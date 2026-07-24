@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+const root = process.cwd();
+const exists = (p) => fs.existsSync(path.join(root, p));
+const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
+for (const required of ["pages/loby.html", "pages/game.html", "js/online.js", "js/online.passive.js", "database.rules.json"]) assert.ok(exists(required), `Missing ${required}`);
+for (const removed of ["index.html", "pages/mode.html", "pages/dashboard.html", "js/dashboard.js", "js/leaderboard.js", "js/ai.worker.js"]) assert.equal(exists(removed), false, `Unexpected ${removed}`);
+const lobby = read("pages/loby.html");
+assert.match(lobby, /https:\/\/ouglsoft\.com\/dhamet\/pages\/mode\.html/);
+const ui = read("js/ui.js");
+assert.match(ui, /z-postmatch-confirm-only/);
+assert.doesNotMatch(ui, /requestRematch/);
+const online = read("js/online.js") + read("js/online.passive.js");
+assert.doesNotMatch(online, /rematch_request|rematch_accept|rematch_reject|requestRematch|_resetRoomForRematch/);
+console.log("structure tests passed");

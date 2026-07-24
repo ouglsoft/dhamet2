@@ -1,0 +1,370 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "players": {
+      ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous'",
+      "$uid": {
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid",
+        ".validate": "(!newData.exists()) || (newData.hasChildren(['status','nickname','updatedAt']) && newData.child('status').isString() && (newData.child('status').val() === 'available' || newData.child('status').val() === 'inPvP' || newData.child('status').val() === 'spectating') && newData.child('nickname').isString() && newData.child('nickname').val().length <= 32 && newData.child('updatedAt').isNumber() && (!newData.child('role').exists() || (newData.child('role').isString() && (newData.child('role').val() === 'lobby' || newData.child('role').val() === 'player' || newData.child('role').val() === 'spectator'))) && (!newData.child('roomId').exists() || (newData.child('roomId').isString() && newData.child('roomId').val().length <= 80)) && (!newData.child('icon').exists() || (newData.child('icon').isString() && newData.child('icon').val().length <= 160)) && (!newData.child('acceptsInvites').exists() || newData.child('acceptsInvites').isBoolean()))"
+      }
+    },
+    "invites": {
+      "$toUid": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $toUid",
+        "$inviteId": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((!data.exists() && newData.exists() && auth.uid === newData.child('fromUid').val() && newData.child('toUid').val() === $toUid) || (!newData.exists() && data.exists() && (auth.uid === $toUid || auth.uid === data.child('fromUid').val())))",
+          ".validate": "(!newData.exists()) || (newData.hasChildren(['fromUid','toUid','gameId','createdAt','status']) && newData.child('toUid').val() === $toUid && newData.child('fromUid').isString() && newData.child('fromUid').val().length > 0 && newData.child('gameId').isString() && newData.child('gameId').val().length > 0 && newData.child('createdAt').isNumber() && newData.child('status').isString() && newData.child('status').val() === 'pending' && (!newData.child('fromNick').exists() || (newData.child('fromNick').isString() && newData.child('fromNick').val().length <= 32)) && (!newData.child('roomName').exists() || (newData.child('roomName').isString() && newData.child('roomName').val().length <= 64)) && (!newData.child('visibility').exists() || (newData.child('visibility').isString() && (newData.child('visibility').val() === 'public' || newData.child('visibility').val() === 'private'))) && (!newData.child('type').exists() || (newData.child('type').isString() && newData.child('type').val() === 'invite')) && (!newData.child('kind').exists() || (newData.child('kind').isString() && newData.child('kind').val() === 'invite')) && (!newData.child('expiresAt').exists() || (newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() >= newData.child('createdAt').val() && newData.child('expiresAt').val() <= newData.child('createdAt').val() + 120000)) && root.child('players/'+$toUid+'/acceptsInvites').val() !== false && !((!newData.child('type').exists() || newData.child('type').val() === 'invite') && (root.child('players/'+$toUid+'/status').val() === 'inPvP' || root.child('players/'+$toUid+'/role').val() === 'player') && root.child('players/'+$toUid+'/roomId').exists()) && !((!newData.child('type').exists() || newData.child('type').val() === 'invite') && (root.child('players/'+newData.child('fromUid').val()+'/status').val() === 'inPvP' || root.child('players/'+newData.child('fromUid').val()+'/role').val() === 'player') && root.child('players/'+newData.child('fromUid').val()+'/roomId').exists()))"
+        }
+      }
+    },
+    "games": {
+      "$gameId": {
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((!data.exists() && newData.child('players/white/uid').val() === auth.uid) || (data.exists() && (data.child('players/white/uid').val() === auth.uid || data.child('players/black/uid').val() === auth.uid || (!newData.exists() && data.child('status').val() === 'active' && root.child('roomList/'+$gameId+'/cleanupAt').isNumber() && root.child('roomList/'+$gameId+'/cleanupAt').val() < now && !data.child('presence/'+data.child('players/white/uid').val()).exists() && !data.child('presence/'+data.child('players/black/uid').val()).exists()))))",
+        "roomName": {
+          ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() === data.val()))"
+        },
+        "name": {
+          ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() === data.val()))"
+        },
+        "status": {
+          ".validate": "(!newData.exists()) || (newData.isString() && (newData.val() === 'pending' || newData.val() === 'active' || newData.val() === 'ended' || newData.val() === 'rejected'))"
+        },
+        "createdAt": {
+          ".validate": "(!newData.exists()) || (newData.isNumber() && (!data.exists() || newData.val() === data.val()))"
+        },
+        "acceptedAt": {
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "endedAt": {
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "endedReason": {
+          ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+        },
+        "winner": {
+          ".validate": "(!newData.exists()) || (newData.isNumber() && (newData.val() === -1 || newData.val() === 0 || newData.val() === 1))"
+        },
+        "endedBy": {
+          ".validate": "(!newData.exists()) || (newData.hasChild('nickname') && newData.child('nickname').isString() && newData.child('nickname').val().length <= 32 && (!newData.child('uid').exists() || newData.child('uid').isString()))",
+          "uid": {
+            ".validate": "(!newData.exists()) || newData.isString()"
+          },
+          "nickname": {
+            ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "spectatorCount": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('games/'+$gameId).exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+          ".validate": "(!newData.exists()) || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 3)"
+        },
+        "spectatorCountUpdatedAt": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('games/'+$gameId).exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "moveIndex": {
+          ".validate": "(!newData.exists()) || (newData.isNumber() && newData.val() >= 0 && newData.val() < 1000000000)"
+        },
+        "ply": {
+          ".validate": "(!newData.exists()) || (newData.isNumber() && newData.val() >= 0 && newData.val() < 100000)"
+        },
+        "turn": {
+          ".validate": "(!newData.exists()) || (newData.isNumber() && newData.val() >= -1 && newData.val() <= 1)"
+        },
+        "starter": {
+          ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 16 && (!data.exists() || newData.val() === data.val()))"
+        },
+        "players": {
+          ".validate": "(!newData.exists()) || (newData.hasChildren(['white','black']))",
+          "white": {
+            "uid": {
+              ".validate": "(!newData.exists()) || (newData.isString() && (!data.exists() ? newData.val() === auth.uid : newData.val() === data.val()))"
+            },
+            "nickname": {
+              ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "black": {
+            "uid": {
+              ".validate": "(!newData.exists()) || (newData.isString() && (!data.exists() || newData.val() === data.val()))"
+            },
+            "nickname": {
+              ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "state": {
+          ".validate": "(!newData.exists()) || true"
+        },
+        "states": {
+          ".validate": "(!newData.exists()) || true"
+        },
+        "lastMove": {
+          ".validate": "(!newData.exists()) || true"
+        },
+        "soufla": {
+          ".validate": "(!newData.exists()) || true"
+        },
+        "undoRequest": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || (!newData.exists() && root.child('roomList/'+$gameId+'/cleanupAt').isNumber() && root.child('roomList/'+$gameId+'/cleanupAt').val() < now))",
+          ".validate": "(!newData.exists()) || (newData.hasChildren(['status','requesterUid','requesterNick','requestedAt','ply']) && newData.child('status').isString() && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'active' || newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected') && newData.child('requesterUid').isString() && newData.child('requesterNick').isString() && newData.child('requesterNick').val().length <= 32 && newData.child('requestedAt').isNumber() && newData.child('ply').isNumber() && (newData.child('requesterUid').val() === root.child('games/'+$gameId+'/players/white/uid').val() || newData.child('requesterUid').val() === root.child('games/'+$gameId+'/players/black/uid').val()) && (!newData.child('responderUid').exists() || (newData.child('responderUid').isString() && (newData.child('responderUid').val() === root.child('games/'+$gameId+'/players/white/uid').val() || newData.child('responderUid').val() === root.child('games/'+$gameId+'/players/black/uid').val()))) && (!newData.child('responderNick').exists() || (newData.child('responderNick').isString() && newData.child('responderNick').val().length <= 32)) && (!newData.child('respondedAt').exists() || newData.child('respondedAt').isNumber()) && (!data.exists() ? (newData.child('requesterUid').val() === auth.uid) : true) && ((data.exists() && (newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected') && data.child('status').val() !== newData.child('status').val()) ? (newData.child('responderUid').val() === auth.uid && auth.uid !== data.child('requesterUid').val()) : true) && (!data.exists() || newData.child('requesterUid').val() === data.child('requesterUid').val()))",
+          "status": {
+            ".validate": "(!newData.exists()) || (newData.isString() && (newData.val() === 'pending' || newData.val() === 'active' || newData.val() === 'accepted' || newData.val() === 'rejected'))"
+          },
+          "requesterUid": {
+            ".validate": "(!newData.exists()) || (newData.isString() && (!data.exists() || newData.val() === data.val()))"
+          },
+          "requesterNick": {
+            ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+          },
+          "requestedAt": {
+            ".validate": "(!newData.exists()) || newData.isNumber()"
+          },
+          "ply": {
+            ".validate": "(!newData.exists()) || newData.isNumber()"
+          },
+          "responderUid": {
+            ".validate": "(!newData.exists()) || newData.isString()"
+          },
+          "responderNick": {
+            ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+          },
+          "respondedAt": {
+            ".validate": "(!newData.exists()) || newData.isNumber()"
+          },
+          "acceptedAt": {
+            ".validate": "(!newData.exists()) || newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "log": {
+          ".validate": "(!newData.exists()) || (!newData.child('220').exists())",
+          "$i": {
+            ".validate": "newData.hasChildren(['ts','text']) && newData.child('ts').isNumber() && newData.child('text').isString() && newData.child('text').val().length <= 200 && (!newData.child('type').exists() || (newData.child('type').isString() && newData.child('type').val() === 'invite')) && (!newData.child('byUid').exists() || newData.child('byUid').isString()) && (!newData.child('byNick').exists() || (newData.child('byNick').isString() && newData.child('byNick').val().length <= 32))"
+          }
+        },
+        "presence": {
+          "$uid": {
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid && ((root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid) || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+            ".validate": "(!newData.exists()) || (newData.child('updatedAt').isNumber() && (!newData.child('uid').exists() || newData.child('uid').val() === $uid) && (!newData.child('nickname').exists() || (newData.child('nickname').isString() && newData.child('nickname').val().length <= 32)) && (!newData.child('side').exists() || newData.child('side').isNumber()) && (!newData.child('joinedAt').exists() || newData.child('joinedAt').isNumber()))"
+          }
+        },
+        "recoverySignal": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || (!newData.exists() && root.child('roomList/'+$gameId+'/cleanupAt').isNumber() && root.child('roomList/'+$gameId+'/cleanupAt').val() < now))",
+          ".validate": "(!newData.exists()) || (newData.hasChildren(['nonce','action','reason','byUid','ts']) && newData.child('nonce').isString() && newData.child('nonce').val().length > 0 && newData.child('nonce').val().length <= 160 && newData.child('action').isString() && (newData.child('action').val() === 'sync' || newData.child('action').val() === 'reload') && newData.child('reason').isString() && newData.child('reason').val().length > 0 && newData.child('reason').val().length <= 32 && newData.child('byUid').isString() && newData.child('byUid').val() === auth.uid && (newData.child('byUid').val() === root.child('games/'+$gameId+'/players/white/uid').val() || newData.child('byUid').val() === root.child('games/'+$gameId+'/players/black/uid').val()) && newData.child('ts').isNumber())",
+          "nonce": {
+            ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length > 0 && newData.val().length <= 160)"
+          },
+          "action": {
+            ".validate": "(!newData.exists()) || (newData.isString() && (newData.val() === 'sync' || newData.val() === 'reload'))"
+          },
+          "reason": {
+            ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length > 0 && newData.val().length <= 32)"
+          },
+          "byUid": {
+            ".validate": "(!newData.exists()) || (newData.isString() && newData.val() === auth.uid)"
+          },
+          "ts": {
+            ".validate": "(!newData.exists()) || newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "$other": {
+          ".validate": false
+        },
+        ".validate": "(!newData.exists()) || (newData.hasChildren(['players','status','createdAt']) && newData.child('players/white/uid').isString() && newData.child('players/black/uid').isString() && newData.child('players/white/nickname').isString() && newData.child('players/black/nickname').isString() && newData.child('players/white/nickname').val().length <= 32 && newData.child('players/black/nickname').val().length <= 32 && newData.child('createdAt').isNumber() && newData.child('status').isString() && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'active' || newData.child('status').val() === 'ended' || newData.child('status').val() === 'rejected') && (!data.exists() || (newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('players/white/uid').val() === data.child('players/white/uid').val() && newData.child('players/black/uid').val() === data.child('players/black/uid').val())))",
+        ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (!data.child('visibility').exists() || data.child('visibility').val() === 'public' || data.child('players/white/uid').val() === auth.uid || data.child('players/black/uid').val() === auth.uid)",
+        "visibility": {
+          ".validate": "(!newData.exists()) || (newData.isString() && (newData.val() === 'public' || newData.val() === 'private') && (!data.exists() || newData.val() === data.val()))"
+        }
+      },
+      ".indexOn": [
+        "status",
+        "endedAt",
+        "createdAt",
+        "acceptedAt"
+      ]
+    },
+    "chats": {
+      "$gameId": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !newData.exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || !root.child('games/'+$gameId).exists())",
+        "messages": {
+          "$msgId": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists() && newData.exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+            ".validate": "(!newData.exists()) || (newData.hasChildren(['fromUid','fromNick','text','ts']) && newData.child('fromUid').isString() && newData.child('fromUid').val().length > 0 && newData.child('fromUid').val().length <= 128 && newData.child('fromUid').val() === auth.uid && newData.child('fromNick').isString() && newData.child('fromNick').val().length <= 32 && (!newData.child('role').exists() || (newData.child('role').isString() && (newData.child('role').val() === 'player' || newData.child('role').val() === 'spectator'))) && newData.child('text').isString() && newData.child('text').val().length <= 280 && newData.child('ts').isNumber())"
+          },
+          ".indexOn": [
+            "ts"
+          ]
+        },
+        "reads": {
+          "$uid": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists()) || auth.uid === $uid)",
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+            ".validate": "newData.hasChildren(['lastReadTs','updatedAt']) && newData.child('lastReadTs').isNumber() && newData.child('updatedAt').isNumber()"
+          }
+        }
+      }
+    },
+    "rtc": {
+      "$gameId": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid)",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !newData.exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || !root.child('games/'+$gameId).exists())",
+        "participants": {
+          "$uid": {
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid)",
+            ".validate": "(!newData.exists()) || (newData.hasChildren(['uid','nickname','role','micMuted','joinedAt','lastSeen']) && newData.child('uid').val() === $uid && newData.child('nickname').isString() && newData.child('nickname').val().length <= 32 && newData.child('role').isString() && newData.child('role').val() === 'player' && newData.child('micMuted').isBoolean() && newData.child('joinedAt').isNumber() && newData.child('lastSeen').isNumber())"
+          }
+        },
+        "signals": {
+          "$toUid": {
+            ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $toUid && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid)",
+            "$fromUid": {
+              "$sigId": {
+                ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((auth.uid === $fromUid) || (auth.uid === $toUid && !newData.exists())) && root.child('rtc/'+$gameId+'/participants/'+$toUid).exists() && root.child('rtc/'+$gameId+'/participants/'+$fromUid).exists()",
+                ".validate": "(!newData.exists()) || (newData.hasChildren(['ts','type']) && newData.child('ts').isNumber() && newData.child('type').isString() && newData.child('type').val().length <= 24 && (!newData.child('callId').exists() || (newData.child('callId').isString() && newData.child('callId').val().length <= 200)) && (!newData.child('restart').exists() || newData.child('restart').isBoolean()) && (!newData.child('sdp').exists() || (newData.child('sdp').isString() && newData.child('sdp').val().length <= 12000)) && (!newData.child('candidate').exists() || (newData.child('candidate').hasChild('candidate') && newData.child('candidate/candidate').isString() && newData.child('candidate/candidate').val().length <= 2048)))"
+              }
+            }
+          }
+        }
+      }
+    },
+    "spectators": {
+      "$gameId": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (!root.child('games/'+$gameId+'/visibility').exists() || root.child('games/'+$gameId+'/visibility').val() === 'public')",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((!newData.exists() && (!root.child('games/'+$gameId).exists() || root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || (root.child('roomList/'+$gameId+'/cleanupAt').isNumber() && root.child('roomList/'+$gameId+'/cleanupAt').val() < now))) || (root.child('games/'+$gameId).exists() && (!root.child('games/'+$gameId+'/visibility').exists() || root.child('games/'+$gameId+'/visibility').val() === 'public')))",
+        "$uid": {
+          ".validate": "(!newData.exists() ? (!data.exists() || (auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid)) : (data.exists() && newData.val() === data.val()) || (auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid && newData.hasChildren(['uid','nickname','joinedAt']) && newData.child('uid').val() === $uid && newData.child('nickname').isString() && newData.child('nickname').val().length <= 32 && newData.child('joinedAt').isNumber() && (!data.exists() || newData.child('joinedAt').val() === data.child('joinedAt').val())))"
+        }
+      }
+    },
+    "userEvents": {
+      "$uid": {
+        ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid",
+        "$eventId": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((!data.exists() && newData.exists() && auth.uid === newData.child('fromUid').val() && newData.child('toUid').val() === $uid) || (!newData.exists() && data.exists() && (auth.uid === $uid || auth.uid === data.child('fromUid').val())))",
+          ".validate": "(!newData.exists()) || (newData.hasChildren(['type','fromUid','toUid','gameId','createdAt','status']) && newData.child('toUid').val() === $uid && newData.child('type').isString() && newData.child('type').val() === 'match_end' && newData.child('fromUid').isString() && newData.child('fromUid').val().length > 0 && newData.child('gameId').isString() && newData.child('gameId').val().length > 0 && newData.child('createdAt').isNumber() && newData.child('status').isString() && newData.child('status').val().length <= 32 && (!newData.child('fromNick').exists() || (newData.child('fromNick').isString() && newData.child('fromNick').val().length <= 32)) && (!newData.child('reason').exists() || (newData.child('reason').isString() && newData.child('reason').val().length <= 32)) && (!newData.child('expiresAt').exists() || newData.child('expiresAt').isNumber()))"
+        }
+      }
+    },
+    "roomList": {
+      ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous'",
+      ".indexOn": [
+        "status",
+        "createdAt",
+        "updatedAt",
+        "cleanupAt"
+      ],
+      "$gameId": {
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || (!newData.exists() && root.child('roomList/'+$gameId+'/cleanupAt').isNumber() && root.child('roomList/'+$gameId+'/cleanupAt').val() < now))",
+        ".validate": "(!newData.exists()) || (newData.hasChildren(['status','roomName','createdAt','acceptedAt','players','updatedAt']) && newData.child('status').isString() && newData.child('status').val() === 'active' && newData.child('roomName').isString() && newData.child('roomName').val().length <= 40 && (!newData.child('visibility').exists() || (newData.child('visibility').isString() && (newData.child('visibility').val() === 'public' || newData.child('visibility').val() === 'private'))) && newData.child('createdAt').isNumber() && newData.child('acceptedAt').isNumber() && newData.child('updatedAt').isNumber() && (!newData.child('cleanupAt').exists() || newData.child('cleanupAt').isNumber()) && (!newData.child('spectatorCount').exists() || (newData.child('spectatorCount').isNumber() && newData.child('spectatorCount').val() >= 0 && newData.child('spectatorCount').val() <= 3)) && (!newData.child('spectatorCountUpdatedAt').exists() || newData.child('spectatorCountUpdatedAt').isNumber()))",
+        "status": {
+          ".validate": "(!newData.exists()) || (newData.isString() && newData.val() === 'active')"
+        },
+        "roomName": {
+          ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 40)"
+        },
+        "createdAt": {
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "acceptedAt": {
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "updatedAt": {
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "cleanupAt": {
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "spectatorCount": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('roomList/'+$gameId).exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+          ".validate": "(!newData.exists()) || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 3)"
+        },
+        "spectatorCountUpdatedAt": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('roomList/'+$gameId).exists() && (root.child('games/'+$gameId+'/players/white/uid').val() === auth.uid || root.child('games/'+$gameId+'/players/black/uid').val() === auth.uid || root.child('spectators/'+$gameId+'/'+auth.uid).exists())",
+          ".validate": "(!newData.exists()) || newData.isNumber()"
+        },
+        "players": {
+          ".validate": "(!newData.exists()) || newData.hasChildren(['white','black'])",
+          "white": {
+            "uid": {
+              ".validate": "(!newData.exists()) || newData.isString()"
+            },
+            "nickname": {
+              ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "black": {
+            "uid": {
+              ".validate": "(!newData.exists()) || newData.isString()"
+            },
+            "nickname": {
+              ".validate": "(!newData.exists()) || (newData.isString() && newData.val().length <= 32)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "$other": {
+          ".validate": false
+        },
+        "visibility": {
+          ".validate": "(!newData.exists()) || (newData.isString() && (newData.val() === 'public' || newData.val() === 'private'))"
+        }
+      }
+    },
+    "profiles": {
+      ".read": false,
+      ".write": false
+    },
+    "leaderboardV1": {
+      ".read": false,
+      ".write": false
+    },
+    "statistics": {
+      ".read": false,
+      ".write": false
+    },
+    "matchHistory": {
+      ".read": false,
+      ".write": false
+    },
+    "achievements": {
+      ".read": false,
+      ".write": false
+    },
+    "trainGamesV3": {
+      ".read": false,
+      ".write": false
+    },
+    "Human-model": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
