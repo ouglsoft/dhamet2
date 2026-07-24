@@ -1173,6 +1173,31 @@
     } catch (e) {}
   }
 
+  function settleWithin(promise, timeoutMs, fallback) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve(fallback);
+      }, Math.max(500, Number(timeoutMs || 7000)));
+      Promise.resolve(promise).then(
+        (value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        },
+        () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(fallback);
+        },
+      );
+    });
+  }
+
   let _authReadyPromise = null;
   async function ensureAuthReady() {
     if (!ensureFirebase()) return false;
@@ -1181,30 +1206,31 @@
       // this module never starts a second anonymous sign-in with a different UID.
       try {
         if (window.DhametEmergencyReady && typeof window.DhametEmergencyReady.then === "function") {
-          await window.DhametEmergencyReady;
+          await settleWithin(window.DhametEmergencyReady, 9000, null);
         }
       } catch (_) {}
 
       if (auth && auth.currentUser && auth.currentUser.isAnonymous) {
         try {
           if (!window.__dhamet2AuthTokenFreshAt || Date.now() - Number(window.__dhamet2AuthTokenFreshAt || 0) > 5 * 60 * 1000) {
-            await auth.currentUser.getIdToken(true);
+            const tokenReady = await settleWithin(auth.currentUser.getIdToken(true), 7000, false);
+            if (!tokenReady) throw new Error("auth-token-timeout");
             window.__dhamet2AuthTokenFreshAt = Date.now();
           }
         } catch (_) {
           try {
             if (window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
-              await window.DhametEmergency.resetAnonymous();
+              await settleWithin(window.DhametEmergency.resetAnonymous(), 9000, null);
             }
           } catch (_) {}
         }
         return !!(auth && auth.currentUser && auth.currentUser.isAnonymous);
       }
       if (auth && auth.currentUser && !auth.currentUser.isAnonymous) {
-        await auth.signOut();
+        await settleWithin(auth.signOut(), 5000, null);
       }
       if (!_authReadyPromise) {
-        _authReadyPromise = auth.signInAnonymously()
+        _authReadyPromise = settleWithin(auth.signInAnonymously(), 9000, null)
           .then(() => !!(auth && auth.currentUser && auth.currentUser.isAnonymous))
           .catch(() => false)
           .finally(() => { _authReadyPromise = null; });
@@ -1864,7 +1890,16 @@
 
     _getPersistedActiveGameId: function () {
           try {
-            return String(ssGet(PERSIST_GAME_ID_KEY) || "").trim();
+            const gid = String(ssGet(PERSIST_GAME_ID_KEY) || "").trim();
+            if (!gid) return "";
+            const ts = parseInt(ssGet(PERSIST_GAME_TS_KEY) || "0", 10) || 0;
+            // Restored browser/mobile tabs can preserve sessionStorage for days. A stale
+            // private game id must never block the lobby startup.
+            if (!ts || Date.now() - ts > 6 * 60 * 60 * 1000) {
+              this._clearPersistedActiveGame();
+              return "";
+            }
+            return gid;
           } catch (e) {
             return "";
           }
@@ -1874,7 +1909,11 @@
           const me = String(uid || this.myUid || (auth && auth.currentUser && auth.currentUser.uid) || "").trim();
           if (!me || !db || !db.ref) return "";
           try {
-            const snap = await db.ref("roomList").orderByChild("status").equalTo("active").limitToLast(100).once("value");
+            const snap = await settleWithin(
+              db.ref("roomList").orderByChild("status").equalTo("active").limitToLast(100).once("value"),
+              6000,
+              null,
+            );
             const all = snap && snap.val ? snap.val() : null;
             if (!all) return "";
             const candidates = [];
@@ -1885,7 +1924,7 @@
               const buid = String((players.black && players.black.uid) || "").trim();
               if (me !== wuid && me !== buid) continue;
               if (this._isLobbyRoomStale && this._isLobbyRoomStale(r)) {
-                try { await this._sweepStaleLobbyRoom(gid, r); } catch (e) {}
+                try { settleWithin(this._sweepStaleLobbyRoom(gid, r), 2500, false); } catch (e) {}
                 continue;
               }
               candidates.push({ gid, ts: Number(r.updatedAt || r.acceptedAt || r.createdAt || 0) || 0 });
@@ -1899,7 +1938,7 @@
         },
 
     _getActivePlayerRoomId: async function () {
-          const ok = await ensureAuthReady();
+          const ok = await settleWithin(ensureAuthReady(), 9000, false);
           const uid = this.myUid || (auth && auth.currentUser && auth.currentUser.uid) || "";
           if (!ok || !uid || !db || !db.ref) return "";
     
@@ -1907,7 +1946,11 @@
     
           if (gid) {
             try {
-              const snap = await db.ref("games").child(gid).once("value");
+              const snap = await settleWithin(db.ref("games").child(gid).once("value"), 6000, null);
+              if (!snap) {
+                this._clearPersistedActiveGame();
+                gid = "";
+              }
               const g = snap && snap.val ? snap.val() : null;
               if (g && g.status === "active" && g.players) {
                 const wuid = g.players.white && g.players.white.uid ? String(g.players.white.uid) : "";
@@ -1989,7 +2032,7 @@
         },
 
     initPresence: async function () {
-          const ok = await ensureAuthReady();
+          const ok = await settleWithin(ensureAuthReady(), 9000, false);
           if (!ok) return false;
     
           try {
@@ -2107,11 +2150,15 @@
             } catch (e) {
               Logger.warn("presence_ondisconnect_failed", { err: String(e && (e.message || e)) });
             }
-            const initialPresenceOk = await safePlayerWrite(
-              this.statusRef,
-              this.myUid,
-              payload(),
-              "players.initPresence",
+            const initialPresenceOk = await settleWithin(
+              safePlayerWrite(
+                this.statusRef,
+                this.myUid,
+                payload(),
+                "players.initPresence",
+              ),
+              8000,
+              false,
             );
             if (!initialPresenceOk) return false;
     
@@ -2126,7 +2173,8 @@
               this._bindInvitePreferenceListener();
             } catch (e) {}
             try {
-              await this._markBusyIfActivePlayerRoom("players.initPresence.activeRoom");
+              // Never block lobby rendering on recovery of an old active-room marker.
+              settleWithin(this._markBusyIfActivePlayerRoom("players.initPresence.activeRoom"), 6000, false);
             } catch (e) {}
     
             return true;
@@ -2187,50 +2235,30 @@
             this._lifecycleBound = true;
     
             const cleanup = () => {
+              // Do local teardown only. onDisconnect() already removes presence on the
+              // server. Starting Firebase writes from beforeunload/pagehide can stall
+              // Chromium's shared network process and freeze every tab in the window.
+              try { this._stopPresenceHeartbeat(); } catch (e) {}
+              try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (e) {}
               try {
-                this._stopPresenceHeartbeat();
+                if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
+                  this._presenceConnInfoRef.off("value", this._presenceConnInfoHandler);
+                }
+              } catch (e) {}
+            };
+            const resume = () => {
+              try {
+                if (this._presenceInited && this.statusRef && this.myUid) {
+                  this._startPresenceHeartbeat();
+                }
               } catch (e) {}
               try {
-                if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat();
-              } catch (e) {}
-    
-              let internalNav = false;
-              try {
-                const ts = parseInt(ssGet("zamat.internalNavTs") || "0", 10);
-                internalNav = !!(ts && Date.now() - ts < 2500);
-              } catch (e) {}
-    
-              const hasActiveGame = !!(
-                this.gameId ||
-                this._presenceRoomId ||
-                (ssGet && ssGet(PERSIST_GAME_ID_KEY))
-              );
-              const isPvpContext = !!(
-                this.isActive ||
-                this._presenceStatus === "inPvP" ||
-                this._presenceRole === "player"
-              );
-    
-              if (internalNav && hasActiveGame && isPvpContext) {
-                try {
-                  this._touchRoomListActivity(this.gameId || this._presenceRoomId || ssGet(PERSIST_GAME_ID_KEY), true);
-                } catch (e) {}
-                try {
-                  if (this.presenceRef) this.presenceRef.remove();
-                } catch (e) {}
-                return;
-              }
-    
-              try {
-                if (this.statusRef) this.statusRef.remove();
-              } catch (e) {}
-              try {
-                if (this.presenceRef) this.presenceRef.remove();
+                if (this.isActive && this._startGamePresenceHeartbeat) this._startGamePresenceHeartbeat();
               } catch (e) {}
             };
     
             window.addEventListener("pagehide", cleanup, { capture: true });
-            window.addEventListener("beforeunload", cleanup, { capture: true });
+            window.addEventListener("pageshow", resume, { passive: true });
             try {
               this._bindReconnectRecovery();
             } catch (e) {}
@@ -3498,6 +3526,7 @@
     safeDbWriteNoAwait: safeDbWriteNoAwait,
     safePlayerWrite: safePlayerWrite,
     safePlayerWriteNoAwait: safePlayerWriteNoAwait,
+    settleWithin: settleWithin,
     isGamePage: isGamePage,
     escapeHtml: escapeHtml,
     encodeSharedLogText: encodeSharedLogText,

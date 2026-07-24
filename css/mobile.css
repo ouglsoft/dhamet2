@@ -3884,6 +3884,7 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-ro
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   color: rgb(var(--rgb-white));
   background: var(--gradient-game-control);
   border: 1px solid rgb(var(--rgb-white) / .18);
@@ -3930,7 +3931,20 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-ro
 }
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row #btnEndKill {
-  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row.is-live {

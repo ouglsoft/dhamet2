@@ -1082,7 +1082,6 @@ function _trFinalizeOnce(reason) {
 
 try {
   window.addEventListener("pagehide", () => _trFinalizeOnce("disconnect"), { capture: true });
-  window.addEventListener("beforeunload", () => _trFinalizeOnce("disconnect"), { capture: true });
 } catch {}
 
 function boardIdxFromClient(canvas, clientX, clientY) {
@@ -3379,7 +3378,9 @@ const Board3D = (() => {
     const row2 = document.getElementById("pvpRow2");
     const row3 = document.getElementById("pvpRow3");
     const specBar = document.getElementById("specBar");
-    if (!pool || !pvcBox || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;
+    // The online-only backup intentionally has no PvC controls box. Requiring it
+    // prevented every desktop PvP button from being mounted.
+    if (!pool || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;
 
     const els = {
       endLocal: document.getElementById("btnEndLocalMatch"),
@@ -3405,7 +3406,7 @@ const Board3D = (() => {
       }
     });
 
-    clear(pvcBox);
+    if (pvcBox) clear(pvcBox);
     clear(row1);
     clear(row2);
     clear(row3);
@@ -3423,7 +3424,7 @@ const Board3D = (() => {
       [els.chat, els.settings].forEach((el) => el && row2.appendChild(el));
 
       [els.spk, els.mic].forEach((el) => el && row3.appendChild(el));
-    } else {
+    } else if (pvcBox) {
       [els.endLocal, els.undo, els.settings, els.newBtn, els.save, els.resume].forEach(
         (el) => el && pvcBox.appendChild(el),
       );

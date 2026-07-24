@@ -2,6 +2,7 @@
   "use strict";
 
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
+  const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
@@ -127,6 +128,43 @@
       return field && !field.includes("REPLACE_WITH_");
     });
   }
+  function withTimeout(promise, timeoutMs, code) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error(code || "firebase-operation-timeout"));
+      }, Math.max(500, Number(timeoutMs || 7000)));
+      Promise.resolve(promise).then(
+        (value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        },
+        (error) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
+  }
+  function readTabAuthMarker() {
+    try {
+      const raw = sessionStorage.getItem(AUTH_TAB_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  function markTabAuth(user) {
+    try {
+      sessionStorage.setItem(AUTH_TAB_KEY, JSON.stringify({ uid: String((user && user.uid) || ""), ts: Date.now() }));
+    } catch (_) {}
+  }
   function initFirebase() {
     if (!firebaseConfigReady(window.firebaseConfig)) {
       throw new Error("firebase-config-required");
@@ -163,11 +201,12 @@
   }
 
   async function signInFreshAnonymous(auth) {
-    try { await auth.signOut(); } catch (_) {}
-    const result = await auth.signInAnonymously();
+    try { await withTimeout(auth.signOut(), 4000, "anonymous-signout-timeout"); } catch (_) {}
+    const result = await withTimeout(auth.signInAnonymously(), 9000, "anonymous-signin-timeout");
     const user = result && result.user ? result.user : auth.currentUser;
     if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
-    try { await user.getIdToken(true); } catch (_) {}
+    try { await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout"); } catch (_) {}
+    markTabAuth(user);
     return user;
   }
 
@@ -176,25 +215,30 @@
     ensureAnonymousPromise = (async () => {
       if (!initFirebase()) throw new Error("firebase-unavailable");
       const auth = firebase.auth();
-      try { await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}
+      // The emergency identity is tab-scoped. This prevents an old anonymous UID/token
+      // from surviving browser restarts while still preserving the UID across lobby/game
+      // navigation and reloads inside the same tab.
+      try {
+        await withTimeout(auth.setPersistence(firebase.auth.Auth.Persistence.SESSION), 4000, "auth-persistence-timeout");
+      } catch (_) {}
 
       let user = await waitForInitialAuthState(auth, 4000);
-      if (user && !user.isAnonymous) user = await signInFreshAnonymous(auth);
-      if (!user) {
-        const result = await auth.signInAnonymously();
-        user = result && result.user ? result.user : auth.currentUser;
-      }
+      const marker = readTabAuthMarker();
+      const markerMatches = !!(marker && marker.uid && user && String(marker.uid) === String(user.uid));
+      if (user && (!user.isAnonymous || !markerMatches)) user = await signInFreshAnonymous(auth);
+      if (!user) user = await signInFreshAnonymous(auth);
       if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
 
-      // A persisted browser session can contain an expired/revoked anonymous token.
-      // Force one refresh; if it fails, replace only that unusable anonymous session.
+      // Bound token refresh so a damaged persisted browser state cannot leave the lobby
+      // on its loading message indefinitely.
       try {
-        await user.getIdToken(true);
+        await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout");
       } catch (_) {
         user = await signInFreshAnonymous(auth);
       }
 
       try { firebase.database().goOnline(); } catch (_) {}
+      markTabAuth(user);
       writeSession(user);
       return user;
     })().finally(() => { ensureAnonymousPromise = null; });
@@ -207,6 +251,7 @@
     ensureAnonymousPromise = null;
     const user = await signInFreshAnonymous(auth);
     try { firebase.database().goOnline(); } catch (_) {}
+    markTabAuth(user);
     writeSession(user);
     return user;
   }

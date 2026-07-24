@@ -5821,7 +5821,7 @@
           let playersLoaded = false;
           let roomsLoaded = false;
           let lobbyLoadTimer = null;
-          const authRecoveryKey = "dhamet2.lobby.authRecovery.v2";
+          const authRecoveryKey = "dhamet2.lobby.authRecovery.v3";
           const clearAuthRecoveryMarker = () => {
             try { sessionStorage.removeItem(authRecoveryKey); } catch (_) {}
           };
@@ -5851,6 +5851,12 @@
           };
     
           try {
+            // Start the watchdog before auth/presence recovery. Previously it started
+            // after reads that could hang, leaving the loading text forever.
+            lobbyLoadTimer = setTimeout(lobbyLoadFailed, 12000);
+          } catch (e) {}
+
+          try {
             const setLoading = (el, msg) => {
               if (!el) return;
               el.innerHTML = `<div class="z-empty z-loading">${msg || ""}</div>`;
@@ -5859,12 +5865,9 @@
             setLoading(roomsEl, window.I18N.translateArgs("lobby.loadingRooms"));
           } catch (e) {}
     
-          const ok = await this.initPresence();
+          const ok = await S.settleWithin(this.initPresence(), 10000, false);
           if (!ok) {
-            try {
-              if (playersEl)
-                playersEl.innerHTML = `<div class="z-empty">${window.I18N.translateArgs("status.onlineInitFail")}</div>`;
-            } catch (e) {}
+            lobbyLoadFailed();
             return;
           }
     
@@ -5881,11 +5884,9 @@
             }
           } catch (e) {}
     
-          await this._syncLobbyAvailabilityFromActiveGame();
-
-          try {
-            lobbyLoadTimer = setTimeout(lobbyLoadFailed, 10000);
-          } catch (e) {}
+          // Recover active-room state in the background. Player/room listeners must
+          // never wait for a stale private game id stored by a restored browser tab.
+          try { S.settleWithin(this._syncLobbyAvailabilityFromActiveGame(), 6000, false); } catch (e) {}
     
           try {
             this._bindInviteListener();
