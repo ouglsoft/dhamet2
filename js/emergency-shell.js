@@ -27,6 +27,63 @@
     try { window.I18N && window.I18N.apply && window.I18N.apply(document, value); } catch (_) {}
     return value;
   }
+
+  function isPhoneLike() {
+    const w = Math.max(0, window.innerWidth || 0);
+    const h = Math.max(0, window.innerHeight || 0);
+    const sw = Math.max(0, (window.screen && window.screen.width) || 0);
+    const sh = Math.max(0, (window.screen && window.screen.height) || 0);
+    const screenShort = Math.min(sw || w, sh || h) || Math.min(w, h);
+    let ua = "";
+    let touch = 0;
+    try {
+      touch = Math.max(0, navigator.maxTouchPoints || 0);
+      ua = String(navigator.userAgent || navigator.vendor || "");
+    } catch (_) {}
+    if (/Android.+Mobile|iPhone|iPod|Windows Phone|Opera Mini|IEMobile|Mobile Safari/i.test(ua)) return true;
+    if (/iPad|Tablet|Silk|Android(?!.*Mobile)/i.test(ua)) return screenShort <= 1024;
+    if (/Windows NT|Macintosh|X11|CrOS|Linux x86_64/i.test(ua)) return touch > 0 && screenShort > 0 && screenShort <= 600;
+    return touch > 0 && screenShort > 0 && screenShort <= 600;
+  }
+
+  function publicLanguage() {
+    const lang = String(getLang() || "ar").toLowerCase();
+    return lang.startsWith("fr") ? "fr" : (lang.startsWith("ar") ? "ar" : "en");
+  }
+
+  function publicUrl(kind) {
+    const lang = publicLanguage();
+    let legalBase = "https://ouglsoft.com/legal/dhamet";
+    if (lang === "ar") legalBase += "/ar";
+    else if (lang === "fr") legalBase += "/fr";
+    if (kind === "rules") return legalBase + "/rules.html";
+    if (kind === "privacy") return legalBase + "/privacy-policy.html";
+    if (kind === "terms") return legalBase + "/terms-of-use.html";
+    if (kind === "contact") {
+      if (lang === "ar") return "https://ouglsoft.com/ar/pages/contact.html";
+      if (lang === "fr") return "https://ouglsoft.com/fr/pages/contact.html";
+      return "https://ouglsoft.com/pages/contact.html";
+    }
+    return "https://ouglsoft.com";
+  }
+
+  function getPublicLinks() {
+    return [
+      { href: publicUrl("terms"), key: "pages.nav.terms", shortKey: "pages.navShort.terms", external: true, legalKind: "terms" },
+      { href: publicUrl("privacy"), key: "pages.nav.privacy", shortKey: "pages.navShort.privacy", external: true, legalKind: "privacy" },
+      { href: publicUrl("rules"), key: "pages.nav.rules", shortKey: "pages.nav.rules", external: true, legalKind: "rules" },
+      { href: publicUrl("contact"), key: "pages.nav.contact", shortKey: "pages.navShort.contact", external: true, legalKind: "contact" }
+    ];
+  }
+
+  function getFooterText() {
+    const year = new Date().getFullYear();
+    try {
+      if (window.I18N && typeof window.I18N.text === "function") return window.I18N.text("pages.footer.text", { year });
+    } catch (_) {}
+    return "© " + year + " العُقل للبرمجيات / El Ougl Software SARL — جميع الحقوق محفوظة";
+  }
+
   function randomNick(uid) {
     const suffix = String(uid || "guest").replace(/[^a-z0-9]/gi, "").slice(-5).toUpperCase() || Math.floor(1000 + Math.random() * 9000);
     return "ضيف " + suffix;
@@ -117,6 +174,7 @@
     pageAssetPrefix: pagePrefix,
     pageAssetUrl: assetUrl,
     getLang,
+    isPhoneLike,
     getAllowedUserIcons: () => window.ZIconManifest.slice(),
     sanitizeUserIconPath: (value) => {
       const clean = String(value || "").replace(/^(?:\.\.\/)+/, "").replace(/^\/+/, "");
@@ -125,8 +183,8 @@
   });
   window.ZShell = Object.assign(window.ZShell || {}, {
     getLang, setLang,
-    getPublicLinks: () => [],
-    getFooterText: () => "",
+    getPublicLinks,
+    getFooterText,
     createStartPlayButton: () => null
   });
   window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, readSession, writeSession, firebaseConfigReady });
