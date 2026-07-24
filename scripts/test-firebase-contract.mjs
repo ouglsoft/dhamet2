@@ -21,9 +21,9 @@ assert.match(passive, /const initialPresenceOk = await safePlayerWrite\(/,
   "initial presence must be confirmed before lobby listeners start");
 assert.doesNotMatch(passive, /const snap = await this\.playersRef\.once\("value"\);\s*const players/s,
   "lobby startup must not block on a full players read before presence registration");
-assert.match(online, /ref\.on\("value", cb, \(err\) =>/,
+assert.match(online, /ref\.on\("value", cb, (?:async )?\(err\) =>/,
   "players listener must expose read failures instead of loading forever");
-assert.match(online, /refG\.on\("value", cbG, \(err\) =>/,
+assert.match(online, /refG\.on\("value", cbG, (?:async )?\(err\) =>/,
   "rooms listener must expose read failures instead of loading forever");
 
 console.log("Firebase contract regression tests passed");

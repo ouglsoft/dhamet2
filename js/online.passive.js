@@ -1185,7 +1185,21 @@
         }
       } catch (_) {}
 
-      if (auth && auth.currentUser && auth.currentUser.isAnonymous) return true;
+      if (auth && auth.currentUser && auth.currentUser.isAnonymous) {
+        try {
+          if (!window.__dhamet2AuthTokenFreshAt || Date.now() - Number(window.__dhamet2AuthTokenFreshAt || 0) > 5 * 60 * 1000) {
+            await auth.currentUser.getIdToken(true);
+            window.__dhamet2AuthTokenFreshAt = Date.now();
+          }
+        } catch (_) {
+          try {
+            if (window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
+              await window.DhametEmergency.resetAnonymous();
+            }
+          } catch (_) {}
+        }
+        return !!(auth && auth.currentUser && auth.currentUser.isAnonymous);
+      }
       if (auth && auth.currentUser && !auth.currentUser.isAnonymous) {
         await auth.signOut();
       }
@@ -1911,11 +1925,19 @@
               gid = "";
             } catch (e) {
               Logger.warn("active_room_check_failed", { gameId: gid, err: String(e && (e.message || e)) });
-              this.myUid = uid;
-              this._presenceStatus = "inPvP";
-              this._presenceRole = "player";
-              this._presenceRoomId = gid;
-              return gid;
+              if (isPermissionDenied(e)) {
+                // A normal browser may retain a private game id from an older anonymous UID.
+                // Never mark the new session busy when that stale game belongs to another UID.
+                this._clearPersistedActiveGame();
+                gid = "";
+              } else {
+                // On a transient network failure, keep the active-game guard conservative.
+                this.myUid = uid;
+                this._presenceStatus = "inPvP";
+                this._presenceRole = "player";
+                this._presenceRoomId = gid;
+                return gid;
+              }
             }
           }
     

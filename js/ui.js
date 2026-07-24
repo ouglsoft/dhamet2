@@ -3210,7 +3210,7 @@ function bindUI() {
   qs("#btnMic")?.addEventListener("click", () => window.Online?.toggleMic?.());
   qs("#btnLeaveRoom")?.addEventListener("click", () => window.Online?.leaveRoom?.());
   qs("#btnSettings").addEventListener("click", () => UI.showSettingsModal());
-  qs("#btnNew").addEventListener("click", () => {
+  qs("#btnNew")?.addEventListener("click", () => {
     Modal.twoAction({
       title: t("modals.newGame.title"),
       body: `<div>${t("modals.newGame.confirm")}</div>`,
@@ -3250,8 +3250,8 @@ function bindUI() {
     });
   });
 
-  qs("#btnSave").addEventListener("click", saveGame);
-  qs("#btnResume").addEventListener("click", resumeGame);
+  qs("#btnSave")?.addEventListener("click", saveGame);
+  qs("#btnResume")?.addEventListener("click", resumeGame);
   qs("#btnEndKill").addEventListener("click", endKillPressed);
 
   qs("#board").addEventListener("click", Input.onBoardClick);

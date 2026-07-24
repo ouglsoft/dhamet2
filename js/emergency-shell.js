@@ -140,20 +140,73 @@
       return false;
     }
   }
+  let ensureAnonymousPromise = null;
+
+  function waitForInitialAuthState(auth, timeoutMs) {
+    return new Promise((resolve) => {
+      let settled = false;
+      let unsubscribe = null;
+      const finish = (user) => {
+        if (settled) return;
+        settled = true;
+        try { if (unsubscribe) unsubscribe(); } catch (_) {}
+        resolve(user || null);
+      };
+      try {
+        unsubscribe = auth.onAuthStateChanged((user) => finish(user), () => finish(auth.currentUser || null));
+      } catch (_) {
+        finish(auth.currentUser || null);
+        return;
+      }
+      setTimeout(() => finish(auth.currentUser || null), Math.max(500, Number(timeoutMs || 3500)));
+    });
+  }
+
+  async function signInFreshAnonymous(auth) {
+    try { await auth.signOut(); } catch (_) {}
+    const result = await auth.signInAnonymously();
+    const user = result && result.user ? result.user : auth.currentUser;
+    if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
+    try { await user.getIdToken(true); } catch (_) {}
+    return user;
+  }
+
   async function ensureAnonymous() {
+    if (ensureAnonymousPromise) return ensureAnonymousPromise;
+    ensureAnonymousPromise = (async () => {
+      if (!initFirebase()) throw new Error("firebase-unavailable");
+      const auth = firebase.auth();
+      try { await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}
+
+      let user = await waitForInitialAuthState(auth, 4000);
+      if (user && !user.isAnonymous) user = await signInFreshAnonymous(auth);
+      if (!user) {
+        const result = await auth.signInAnonymously();
+        user = result && result.user ? result.user : auth.currentUser;
+      }
+      if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
+
+      // A persisted browser session can contain an expired/revoked anonymous token.
+      // Force one refresh; if it fails, replace only that unusable anonymous session.
+      try {
+        await user.getIdToken(true);
+      } catch (_) {
+        user = await signInFreshAnonymous(auth);
+      }
+
+      try { firebase.database().goOnline(); } catch (_) {}
+      writeSession(user);
+      return user;
+    })().finally(() => { ensureAnonymousPromise = null; });
+    return ensureAnonymousPromise;
+  }
+
+  async function resetAnonymous() {
     if (!initFirebase()) throw new Error("firebase-unavailable");
     const auth = firebase.auth();
-    try { await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}
-    let user = auth.currentUser;
-    if (user && !user.isAnonymous) {
-      await auth.signOut();
-      user = null;
-    }
-    if (!user) {
-      const result = await auth.signInAnonymously();
-      user = result && result.user ? result.user : auth.currentUser;
-    }
-    if (!user) throw new Error("anonymous-auth-failed");
+    ensureAnonymousPromise = null;
+    const user = await signInFreshAnonymous(auth);
+    try { firebase.database().goOnline(); } catch (_) {}
     writeSession(user);
     return user;
   }
@@ -187,8 +240,8 @@
     getFooterText,
     createStartPlayButton: () => null
   });
-  window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, readSession, writeSession, firebaseConfigReady });
-  window.DhametEmergency = Object.freeze({ ensureAnonymous, readSession, randomNick });
+  window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, resetAnonymous, readSession, writeSession, firebaseConfigReady });
+  window.DhametEmergency = Object.freeze({ ensureAnonymous, resetAnonymous, readSession, randomNick });
 
   document.documentElement.classList.add("auth-pending");
   const ready = ensureAnonymous()

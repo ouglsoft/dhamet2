@@ -5821,6 +5821,25 @@
           let playersLoaded = false;
           let roomsLoaded = false;
           let lobbyLoadTimer = null;
+          const authRecoveryKey = "dhamet2.lobby.authRecovery.v2";
+          const clearAuthRecoveryMarker = () => {
+            try { sessionStorage.removeItem(authRecoveryKey); } catch (_) {}
+          };
+          const recoverPermissionSession = async (err) => {
+            if (!isPermissionDenied(err)) return false;
+            try {
+              if (sessionStorage.getItem(authRecoveryKey) === "1") return false;
+              sessionStorage.setItem(authRecoveryKey, "1");
+            } catch (_) {}
+            try {
+              if (window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
+                await window.DhametEmergency.resetAnonymous();
+                location.reload();
+                return true;
+              }
+            } catch (_) {}
+            return false;
+          };
           const lobbyLoadFailed = () => {
             if (lobbyLoadTimer) {
               clearTimeout(lobbyLoadTimer);
@@ -5883,6 +5902,7 @@
     
             const cb = (snap) => {
               playersLoaded = true;
+              if (playersLoaded && roomsLoaded) clearAuthRecoveryMarker();
               if (playersLoaded && roomsLoaded && lobbyLoadTimer) {
                 clearTimeout(lobbyLoadTimer);
                 lobbyLoadTimer = null;
@@ -6001,9 +6021,10 @@
             };
     
             this._lobbyPlayersCb = cb;
-            ref.on("value", cb, (err) => {
+            ref.on("value", cb, async (err) => {
               playersLoaded = false;
               try { Logger.warn("lobby_players_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
+              if (await recoverPermissionSession(err)) return;
               lobbyLoadFailed();
             });
           } catch (e) {
@@ -6021,6 +6042,7 @@
     
             const cbG = (snap) => {
               roomsLoaded = true;
+              if (playersLoaded && roomsLoaded) clearAuthRecoveryMarker();
               if (playersLoaded && roomsLoaded && lobbyLoadTimer) {
                 clearTimeout(lobbyLoadTimer);
                 lobbyLoadTimer = null;
@@ -6113,9 +6135,10 @@
             };
     
             this._lobbyRoomsCb = cbG;
-            refG.on("value", cbG, (err) => {
+            refG.on("value", cbG, async (err) => {
               roomsLoaded = false;
               try { Logger.warn("lobby_rooms_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
+              if (await recoverPermissionSession(err)) return;
               lobbyLoadFailed();
             });
     
