@@ -1685,7 +1685,7 @@ function normalizeMobileControlIcons() {
       timerRow.style.boxShadow = tileShadow;
     }
     const endBtn = qs("#btnEndKill", grid);
-    if (endBtn && endBtn.style) {
+    if (endBtn && endBtn !== timerRow && endBtn.style) {
       endBtn.style.background = "transparent";
       endBtn.style.backgroundColor = "transparent";
       endBtn.style.backgroundImage = "none";
@@ -1730,15 +1730,33 @@ function syncEndKillAvailability(active) {
   } catch (_) {}
 }
 
+let __lastEndKillActivationAt = 0;
+function releaseResolvedOnlineUiHold() {
+  try {
+    const online = window.Online;
+    if (!online || !online.isActive || online.isSpectator) return false;
+    const root = document.documentElement;
+    if (root && root.classList) { root.classList.remove("ui-hold", "role-pending"); root.classList.add("ui-ready"); }
+    if (document.body && document.body.classList) document.body.classList.add("z-online-active");
+    return true;
+  } catch (_) { return false; }
+}
+function activateEndKillFromEvent(event) {
+  try {
+    const now = performance.now();
+    if (now - __lastEndKillActivationAt < 320) { if (event && event.cancelable) event.preventDefault(); return; }
+    __lastEndKillActivationAt = now;
+    if (event && event.cancelable) event.preventDefault();
+    if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+  } catch (_) {}
+  endKillPressed();
+}
+
 function endKillPressed() {
   try {
     var root = document.documentElement;
-    if (
-      root &&
-      root.classList &&
-      (root.classList.contains("role-pending") || root.classList.contains("ui-hold"))
-    )
-      return;
+    const resolvedOnline = releaseResolvedOnlineUiHold();
+    if (!resolvedOnline && root && root.classList && (root.classList.contains("role-pending") || root.classList.contains("ui-hold"))) return;
     if (window.Online && window.Online.isActive && window.Online.isSpectator) {
       return;
     }
@@ -3251,7 +3269,12 @@ function bindUI() {
 
   qs("#btnSave")?.addEventListener("click", saveGame);
   qs("#btnResume")?.addEventListener("click", resumeGame);
-  qs("#btnEndKill").addEventListener("click", endKillPressed);
+  const endKillRow = qs(".timer-row");
+  const endKillButton = qs("#btnEndKill");
+  if (endKillRow) {
+    endKillRow.addEventListener("pointerup", activateEndKillFromEvent, { passive: false });
+    endKillRow.addEventListener("click", activateEndKillFromEvent, { passive: false });
+  } else if (endKillButton) endKillButton.addEventListener("click", activateEndKillFromEvent, { passive: false });
 
   qs("#board").addEventListener("click", Input.onBoardClick);
   const __boardPd = qs("#board");
@@ -3400,17 +3423,6 @@ const Board3D = (() => {
       while (node && node.firstChild) node.removeChild(node.firstChild);
     };
 
-    Object.values(els).forEach((el) => {
-      if (el && el.parentElement !== pool) {
-        pool.appendChild(el);
-      }
-    });
-
-    if (pvcBox) clear(pvcBox);
-    clear(row1);
-    clear(row2);
-    clear(row3);
-
     if (isSpectator) {
       const leaveRoom = document.getElementById("btnLeaveRoom");
       if (leaveRoom && leaveRoom.parentElement !== specBar) specBar.appendChild(leaveRoom);
@@ -3424,7 +3436,16 @@ const Board3D = (() => {
       [els.chat, els.settings].forEach((el) => el && row2.appendChild(el));
 
       [els.spk, els.mic].forEach((el) => el && row3.appendChild(el));
+      try {
+        const wrap = document.getElementById("controlsWrap");
+        if (wrap) { wrap.hidden = false; wrap.style.display = "block"; wrap.style.visibility = "visible"; wrap.style.opacity = "1"; wrap.style.pointerEvents = "auto"; }
+        pvpBox.hidden = false; pvpBox.style.display = "block"; pvpBox.style.visibility = "visible";
+        [row1,row2,row3].forEach((row) => { row.hidden=false; row.style.display="flex"; row.style.visibility="visible"; row.style.pointerEvents="auto"; });
+        releaseResolvedOnlineUiHold();
+      } catch (_) {}
     } else if (pvcBox) {
+      Object.values(els).forEach((el) => { if (el && el.parentElement !== pool) pool.appendChild(el); });
+      clear(pvcBox);
       [els.endLocal, els.undo, els.settings, els.newBtn, els.save, els.resume].forEach(
         (el) => el && pvcBox.appendChild(el),
       );

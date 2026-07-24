@@ -1520,9 +1520,8 @@
         },
 
     _setOnlineButtonsState: function (on) {
-          try {
-            this._applyUiHold(true);
-          } catch (e) {}
+          try { if (document.body && document.body.classList) document.body.classList.toggle("z-online-active", !!on && !this.isSpectator); } catch (e) {}
+          try { this._applyUiHold(true); } catch (e) {}
           try {
           } catch (e) {}
           try {
@@ -1623,9 +1622,9 @@
               }
             } catch (e) {}
           }
-          try {
-            this._releaseUiHoldSoon();
-          } catch (e) {}
+          try { if (window.ZamatControls && typeof window.ZamatControls.mount === "function") window.ZamatControls.mount(!!on, !!this.isSpectator); } catch (e) {}
+          try { this._releaseUiHoldSoon(); } catch (e) {}
+          try { var self=this; setTimeout(function(){ try { if (self.isActive) { self._applyUiHold(false); if (document.body && document.body.classList && !self.isSpectator) document.body.classList.add("z-online-active"); if (window.ZamatControls && typeof window.ZamatControls.mount === "function") window.ZamatControls.mount(true, !!self.isSpectator); } } catch (_) {} },400); } catch (e) {}
         },
 
     _notifyMatchEndWatchers: async function (gameId, reason, fromNick) {

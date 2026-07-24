@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+  const BUILD_VERSION = "20260725-controlsfix2";
+  window.DHAMET2_BUILD_VERSION = BUILD_VERSION;
+  try { console.info("Dhamet2 build", BUILD_VERSION); } catch (_) {}
+
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
   const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
   const LANG_KEY = "zamat.lang";

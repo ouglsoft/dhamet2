@@ -2471,3 +2471,13 @@ body.z-game-page:not(.z-mobile-on) .controls-box .btn .btn-ico {
   filter: brightness(0) invert(1) drop-shadow(0 1px 1px rgb(var(--rgb-black) / .28));
   opacity: 1;
 }
+
+
+/* Dhamet2 controlsfix2 */
+body.z-game-page.mode-pvp:not(.z-mobile-on) #controlsWrap, body.z-game-page.mode-pvp.z-online-active:not(.z-mobile-on) #controlsWrap, html.ui-hold body.z-game-page.mode-pvp.z-online-active:not(.z-mobile-on) #controlsWrap, html.role-pending body.z-game-page.mode-pvp.z-online-active:not(.z-mobile-on) #controlsWrap { display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; }
+body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpControlsBox { display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; }
+body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpRow1, body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpRow2, body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpRow3 { display:flex !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; }
+
+.timer-row#btnEndKill { width:100%; display:flex !important; align-items:center; justify-content:space-between; gap:8px; }
+.timer-row#btnEndKill .clock { flex:0 0 34%; }
+.timer-row#btnEndKill .end-kill-action { flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; gap:8px; }

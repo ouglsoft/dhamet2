@@ -3988,3 +3988,31 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="game"] .
   height: 60px;
   min-height: 60px;
 }
+
+
+/* Dhamet2 controlsfix2 */
+body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill {
+  position: relative !important;
+  z-index: 20 !important;
+  display: flex !important;
+  visibility: visible !important;
+  width: 100% !important;
+  height: auto;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  isolation: isolate;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill .clock {
+  pointer-events: none !important;
+}
+body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill .end-kill-action {
+  display: none !important;
+}
+body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill.is-live {
+  pointer-events: auto !important;
+}
