@@ -6,7 +6,7 @@
       ".read": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous'",
       "$uid": {
         ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && auth.uid === $uid",
-        ".validate": "(!newData.exists()) || (newData.hasChildren(['status','nickname','updatedAt']) && newData.child('status').isString() && (newData.child('status').val() === 'available' || newData.child('status').val() === 'inPvP' || newData.child('status').val() === 'spectating') && newData.child('nickname').isString() && newData.child('nickname').val().length <= 32 && newData.child('updatedAt').isNumber() && (!newData.child('role').exists() || (newData.child('role').isString() && (newData.child('role').val() === 'lobby' || newData.child('role').val() === 'player' || newData.child('role').val() === 'spectator'))) && (!newData.child('roomId').exists() || (newData.child('roomId').isString() && newData.child('roomId').val().length <= 80)) && (!newData.child('icon').exists() || (newData.child('icon').isString() && newData.child('icon').val().length <= 160)) && (!newData.child('acceptsInvites').exists() || newData.child('acceptsInvites').isBoolean()))"
+        ".validate": "(!newData.exists()) || (newData.hasChildren(['status','nickname','updatedAt']) && newData.child('status').isString() && (newData.child('status').val() === 'available' || newData.child('status').val() === 'inPvP' || newData.child('status').val() === 'spectating') && newData.child('nickname').isString() && newData.child('nickname').val().length <= 32 && newData.child('updatedAt').isNumber() && (!newData.child('role').exists() || (newData.child('role').isString() && (newData.child('role').val() === 'lobby' || newData.child('role').val() === 'player' || newData.child('role').val() === 'spectator'))) && (!newData.child('roomId').exists() || (newData.child('roomId').isString() && newData.child('roomId').val().length <= 80)) && (!newData.child('icon').exists() || (newData.child('icon').isString() && newData.child('icon').val().length <= 160)) && (!newData.child('acceptsInvites').exists() || newData.child('acceptsInvites').isBoolean()) && (!newData.child('registered').exists() || newData.child('registered').isBoolean()))"
       }
     },
     "invites": {
@@ -154,7 +154,7 @@
         "log": {
           ".validate": "(!newData.exists()) || (!newData.child('220').exists())",
           "$i": {
-            ".validate": "newData.hasChildren(['ts','text']) && newData.child('ts').isNumber() && newData.child('text').isString() && newData.child('text').val().length <= 200 && (!newData.child('type').exists() || (newData.child('type').isString() && newData.child('type').val() === 'invite')) && (!newData.child('byUid').exists() || newData.child('byUid').isString()) && (!newData.child('byNick').exists() || (newData.child('byNick').isString() && newData.child('byNick').val().length <= 32))"
+            ".validate": "newData.hasChildren(['ts','text']) && newData.child('ts').isNumber() && newData.child('text').isString() && newData.child('text').val().length <= 200 && (!newData.child('type').exists() || (newData.child('type').isString() && newData.child('type').val().length <= 32)) && (!newData.child('byUid').exists() || newData.child('byUid').isString()) && (!newData.child('byNick').exists() || (newData.child('byNick').isString() && newData.child('byNick').val().length <= 32))"
           }
         },
         "presence": {

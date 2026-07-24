@@ -19,24 +19,24 @@
   <meta property="og:url" content="https://dhamet2.ouglsoft.com/pages/game.html" />
   <meta property="og:image" content="https://dhamet2.ouglsoft.com/assets/icons/icon.webp" />
 
-  <script src="../js/online-only-guard.js?v=20260724-ui1"></script>
-  <script src="../js/theme-colors.js?v=20260724-ui1"></script>
-  <link rel="stylesheet" href="../css/style.css?v=20260724-ui1" />
-  <link rel="stylesheet" href="../css/pages.css?v=20260724-ui1" />
-  <link rel="stylesheet" href="../css/mobile.css?v=20260724-ui1" />
-  <link rel="stylesheet" href="../css/theme.css?v=20260724-ui1" />
+  <script src="../js/online-only-guard.js?v=20260724-gamefix1"></script>
+  <script src="../js/theme-colors.js?v=20260724-gamefix1"></script>
+  <link rel="stylesheet" href="../css/style.css?v=20260724-gamefix1" />
+  <link rel="stylesheet" href="../css/pages.css?v=20260724-gamefix1" />
+  <link rel="stylesheet" href="../css/mobile.css?v=20260724-gamefix1" />
+  <link rel="stylesheet" href="../css/theme.css?v=20260724-gamefix1" />
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/12.16.0/firebase-database-compat.js"></script>
-  <script src="../js/firebase.config.js?v=20260724-ui1"></script>
-  <script src="../js/emergency-shell.js?v=20260724-ui1"></script>
-  <script src="../js/i18n.js?v=20260724-ui1"></script>
-  <script src="../js/modal.js?v=20260724-ui1"></script>
-  <script src="../js/visual-shell.js?v=20260724-ui1"></script>
-  <script defer src="../js/online.passive.js?v=20260724-ui1"></script>
-  <script defer src="../js/online.js?v=20260724-ui1"></script>
+  <script src="../js/firebase.config.js?v=20260724-gamefix1"></script>
+  <script src="../js/emergency-shell.js?v=20260724-gamefix1"></script>
+  <script src="../js/i18n.js?v=20260724-gamefix1"></script>
+  <script src="../js/modal.js?v=20260724-gamefix1"></script>
+  <script src="../js/visual-shell.js?v=20260724-gamefix1"></script>
+  <script defer src="../js/online.passive.js?v=20260724-gamefix1"></script>
+  <script defer src="../js/online.js?v=20260724-gamefix1"></script>
 </head>
 <body class="z-page-body z-home-page z-game-page mode-pvp">
 <div class="app">
@@ -46,7 +46,7 @@
 <aside class="side">
 <div class="status-row">
 <div class="status" id="statusText">
-<img alt="" aria-hidden="true" class="turn-pawn" id="turnPawn" src="../assets/icons/pawn-black.svg?v=20260724-ui1"/>
+<img alt="" aria-hidden="true" class="turn-pawn" id="turnPawn" src="../assets/icons/pawn-black.svg?v=20260724-gamefix1"/>
 <span id="statusTextMsg">...</span>
 </div>
 </div>
@@ -56,8 +56,8 @@
 <thead>
 <tr>
 <th data-i18n="ui.stats">الإحصائيات</th>
-<th><span class="player-head stats-piece-head"><span class="stats-piece-frame is-black-piece"><img alt="" aria-hidden="true" class="stats-piece-icon" src="../assets/icons/pawn-black.svg?v=20260724-ui1"/></span><span class="sr-only" id="pTopName">—</span></span></th>
-<th><span class="player-head stats-piece-head"><span class="stats-piece-frame is-white-piece"><img alt="" aria-hidden="true" class="stats-piece-icon" src="../assets/icons/pawn-white.svg?v=20260724-ui1"/></span><span class="sr-only" id="pBotName">—</span></span></th>
+<th><span class="player-head stats-piece-head"><span class="stats-piece-frame is-black-piece"><img alt="" aria-hidden="true" class="stats-piece-icon" src="../assets/icons/pawn-black.svg?v=20260724-gamefix1"/></span><span class="sr-only" id="pTopName">—</span></span></th>
+<th><span class="player-head stats-piece-head"><span class="stats-piece-frame is-white-piece"><img alt="" aria-hidden="true" class="stats-piece-icon" src="../assets/icons/pawn-white.svg?v=20260724-gamefix1"/></span><span class="sr-only" id="pBotName">—</span></span></th>
 </tr>
 </thead>
 <tbody>
@@ -85,11 +85,11 @@
 <tr>
 <th data-i18n="ui.stats">الإحصائيات</th>
 <th class="stats-color-head">
-<span class="stats-piece-frame is-black-piece"><img alt="" aria-hidden="true" class="stats-piece-icon piece-ico" src="../assets/icons/pawn-black.svg?v=20260724-ui1"/></span>
+<span class="stats-piece-frame is-black-piece"><img alt="" aria-hidden="true" class="stats-piece-icon piece-ico" src="../assets/icons/pawn-black.svg?v=20260724-gamefix1"/></span>
 <span class="sr-only" id="pTopNameM">—</span>
 </th>
 <th class="stats-color-head">
-<span class="stats-piece-frame is-white-piece"><img alt="" aria-hidden="true" class="stats-piece-icon piece-ico" src="../assets/icons/pawn-white.svg?v=20260724-ui1"/></span>
+<span class="stats-piece-frame is-white-piece"><img alt="" aria-hidden="true" class="stats-piece-icon piece-ico" src="../assets/icons/pawn-white.svg?v=20260724-gamefix1"/></span>
 <span class="sr-only" id="pBotNameM">—</span>
 </th>
 </tr>
@@ -122,13 +122,13 @@
 <span id="killClock">00:00</span>
 </div>
 <button aria-disabled="true" class="btn ok keep-text" data-chain-active="false" id="btnEndKill" type="button">
-<img alt="" aria-hidden="true" class="btn-ico" src="../assets/icons/end-kill.svg?v=20260724-ui1"/>
+<img alt="" aria-hidden="true" class="btn-ico" src="../assets/icons/end-kill.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="buttons.endKill">إنهاء الأسر</span>
 </button>
 </div>
 <div class="soufla-row">
 <button class="btn keep-text" id="btnSoufla" type="button">
-<img alt="" aria-hidden="true" class="btn-ico z-soufla-icon" src="../assets/icons/soufla.svg?v=20260724-ui1"/>
+<img alt="" aria-hidden="true" class="btn-ico z-soufla-icon" src="../assets/icons/soufla.svg?v=20260724-gamefix1"/>
 <span class="btn-text z-soufla-label" data-i18n="buttons.soufla">سوفلة</span>
 </button>
 </div>
@@ -142,11 +142,11 @@
 <div aria-hidden="true" class="controls-pool" id="controlsPool">
 
 <button class="btn keep-text" id="btnUndo">
-<img alt="تراجع" class="btn-ico" data-i18n-alt="buttons.undo" src="../assets/icons/undo.svg?v=20260724-ui1"/>
+<img alt="تراجع" class="btn-ico" data-i18n-alt="buttons.undo" src="../assets/icons/undo.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="buttons.undo">تراجع</span>
 </button>
 <button class="btn keep-text" id="btnSettings">
-<img alt="الإعدادات" class="btn-ico" data-i18n-alt="buttons.settings" src="../assets/icons/settings.svg?v=20260724-ui1"/>
+<img alt="الإعدادات" class="btn-ico" data-i18n-alt="buttons.settings" src="../assets/icons/settings.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="buttons.settings">إعدادات</span>
 </button>
 
@@ -154,33 +154,33 @@
 
 
 <button class="btn end" id="btnEndOnline">
-<img alt="خروج" class="btn-ico" data-i18n-alt="buttons.endMatch" src="../assets/icons/end-match.svg?v=20260724-ui1"/>
+<img alt="خروج" class="btn-ico" data-i18n-alt="buttons.endMatch" src="../assets/icons/end-match.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="buttons.endMatch">خروج</span>
 </button>
 <div class="sync-control-wrap" id="syncControlWrap">
 <div aria-live="polite" class="sync-issue-notice" hidden="" id="syncIssueNotice"></div>
 <button class="btn keep-text" id="btnSync">
-<img alt="تحديث" class="btn-ico" data-i18n-alt="buttons.sync" src="../assets/icons/refresh.svg?v=20260724-ui1"/>
+<img alt="تحديث" class="btn-ico" data-i18n-alt="buttons.sync" src="../assets/icons/refresh.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="buttons.sync">تحديث</span>
 </button>
 </div>
 <button class="btn keep-text" id="btnChat">
-<img alt="الدردشة الكتابية" class="btn-ico" data-i18n-alt="pvp.chat.title" src="../assets/icons/chat.svg?v=20260724-ui1"/>
+<img alt="الدردشة الكتابية" class="btn-ico" data-i18n-alt="pvp.chat.title" src="../assets/icons/chat.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="pvp.chat.title">الدردشة الكتابية</span>
 </button>
 <button class="btn keep-text" id="btnSpk">
-<img alt="الصوت" class="btn-ico" data-i18n-alt="pvp.voice.speaker" src="../assets/icons/volume-on.svg?v=20260724-ui1"/>
+<img alt="الصوت" class="btn-ico" data-i18n-alt="pvp.voice.speaker" src="../assets/icons/volume-on.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="pvp.voice.speaker">الصوت</span>
 </button>
 <button class="btn keep-text" id="btnMic">
-<img alt="الميكروفون" class="btn-ico" data-i18n-alt="pvp.voice.mic" src="../assets/icons/mic.svg?v=20260724-ui1"/>
+<img alt="الميكروفون" class="btn-ico" data-i18n-alt="pvp.voice.mic" src="../assets/icons/mic.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="pvp.voice.mic">المايك</span>
 </button>
 </div>
 </div>
 <div class="spec-bar" id="specBar" style="display: none">
 <button class="btn end" id="btnLeaveRoom">
-<img alt="مغادرة الغرفة" class="btn-ico" data-i18n-alt="pvp.leave" src="../assets/icons/leave.svg?v=20260724-ui1"/>
+<img alt="مغادرة الغرفة" class="btn-ico" data-i18n-alt="pvp.leave" src="../assets/icons/leave.svg?v=20260724-gamefix1"/>
 <span class="btn-text" data-i18n="pvp.leave">مغادرة الغرفة</span>
 </button>
 </div>
@@ -211,5 +211,5 @@
 
 
 
-<script src="../shared/dhamet-utils.js?v=20260724-ui1"></script><script src="../shared/dhamet-rules.js?v=20260724-ui1"></script><script src="../js/rules-guard.js?v=20260724-ui1"></script><script src="../js/game.js?v=20260724-ui1"></script><script src="../js/ui.js?v=20260724-ui1"></script><script src="../js/mobile.js?v=20260724-ui1"></script></body>
+<script src="../shared/dhamet-utils.js?v=20260724-gamefix1"></script><script src="../shared/dhamet-rules.js?v=20260724-gamefix1"></script><script src="../js/rules-guard.js?v=20260724-gamefix1"></script><script src="../js/game.js?v=20260724-gamefix1"></script><script src="../js/ui.js?v=20260724-gamefix1"></script><script src="../js/mobile.js?v=20260724-gamefix1"></script></body>
 </html>

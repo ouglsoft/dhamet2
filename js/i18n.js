@@ -450,7 +450,7 @@
     },
     "meta_keywords": "ظامت, زامت, لعبة موريتانية, داما, لعب ضد الحاسوب, لعب عبر الإنترنت",
     "online": {
-      "permissionDenied": "تعذر تنفيذ الإجراء. أعد تسجيل الدخول ثم حاول مرة أخرى.",
+      "permissionDenied": "تعذر تنفيذ الإجراء بسبب انقطاع جلسة اللعب المؤقتة. حدّث الصفحة ثم حاول مرة أخرى.",
       "authRestoreFailed": "تعذر إبقاؤك مسجلًا للدخول. سجّل الدخول من جديد ثم حاول مرة أخرى.",
       "presence": {
         "online": "متصل",
@@ -471,16 +471,16 @@
       },
       "errors": {
         "noGame": "انتهت المباراة أو لم تعد الغرفة متاحة.",
-        "authRequired": "تم تسجيل خروجك. سجّل الدخول من جديد ثم حاول مرة أخرى.",
+        "authRequired": "انتهت جلسة اللعب المؤقتة. حدّث الصفحة لإنشاء جلسة جديدة ثم حاول مرة أخرى.",
         "presenceWriteDenied": "عاد الاتصال. جارٍ إعادتك إلى المباراة…",
         "moveWriteDenied": "لم تُرسل النقلة. تأكد أن الدور لك وأن المباراة ما زالت مستمرة، ثم حاول مرة أخرى.",
-        "inviteWriteDenied": "لم تُرسل الدعوة. ربما بدأ اللاعب مباراة أخرى، أو تحتاج إلى تسجيل الدخول من جديد.",
+        "inviteWriteDenied": "تعذر إرسال الدعوة. حدّث اللوبي وتأكد من اتصالك، ثم حاول مرة أخرى.",
         "chatWriteDenied": "لم تُرسل الرسالة لأنك لم تعد داخل هذه المباراة. أعد فتحها ثم حاول مرة أخرى.",
         "voiceWriteDenied": "تعذر تحديث الصوت. أوقف المحادثة الصوتية ثم شغّلها من جديد.",
         "matchEnded": "انتهت المباراة، ولا يمكن تنفيذ إجراء جديد.",
         "spectatorAction": "أنت تشاهد المباراة فقط، لذلك لا يمكنك تحريك القطع.",
         "spectatorJoinFailed": "تعذر الانضمام كمشاهد. حاول مرة أخرى.",
-        "joinFailed": "تعذر الانضمام إلى المباراة عبر الإنترنت. تحقّق من صلاحيات قاعدة البيانات أو أعد المحاولة."
+        "joinFailed": "تعذر الانضمام إلى المباراة عبر الإنترنت. حدّث الصفحة وتأكد من اتصالك، ثم حاول مرة أخرى."
       },
       "inviteInvalidated": "لم تعد الدعوة صالحة؛ ربما دخل اللاعب مباراة أخرى أو انقطع اتصاله.",
       "inviteSendFail": "تعذر إرسال الدعوة. حاول مرة أخرى.",
@@ -1091,7 +1091,7 @@
     },
     "meta_keywords": "zamat, zamet, mauritanian game, board game, checkers, draughts, computer play, online multiplayer",
     "online": {
-      "permissionDenied": "The action could not be completed. Sign in again and retry.",
+      "permissionDenied": "The temporary play session was interrupted. Refresh the page and try again.",
       "authRestoreFailed": "You were signed out. Sign in again and try once more.",
       "presence": {
         "online": "Online",
@@ -1112,16 +1112,16 @@
       },
       "errors": {
         "noGame": "The match ended or the room is no longer available.",
-        "authRequired": "You were signed out. Sign in again and try once more.",
+        "authRequired": "The temporary play session ended. Refresh the page to create a new session, then try again.",
         "presenceWriteDenied": "Connection restored. Returning you to the match…",
         "moveWriteDenied": "The move was not sent. Make sure it is your turn and the match is still active, then try again.",
-        "inviteWriteDenied": "The invite was not sent. The player may have started another match, or you may need to sign in again.",
+        "inviteWriteDenied": "The invite could not be sent. Refresh the lobby, check your connection, and try again.",
         "chatWriteDenied": "The message was not sent because you are no longer in this match. Reopen it and try again.",
         "voiceWriteDenied": "Voice could not be updated. Turn voice chat off and on, then try again.",
         "matchEnded": "The match has ended, so no new action can be taken.",
         "spectatorAction": "You are watching this match and cannot move the pieces.",
         "spectatorJoinFailed": "You could not join as a spectator. Try again.",
-        "joinFailed": "Couldn't join the online match. Check database permissions/rules or try again."
+        "joinFailed": "Couldn't join the online match. Refresh the page, check your connection, and try again."
       },
       "inviteInvalidated": "The invite is no longer valid. The player may have joined another match or gone offline.",
       "inviteSendFail": "The invite could not be sent. Try again.",
@@ -1732,7 +1732,7 @@
     },
     "meta_keywords": "zamat, zamet, jeu mauritanien, jeu de plateau, dames, jeu contre ordinateur, multijoueur en ligne",
     "online": {
-      "permissionDenied": "L’action n’a pas pu être effectuée. Reconnectez-vous puis réessayez.",
+      "permissionDenied": "La session de jeu temporaire a été interrompue. Actualisez la page puis réessayez.",
       "authRestoreFailed": "Vous avez été déconnecté. Reconnectez-vous puis réessayez.",
       "presence": {
         "online": "En ligne",
@@ -1753,16 +1753,16 @@
       },
       "errors": {
         "noGame": "La partie est terminée ou la salle n’est plus disponible.",
-        "authRequired": "Vous avez été déconnecté. Reconnectez-vous puis réessayez.",
+        "authRequired": "La session de jeu temporaire est terminée. Actualisez la page pour en créer une nouvelle, puis réessayez.",
         "presenceWriteDenied": "Connexion rétablie. Retour à la partie en cours…",
         "moveWriteDenied": "Le coup n’a pas été envoyé. Vérifiez que c’est votre tour et que la partie est toujours en cours, puis réessayez.",
-        "inviteWriteDenied": "L’invitation n’a pas été envoyée. Le joueur a peut-être commencé une autre partie, ou vous devez peut-être vous reconnecter.",
+        "inviteWriteDenied": "L’invitation n’a pas pu être envoyée. Actualisez le lobby, vérifiez votre connexion, puis réessayez.",
         "chatWriteDenied": "Le message n’a pas été envoyé, car vous n’êtes plus dans cette partie. Rouvrez-la puis réessayez.",
         "voiceWriteDenied": "L’audio n’a pas pu être mis à jour. Désactivez puis réactivez le chat vocal et réessayez.",
         "matchEnded": "La partie est terminée ; aucune nouvelle action ne peut être effectuée.",
         "spectatorAction": "Vous regardez cette partie et ne pouvez pas déplacer les pièces.",
         "spectatorJoinFailed": "Impossible de rejoindre comme spectateur. Réessayez.",
-        "joinFailed": "Impossible de rejoindre la partie en ligne. Vérifiez les règles/autorisations de la base de données ou réessayez."
+        "joinFailed": "Impossible de rejoindre la partie en ligne. Actualisez la page, vérifiez votre connexion, puis réessayez."
       },
       "inviteInvalidated": "L’invitation n’est plus valable. Le joueur a peut-être rejoint une autre partie ou s’est déconnecté.",
       "inviteSendFail": "L’invitation n’a pas pu être envoyée. Réessayez.",

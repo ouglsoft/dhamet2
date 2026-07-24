@@ -1177,6 +1177,14 @@
   async function ensureAuthReady() {
     if (!ensureFirebase()) return false;
     try {
+      // emergency-shell owns anonymous sign-in. Await its shared promise first so
+      // this module never starts a second anonymous sign-in with a different UID.
+      try {
+        if (window.DhametEmergencyReady && typeof window.DhametEmergencyReady.then === "function") {
+          await window.DhametEmergencyReady;
+        }
+      } catch (_) {}
+
       if (auth && auth.currentUser && auth.currentUser.isAnonymous) return true;
       if (auth && auth.currentUser && !auth.currentUser.isAnonymous) {
         await auth.signOut();
@@ -2011,27 +2019,6 @@
             this.userEventsRef = db.ref("userEvents").child(this.myUid);
             this.statusRef = this.playersRef.child(this.myUid);
     
-            try {
-              const snap = await this.playersRef.once("value");
-              const players = (snap && snap.val && snap.val()) || {};
-              const cnt = Object.keys(players).reduce((total, uid) => {
-                const player = players && players[uid];
-                const lastSeen = player && (player.updatedAt || player.joinedAt);
-                return total + (isPresenceFresh(lastSeen, PRESENCE_LIST_TTL_MS) ? 1 : 0);
-              }, 0);
-    
-              if ((cnt | 0) >= (MAX_SIMULTANEOUS_CONNECTIONS | 0)) {
-                try {
-                  firebase.database().goOffline();
-                } catch (_) {}
-                showOnlineNotice({
-                  title: window.I18N.translateArgs("online.connLimit.title"),
-                  body: window.I18N.translateArgs("online.connLimit.body"),
-                });
-                return false;
-              }
-            } catch (e) {}
-    
             this.myNick = getSavedNickOrDefault(this.myUid);
             this.myIcon = getSavedIconOrDefault();
             this._presenceRegistered = currentSessionIsRegistered();
@@ -2098,9 +2085,13 @@
             } catch (e) {
               Logger.warn("presence_ondisconnect_failed", { err: String(e && (e.message || e)) });
             }
-            try {
-              safePlayerWriteNoAwait(this.statusRef, this.myUid, payload(), "players.initPresence");
-            } catch (e) {}
+            const initialPresenceOk = await safePlayerWrite(
+              this.statusRef,
+              this.myUid,
+              payload(),
+              "players.initPresence",
+            );
+            if (!initialPresenceOk) return false;
     
             this._presenceInited = true;
             try {

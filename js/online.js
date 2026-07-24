@@ -5818,6 +5818,18 @@
           const roomsEl = document.getElementById(opts.roomsListId || "roomsList");
     
           const playersEl = document.getElementById(opts.playersListId || "playersList");
+          let playersLoaded = false;
+          let roomsLoaded = false;
+          let lobbyLoadTimer = null;
+          const lobbyLoadFailed = () => {
+            if (lobbyLoadTimer) {
+              clearTimeout(lobbyLoadTimer);
+              lobbyLoadTimer = null;
+            }
+            const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
+            if (!playersLoaded && playersEl) playersEl.innerHTML = `<div class="z-empty">${escapeHtml(msg)}</div>`;
+            if (!roomsLoaded && roomsEl) roomsEl.innerHTML = `<div class="z-empty">${escapeHtml(msg)}</div>`;
+          };
     
           try {
             const setLoading = (el, msg) => {
@@ -5851,6 +5863,10 @@
           } catch (e) {}
     
           await this._syncLobbyAvailabilityFromActiveGame();
+
+          try {
+            lobbyLoadTimer = setTimeout(lobbyLoadFailed, 10000);
+          } catch (e) {}
     
           try {
             this._bindInviteListener();
@@ -5866,6 +5882,11 @@
             this._lobbyPlayersRef = ref;
     
             const cb = (snap) => {
+              playersLoaded = true;
+              if (playersLoaded && roomsLoaded && lobbyLoadTimer) {
+                clearTimeout(lobbyLoadTimer);
+                lobbyLoadTimer = null;
+              }
               this._lobbyPlayersLastSnap = snap || null;
               const all = snap && snap.val ? snap.val() : null;
               const rows = [];
@@ -5980,8 +6001,14 @@
             };
     
             this._lobbyPlayersCb = cb;
-            ref.on("value", cb);
-          } catch (e) {}
+            ref.on("value", cb, (err) => {
+              playersLoaded = false;
+              try { Logger.warn("lobby_players_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
+              lobbyLoadFailed();
+            });
+          } catch (e) {
+            lobbyLoadFailed();
+          }
     
           try {
             const refG = db.ref("roomList").orderByChild("status").equalTo("active").limitToLast(50);
@@ -5993,6 +6020,11 @@
             this._lobbyRoomsRef = refG;
     
             const cbG = (snap) => {
+              roomsLoaded = true;
+              if (playersLoaded && roomsLoaded && lobbyLoadTimer) {
+                clearTimeout(lobbyLoadTimer);
+                lobbyLoadTimer = null;
+              }
               const all = snap && snap.val ? snap.val() : null;
               const rooms = [];
     
@@ -6081,9 +6113,15 @@
             };
     
             this._lobbyRoomsCb = cbG;
-            refG.on("value", cbG);
+            refG.on("value", cbG, (err) => {
+              roomsLoaded = false;
+              try { Logger.warn("lobby_rooms_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
+              lobbyLoadFailed();
+            });
     
-          } catch (e) {}
+          } catch (e) {
+            lobbyLoadFailed();
+          }
         },
 
     _isCurrentUserPlayerInGame: function (g) {

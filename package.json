@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "check": "node scripts/check-online-only.mjs && node scripts/test-structure.mjs && node scripts/test-ui-parity.mjs",
-    "test": "node scripts/check-online-only.mjs && node scripts/test-structure.mjs && node scripts/test-ui-parity.mjs && node scripts/test-rules.mjs",
+    "test": "node scripts/check-online-only.mjs && node scripts/test-structure.mjs && node scripts/test-ui-parity.mjs && node scripts/test-firebase-contract.mjs && node scripts/test-rules.mjs",
     "build": "npm test && node scripts/build-cloudflare-pages.mjs"
   }
 }
