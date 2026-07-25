@@ -12,7 +12,7 @@ const required = [
   "branches:",
   "- main",
   "npm ci --no-audit --no-fund",
-  "DHAMET_BUILD_VERSION=20260725-autodeploy1-$SHORT_SHA",
+  "DHAMET_BUILD_VERSION=20260725-autodeploy2-$SHORT_SHA",
   "npm run build",
   "cloudflare/wrangler-action@v3",
   "pages deploy _site",
@@ -30,7 +30,7 @@ for (const token of required) {
 }
 
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
-if (version.version !== "20260725-autodeploy1") {
+if (version.version !== "20260725-autodeploy2") {
   throw new Error("version.json does not identify the autodeploy build");
 }
 

@@ -1,5 +1,5 @@
 {
   "application": "dhamet2",
-  "version": "20260725-autodeploy1",
+  "version": "20260725-autodeploy2",
   "source": "github-actions-cloudflare-pages-autodeploy"
 }

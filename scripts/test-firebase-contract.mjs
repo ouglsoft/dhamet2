@@ -15,10 +15,10 @@ assert.doesNotMatch(gameLogValidation, /=== 'invite'/,
   "game log rules must not restrict every event to type=invite");
 assert.match(online, /type:\s*"invite_sent"/,
   "invitation creation must retain its real event type");
-assert.match(passive, /await window\.DhametEmergencyReady/,
-  "online auth must await the shared anonymous-auth promise");
-assert.match(passive, /const initialPresenceOk = await safePlayerWrite\(/,
-  "initial presence must be confirmed before lobby listeners start");
+assert.match(passive, /settleWithin\(\s*window\.DhametEmergencyReady\s*,\s*9000/,
+  "online.passive.js must await the shared anonymous-auth promise with a 9-second deadline");
+assert.match(passive, /const initialPresenceOk = await settleWithin\(\s*safePlayerWrite\(/s,
+  "initial presence must be confirmed with a deadline before lobby listeners start");
 assert.doesNotMatch(passive, /const snap = await this\.playersRef\.once\("value"\);\s*const players/s,
   "lobby startup must not block on a full players read before presence registration");
 assert.match(online, /ref\.on\("value", cb, (?:async )?\(err\) =>/,
@@ -27,3 +27,8 @@ assert.match(online, /refG\.on\("value", cbG, (?:async )?\(err\) =>/,
   "rooms listener must expose read failures instead of loading forever");
 
 console.log("Firebase contract regression tests passed");
+
+assert.match(online, /lobbyLoadTimer = setTimeout\(lobbyLoadFailed, 12000\)/,
+  "lobby watchdog must start before Firebase initialization can block");
+assert.match(online, /S\.settleWithin\(this\.initPresence\(\), 10000, false\)/,
+  "lobby presence initialization must have a deadline");

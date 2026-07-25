@@ -24,7 +24,7 @@ if (/!pool \|\| !pvcBox \|\| !pvpBox/.test(ui)) throw new Error("desktop PvP con
 if (!game.includes('class="timer-row btn ok keep-text"') || !game.includes('id="btnEndKill"')) throw new Error("capture timer is not a real button tile");
 if (!headers.includes("connect-src 'self' https://www.gstatic.com")) throw new Error("gstatic CSP connect allowance missing");
 
-if (!game.includes('data-build-version="20260725-autodeploy1"')) throw new Error("new build version is missing");
+if (!game.includes('data-build-version="20260725-autodeploy2"')) throw new Error("new build version is missing");
 if (!game.includes('<div class="pvp-row" id="pvpRow1">\n<button class="btn end" id="btnEndOnline"')) throw new Error("desktop controls are not pre-mounted");
 if (!ui.includes("activateEndKillFromEvent")) throw new Error("delegated timer activation is missing");
 if (!ui.includes("releaseResolvedOnlineUiHold")) throw new Error("active game hold recovery missing");
