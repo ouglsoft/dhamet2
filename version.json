@@ -1,5 +1,5 @@
 {
   "application": "dhamet2",
-  "version": "20260725-controlsfix2",
-  "source": "controls-and-mobile-timer-fix"
+  "version": "20260725-autodeploy1",
+  "source": "github-actions-cloudflare-pages-autodeploy"
 }

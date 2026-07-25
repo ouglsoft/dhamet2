@@ -4,6 +4,56 @@ import path from "path";
 const root = process.cwd();
 const outDir = path.join(root, "_site");
 
+const deployBuildVersion = String(process.env.DHAMET_BUILD_VERSION || "").trim();
+const deployCommitSha = String(process.env.DHAMET_COMMIT_SHA || "").trim();
+
+function applyDeploymentVersion() {
+  if (!deployBuildVersion) return;
+
+  const sourceVersionPath = path.join(root, "version.json");
+  const sourceVersionJson = JSON.parse(fs.readFileSync(sourceVersionPath, "utf8"));
+  const sourceVersion = String(sourceVersionJson.version || "").trim();
+
+  if (!sourceVersion) {
+    throw new Error("version.json must contain a source version");
+  }
+
+  const textExtensions = new Set([
+    ".html", ".js", ".css", ".json", ".xml", ".txt", ".svg",
+  ]);
+
+  function rewrite(currentPath) {
+    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(currentPath, entry.name);
+      if (entry.isDirectory()) {
+        rewrite(fullPath);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (!textExtensions.has(path.extname(entry.name).toLowerCase())) continue;
+
+      const original = fs.readFileSync(fullPath, "utf8");
+      if (!original.includes(sourceVersion)) continue;
+      fs.writeFileSync(fullPath, original.split(sourceVersion).join(deployBuildVersion));
+    }
+  }
+
+  rewrite(outDir);
+
+  const deployedVersionPath = path.join(outDir, "version.json");
+  const deployedVersion = JSON.parse(fs.readFileSync(deployedVersionPath, "utf8"));
+  deployedVersion.version = deployBuildVersion;
+  deployedVersion.release = sourceVersion;
+  if (deployCommitSha) deployedVersion.commit = deployCommitSha;
+  fs.writeFileSync(
+    deployedVersionPath,
+    JSON.stringify(deployedVersion, null, 2) + "\n",
+  );
+
+  console.log(`Applied unique deployment version: ${deployBuildVersion}`);
+}
+
 /*
  * Cloudflare Pages deploys the content of the build output directory.
  * This script prepares a clean static output in _site.
@@ -31,6 +81,7 @@ const excludedFileNames = [
   "DEPLOYMENT_DHAMET2.md",
   "CHANGES.md",
   "FINAL_REVIEW.md",
+  "AUTO_DEPLOY_CLOUDFLARE.md",
   "REPLACEMENT_MANIFEST.md",
   "DELETE_THESE_FILES.txt"
 ];
@@ -86,6 +137,7 @@ fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
 walk(root);
+applyDeploymentVersion();
 
 console.log("Cloudflare Pages output prepared in _site");
 console.log("Excluded from static deployment output:");

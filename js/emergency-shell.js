@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const BUILD_VERSION = "20260725-controlsfix2";
+  const BUILD_VERSION = "20260725-autodeploy1";
   window.DHAMET2_BUILD_VERSION = BUILD_VERSION;
   try { console.info("Dhamet2 build", BUILD_VERSION); } catch (_) {}
 
