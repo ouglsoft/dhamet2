@@ -6025,38 +6025,128 @@
     initLobbyPage: async function (opts) {
           opts = opts || {};
           const roomsEl = document.getElementById(opts.roomsListId || "roomsList");
-    
           const playersEl = document.getElementById(opts.playersListId || "playersList");
+          const recoveryAttempt = Math.max(0, Number(opts.__recoveryAttempt || 0) || 0);
+          const generation = Number(this._lobbyInitGeneration || 0) + 1;
+          this._lobbyInitGeneration = generation;
+          this._lobbyInitOptions = {
+            roomsListId: opts.roomsListId || "roomsList",
+            playersListId: opts.playersListId || "playersList",
+          };
+          this._lobbyLastAttemptAt = Date.now();
+          const isCurrent = () => generation === Number(this._lobbyInitGeneration || 0);
+
+          // A restored mobile tab can retain dead Firebase listeners. Always detach the
+          // previous generation before binding a new one.
+          try {
+            if (this._lobbyPlayersRef && this._lobbyPlayersCb) this._lobbyPlayersRef.off("value", this._lobbyPlayersCb);
+          } catch (_) {}
+          try {
+            if (this._lobbyRoomsRef && this._lobbyRoomsCb) this._lobbyRoomsRef.off("value", this._lobbyRoomsCb);
+          } catch (_) {}
+          this._lobbyPlayersRef = null;
+          this._lobbyPlayersCb = null;
+          this._lobbyRoomsRef = null;
+          this._lobbyRoomsCb = null;
+
           let playersLoaded = false;
           let roomsLoaded = false;
           let lobbyLoadTimer = null;
-          const authRecoveryKey = "dhamet2.lobby.authRecovery.v3";
-          const clearAuthRecoveryMarker = () => {
-            try { sessionStorage.removeItem(authRecoveryKey); } catch (_) {}
+          let recoveryInFlight = false;
+          const clearLoadTimer = () => {
+            if (!lobbyLoadTimer) return;
+            clearTimeout(lobbyLoadTimer);
+            lobbyLoadTimer = null;
+          };
+          const markDataReceived = () => {
+            if (!isCurrent()) return;
+            this._lobbyLastDataAt = Date.now();
+            if (playersLoaded && roomsLoaded) clearLoadTimer();
+          };
+          const showLobbyFailure = () => {
+            if (!isCurrent()) return;
+            clearLoadTimer();
+            const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
+            if (!playersLoaded && playersEl) playersEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
+            if (!roomsLoaded && roomsEl) roomsEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
+          };
+          const resetPresenceBindings = () => {
+            try { this._stopPresenceHeartbeat && this._stopPresenceHeartbeat(); } catch (_) {}
+            try {
+              if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
+                this._presenceConnInfoRef.off("value", this._presenceConnInfoHandler);
+              }
+            } catch (_) {}
+            this._presenceConnInfoRef = null;
+            this._presenceConnInfoHandler = null;
+            try { if (this._inviteQuery) this._inviteQuery.off(); } catch (_) {}
+            try { this._unbindUserEventsListener && this._unbindUserEventsListener(); } catch (_) {}
+            this._inviteQuery = null;
+            this._presenceInited = false;
+            this.statusRef = null;
+            this.playersRef = null;
+            this.invitesRef = null;
+            this.userEventsRef = null;
+            this._invitesPassiveOn = false;
+            this._boundInviteUid = "";
+          };
+          const restartLobbyInPlace = async (reason, forceFreshAuth) => {
+            if (!isCurrent() || recoveryInFlight) return false;
+            if (recoveryAttempt >= 1) {
+              showLobbyFailure();
+              return false;
+            }
+            recoveryInFlight = true;
+            clearLoadTimer();
+            try {
+              try { if (db && typeof db.goOffline === "function") db.goOffline(); } catch (_) {}
+              await new Promise((resolve) => setTimeout(resolve, 120));
+              try { if (db && typeof db.goOnline === "function") db.goOnline(); } catch (_) {}
+
+              let user = auth && auth.currentUser ? auth.currentUser : null;
+              let tokenReady = false;
+              if (!forceFreshAuth && user && user.isAnonymous) {
+                try {
+                  tokenReady = !!(await S.settleWithin(user.getIdToken(true), 6000, false));
+                } catch (_) { tokenReady = false; }
+              }
+              if (!tokenReady && window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
+                try {
+                  user = await S.settleWithin(window.DhametEmergency.resetAnonymous(), 10000, null);
+                  tokenReady = !!(user && user.isAnonymous);
+                } catch (_) { tokenReady = false; }
+              }
+              resetPresenceBindings();
+              // Invalidate callbacks from the broken listener generation before the
+              // replacement generation is installed.
+              this._lobbyInitGeneration = generation + 1;
+              try {
+                Logger.info("lobby_session_recovered", { reason: String(reason || "unknown"), freshAuth: !!forceFreshAuth });
+              } catch (_) {}
+              setTimeout(() => {
+                try {
+                  this.initLobbyPage(Object.assign({}, this._lobbyInitOptions || {}, { __recoveryAttempt: recoveryAttempt + 1 }));
+                } catch (_) { showLobbyFailure(); }
+              }, 40);
+              return true;
+            } catch (_) {
+              showLobbyFailure();
+              return false;
+            } finally {
+              recoveryInFlight = false;
+            }
           };
           const recoverPermissionSession = async (err) => {
             if (!isPermissionDenied(err)) return false;
-            try {
-              if (sessionStorage.getItem(authRecoveryKey) === "1") return false;
-              sessionStorage.setItem(authRecoveryKey, "1");
-            } catch (_) {}
-            try {
-              if (window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
-                await window.DhametEmergency.resetAnonymous();
-                location.reload();
-                return true;
-              }
-            } catch (_) {}
-            return false;
+            return await restartLobbyInPlace("permission-denied", true);
           };
           const lobbyLoadFailed = () => {
-            if (lobbyLoadTimer) {
-              clearTimeout(lobbyLoadTimer);
-              lobbyLoadTimer = null;
+            if (!isCurrent()) return;
+            if (recoveryAttempt < 1) {
+              restartLobbyInPlace("load-timeout", false);
+              return;
             }
-            const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
-            if (!playersLoaded && playersEl) playersEl.innerHTML = `<div class="z-empty">${escapeHtml(msg)}</div>`;
-            if (!roomsLoaded && roomsEl) roomsEl.innerHTML = `<div class="z-empty">${escapeHtml(msg)}</div>`;
+            showLobbyFailure();
           };
     
           try {
@@ -6076,7 +6166,7 @@
     
           const ok = await S.settleWithin(this.initPresence(), 10000, false);
           if (!ok) {
-            lobbyLoadFailed();
+            await restartLobbyInPlace("presence-init-failed", false);
             return;
           }
     
@@ -6111,12 +6201,9 @@
             this._lobbyPlayersRef = ref;
     
             const cb = (snap) => {
+              if (!isCurrent()) return;
               playersLoaded = true;
-              if (playersLoaded && roomsLoaded) clearAuthRecoveryMarker();
-              if (playersLoaded && roomsLoaded && lobbyLoadTimer) {
-                clearTimeout(lobbyLoadTimer);
-                lobbyLoadTimer = null;
-              }
+              markDataReceived();
               this._lobbyPlayersLastSnap = snap || null;
               const all = snap && snap.val ? snap.val() : null;
               const rows = [];
@@ -6235,6 +6322,7 @@
     
             this._lobbyPlayersCb = cb;
             ref.on("value", cb, async (err) => {
+              if (!isCurrent()) return;
               playersLoaded = false;
               try { Logger.warn("lobby_players_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
               if (await recoverPermissionSession(err)) return;
@@ -6254,12 +6342,9 @@
             this._lobbyRoomsRef = refG;
     
             const cbG = (snap) => {
+              if (!isCurrent()) return;
               roomsLoaded = true;
-              if (playersLoaded && roomsLoaded) clearAuthRecoveryMarker();
-              if (playersLoaded && roomsLoaded && lobbyLoadTimer) {
-                clearTimeout(lobbyLoadTimer);
-                lobbyLoadTimer = null;
-              }
+              markDataReceived();
               const all = snap && snap.val ? snap.val() : null;
               const rooms = [];
     
@@ -6349,6 +6434,7 @@
     
             this._lobbyRoomsCb = cbG;
             refG.on("value", cbG, async (err) => {
+              if (!isCurrent()) return;
               roomsLoaded = false;
               try { Logger.warn("lobby_rooms_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
               if (await recoverPermissionSession(err)) return;
@@ -6574,4 +6660,32 @@
       return;
     }
   });
+
+  // Mobile browsers frequently restore normal tabs from the back-forward cache while
+  // private tabs start clean. Rebind Firebase only in the restored/stale normal tab.
+  window.addEventListener("pageshow", function (event) {
+    try {
+      if (!event || !event.persisted) return;
+      if (!document.getElementById("roomsList") || !document.getElementById("playersList")) return;
+      try { if (firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
+      setTimeout(function () {
+        try { Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" }); } catch (_) {}
+      }, 80);
+    } catch (_) {}
+  }, { passive: true });
+
+  document.addEventListener("visibilitychange", function () {
+    try {
+      if (document.visibilityState !== "visible") return;
+      if (!document.getElementById("roomsList") || !document.getElementById("playersList")) return;
+      const last = Number(Online._lobbyLastDataAt || 0);
+      const stale = last > 0 && Date.now() - last > 90 * 1000;
+      const failed = !!document.querySelector("#roomsList .z-load-error, #playersList .z-load-error");
+      if (!stale && !failed) return;
+      try { if (firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
+      setTimeout(function () {
+        try { Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" }); } catch (_) {}
+      }, 80);
+    } catch (_) {}
+  }, { passive: true });
 })();

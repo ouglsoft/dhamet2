@@ -1064,6 +1064,11 @@ const Visual = (() => {
   };
 })();
 
+try {
+  if (typeof window !== "undefined") window.Visual = Visual;
+  if (typeof globalThis !== "undefined") globalThis.Visual = Visual;
+} catch (_) {}
+
 function trBegin(payload) {
   try {
     if (typeof TrainRecorder === "undefined") return null;

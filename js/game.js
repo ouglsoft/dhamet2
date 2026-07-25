@@ -1939,17 +1939,18 @@ window.AI = AI;
 
 /* Moved from pages/game.html to keep page markup declarative. */
 
-      const qs = (sel, root = document) => root.querySelector(sel);
-      const qsa = (sel, root = document) =>
-        Array.from(root.querySelectorAll(sel));
-      const nowHHMMSS = () => {
+      const DhametDOMShared = window.DhametDOM || {};
+      const qs = DhametDOMShared.qs || ((sel, root = document) => root.querySelector(sel));
+      const qsa = DhametDOMShared.qsa || ((sel, root = document) => Array.from(root.querySelectorAll(sel)));
+      const nowHHMMSS = DhametDOMShared.nowHHMMSS || (() => {
         const d = new Date();
         return d.toLocaleTimeString("en-GB", { hour12: false });
-      };
-      const popup = (
-        msg,
-        title = window.I18N.text("modals.notice", null, currentGameLang) || "تنبيه"
-      ) => {
+      });
+      const popup = (msg, title = window.I18N.text("modals.notice", null, currentGameLang) || "تنبيه") => {
+        const okLabel = window.I18N.text("actions.ok", null, currentGameLang) || "حسناً";
+        if (DhametDOMShared.popup) {
+          return DhametDOMShared.popup(msg, title, { Modal: window.Modal, okLabel });
+        }
         const div = document.createElement("div");
         div.style.whiteSpace = "pre-wrap";
         div.textContent = String(msg ?? "");
@@ -1958,21 +1959,21 @@ window.AI = AI;
           body: div,
           buttons: [
             {
-              label: window.I18N.text("actions.ok", null, currentGameLang) || "حسناً",
+              label: okLabel,
               className: "primary",
               onClick: () => Modal.close(),
             },
           ],
         });
       };
-      const fmtHHMMSS = (ts) => {
+      const fmtHHMMSS = DhametDOMShared.fmtHHMMSS || ((ts) => {
         try {
           const d = new Date(ts);
           return d.toLocaleTimeString("en-GB", { hour12: false });
         } catch {
           return nowHHMMSS();
         }
-      };
+      });
       const LogMgr = __IN_WORKER
         ? {
             addEvent() {},
@@ -2179,6 +2180,18 @@ window.AI = AI;
           return _plainSide(side);
         };
 
+        const _isSelfActor = (actor) => {
+          const normalized = _normalizeName(actor);
+          const you = _normalizeName(_t("players.you"));
+          return !!normalized && !!you && normalized.localeCompare(you, undefined, { sensitivity: "accent" }) === 0;
+        };
+
+        const _actorMessage = (ev, genericKey, selfKey, vars) => {
+          const actor = _normalizeName(ev.actor || _actorFromSide(ev.side));
+          const key = _isSelfActor(actor) && selfKey ? selfKey : genericKey;
+          return _t(key, Object.assign({ actor }, vars || {}));
+        };
+
         const _appendHighlighted = (el, txt) => {
           const text = String(txt ?? "");
           const words = _colorWords();
@@ -2216,27 +2229,41 @@ window.AI = AI;
             return _t("log.turnMoveFmt", { side, from, to });
           }
 
+          if (ev.kind === "game_started") return _t("log.gameStarted");
+          if (ev.kind === "opening_started") return _t("log.forced.openingStarted");
+          if (ev.kind === "opening_ended") return _t("log.forced.openingEnded");
+
           if (ev.kind === "promote") {
             const cell = _isoLtr(_rc(ev.idx));
-            const side = _normalizeName(ev.actor || _actorFromSide(ev.side));
-            return _t("log.promote", { cell, side });
+            return _actorMessage(ev, "log.promoteActor", "log.promoteSelf", { cell });
+          }
+
+          if (ev.kind === "soufla_pressed") {
+            return _actorMessage(ev, "log.soufla.pressedActor", "log.soufla.pressedSelf");
           }
 
           if (ev.kind === "soufla_remove") {
             const cell = _isoLtr(_rc(ev.idx));
-            return _t("log.soufla.remove", { cell });
+            return _actorMessage(ev, "log.soufla.removeActor", "log.soufla.removeSelf", { cell });
           }
 
           if (ev.kind === "soufla_force") {
             const from = _isoLtr(_rc(ev.from));
-            const path = Array.isArray(ev.path) ? ev.path.map((v) => _isoLtr(_rc(v))).join("→") : _isoLtr(String(ev.path || ""));
-            return _t("log.soufla.force", { from, path });
+            const to = _isoLtr(_rc(ev.to));
+            return _actorMessage(ev, "log.soufla.forceActor", "log.soufla.forceSelf", { from, to, n: ev.captures | 0 });
           }
 
           if (ev.kind === "undo") {
-            const from = ev.from != null ? _isoLtr(_rc(ev.from)) : "";
-            const to = ev.to != null ? _isoLtr(_rc(ev.to)) : "";
-            return _t("undo.applied", { movePart: "" });
+            return _actorMessage(ev, "log.undoActor", "log.undoSelf");
+          }
+
+          if (ev.kind === "match_ended_by") {
+            return _actorMessage(ev, "log.matchEndedByActor", "log.matchEndedBySelf");
+          }
+
+          if (ev.kind === "game_result") {
+            const winner = _normalizeName(ev.actor || (ev.winner != null ? _actorFromSide(ev.winner) : ""));
+            return winner ? _t("log.gameWinner", { winner }) : _t("log.gameDraw");
           }
 
           if (ev.kind === "i18n_suffix") {
@@ -2279,47 +2306,35 @@ window.AI = AI;
           return el;
         };
 
-        let stickToTop = true;
         let userBrowsingLog = false;
-        let browseReleaseTimer = 0;
+        let programmaticLogScroll = false;
+
+        const setLogScrollTop = (log, value) => {
+          programmaticLogScroll = true;
+          try { log.scrollTop = Math.max(0, Number(value) || 0); } catch (_) {}
+          requestAnimationFrame(() => { programmaticLogScroll = false; });
+        };
 
         const render = () => {
           const log = qs("#log");
           if (!log) return;
 
           const prevTop = log.scrollTop || 0;
-          const prevH = log.scrollHeight || 0;
-          const atTop = prevTop <= 2;
-
           log.innerHTML = "";
           for (let i = events.length - 1; i >= 0; i--) {
             log.appendChild(_makeEl(events[i]));
           }
 
-          if (stickToTop && atTop && !userBrowsingLog) {
-            log.scrollTop = 0;
-          } else if (userBrowsingLog) {
-            stickToTop = false;
-            requestAnimationFrame(() => {
-              try {
-                log.scrollTop = prevTop;
-              } catch (_) {}
-            });
-          } else {
-            stickToTop = false;
-            const newH = log.scrollHeight || 0;
-            const delta = newH - prevH;
-            const nextTop = Math.max(0, prevTop + (delta > 0 ? delta : 0));
-            requestAnimationFrame(() => {
-              try {
-                log.scrollTop = nextTop;
-              } catch (_) {}
-            });
-          }
+          requestAnimationFrame(() => {
+            // Keep the newest events at the top only while the user is not
+            // browsing older entries. A re-render must preserve manual scroll.
+            setLogScrollTop(log, userBrowsingLog ? prevTop : 0);
+          });
         };
 
         const addEvent = (ev) => {
           const e = (ev && typeof ev === "object") ? ev : { kind: "raw", text: String(ev ?? "") };
+          if (e.kind === "error") return;
           if (e.ts == null) e.ts = Date.now();
           events.push(e);
           if (events.length > MAX) events.splice(0, events.length - MAX);
@@ -2337,6 +2352,7 @@ window.AI = AI;
           for (const it of sliced) {
             if (it && typeof it === "object") {
               const e = Object.assign({}, it);
+              if (e.kind === "error") continue;
               if (e.ts == null) e.ts = Date.now();
               events.push(e);
             } else {
@@ -2352,31 +2368,26 @@ window.AI = AI;
           const log = qs("#log");
           if (!log || log.__zScrollBound) return;
           log.__zScrollBound = true;
-          const markBrowsing = () => {
-            try {
-              userBrowsingLog = true;
-              stickToTop = false;
-              if (browseReleaseTimer) clearTimeout(browseReleaseTimer);
-              browseReleaseTimer = setTimeout(() => {
-                try {
-                  userBrowsingLog = (log.scrollTop || 0) > 2;
-                  stickToTop = !userBrowsingLog;
-                } catch (_) {}
-              }, 420);
-            } catch (_) {}
+          const beginBrowsing = () => { userBrowsingLog = true; };
+          const updateBrowsingPosition = () => {
+            if (programmaticLogScroll) return;
+            userBrowsingLog = (log.scrollTop || 0) > 2;
           };
-          log.addEventListener("touchstart", markBrowsing, { passive: true });
-          log.addEventListener("touchmove", markBrowsing, { passive: true });
-          log.addEventListener("touchend", markBrowsing, { passive: true });
-          log.addEventListener("pointerdown", markBrowsing, { passive: true });
-          log.addEventListener("wheel", markBrowsing, { passive: true });
-          log.addEventListener("scroll", markBrowsing, { passive: true });
+          log.addEventListener("touchstart", beginBrowsing, { passive: true });
+          log.addEventListener("touchmove", beginBrowsing, { passive: true });
+          log.addEventListener("pointerdown", beginBrowsing, { passive: true });
+          log.addEventListener("wheel", beginBrowsing, { passive: true });
+          log.addEventListener("scroll", updateBrowsingPosition, { passive: true });
         });
 
         return { addEvent, addText, setEvents, retranslate, _events: events };
       })();
 
-      try { window.LogMgr = LogMgr; } catch (_) {}
+      window.LogMgr = LogMgr;
+      if (!window.DhametGameLogView || typeof window.DhametGameLogView.attach !== "function") {
+        throw new Error("game-log-view.js must load before game-runtime.js");
+      }
+      window.DhametGameLogView.attach(LogMgr);
 
       const logLine = (txt, ts = null) => {
         try {
