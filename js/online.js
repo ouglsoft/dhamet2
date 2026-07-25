@@ -6196,7 +6196,10 @@
                   if (!uid) return;
                   try {
                     await this._createGame(uid);
-                  } catch (e) {}
+                  } catch (e) {
+                    try { Logger.capture(e, { ctx: "invite.create.click", opponentUid: uid }); } catch (_) {}
+                    try { showOnlineNotice(window.I18N.translateArgs("online.inviteSendFail")); } catch (_) {}
+                  }
                 });
               });
             };

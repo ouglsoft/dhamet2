@@ -3,12 +3,12 @@
   "private": true,
   "scripts": {
     "check": "node scripts/check-online-only.mjs && node scripts/test-structure.mjs && node scripts/test-ui-parity.mjs && node scripts/test-primary-ui-assets.mjs && node scripts/test-primary-ui-dom.mjs",
-    "test": "node scripts/check-online-only.mjs && node scripts/test-structure.mjs && node scripts/test-ui-parity.mjs && node scripts/test-primary-ui-assets.mjs && node scripts/test-primary-ui-dom.mjs && node scripts/test-firebase-contract.mjs && node scripts/test-rules.mjs && node scripts/test-rules-parity.mjs && node scripts/test-runtime-contract.mjs && node scripts/test-deployment-workflow.mjs && node scripts/test-message-parity.mjs",
+    "test": "node scripts/check-online-only.mjs && node scripts/test-structure.mjs && node scripts/test-ui-parity.mjs && node scripts/test-primary-ui-assets.mjs && node scripts/test-primary-ui-dom.mjs && node scripts/test-firebase-contract.mjs && node scripts/test-rules.mjs && node scripts/test-rules-parity.mjs && node scripts/test-runtime-contract.mjs && node scripts/test-deployment-workflow.mjs && node scripts/test-message-parity.mjs && node scripts/test-invite-delivery.mjs",
     "build": "npm test && npm run prepare:pages",
     "prepare:pages": "node deploy/prepare-pages.mjs",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.7.25-deployparity1",
+  "version": "2026.7.25-invitefix1",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""

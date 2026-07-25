@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260725-deployparity1",
-  "source": "stable-incremental-cloudflare-pages-deployment",
+  "version": "20260725-invitefix1",
+  "source": "firebase-invite-listener-rebind-and-stale-session-fix",
   "uiReference": "ouglsoft-main",
-  "release": "20260725-deployparity1"
+  "release": "20260725-invitefix1"
 }

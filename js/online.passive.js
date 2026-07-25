@@ -1720,6 +1720,10 @@
 
     _inviteQuery: null,
 
+    _boundInviteUid: "",
+
+    _inviteListenerGeneration: 0,
+
     userEventsRef: null,
 
     _userEventsQuery: null,
@@ -2063,6 +2067,15 @@
               } catch (e) {}
               this._presenceConnInfoRef = null;
               this._presenceConnInfoHandler = null;
+              try {
+                if (this._inviteQuery) this._inviteQuery.off();
+                if (this.invitesRef) this.invitesRef.off();
+              } catch (e) {}
+              try { this._unbindUserEventsListener && this._unbindUserEventsListener(); } catch (e) {}
+              this._inviteQuery = null;
+              this._boundInviteUid = "";
+              this._invitesPassiveOn = false;
+              this._inviteListenerGeneration = Number(this._inviteListenerGeneration || 0) + 1;
               this._presenceInited = false;
               this.statusRef = null;
               this.invitesRef = null;
@@ -2285,14 +2298,27 @@
             const user = firebase.auth().currentUser;
             if (!user) return;
     
-            this.myUid = user.uid;
+            const liveUid = String(user.uid || "");
+            if (!liveUid) return;
             const db = firebase.database();
+            const uidChanged = !!(this._boundInviteUid && this._boundInviteUid !== liveUid);
+            if (uidChanged) {
+              try { if (this._inviteQuery) this._inviteQuery.off(); } catch (e) {}
+              try { if (this.invitesRef) this.invitesRef.off(); } catch (e) {}
+              try { this._unbindUserEventsListener && this._unbindUserEventsListener(); } catch (e) {}
+              this._inviteQuery = null;
+              this._invitesPassiveOn = false;
+              this._inviteListenerGeneration = Number(this._inviteListenerGeneration || 0) + 1;
+            }
+            this.myUid = liveUid;
             if (!this.playersRef) this.playersRef = db.ref("players");
-            if (!this.invitesRef) this.invitesRef = db.ref("invites").child(this.myUid);
-            if (!this.statusRef && this.playersRef) this.statusRef = this.playersRef.child(this.myUid);
+            this.invitesRef = db.ref("invites").child(liveUid);
+            this.userEventsRef = db.ref("userEvents").child(liveUid);
+            this.statusRef = this.playersRef.child(liveUid);
     
-            if (this._invitesPassiveOn) return;
+            if (this._invitesPassiveOn && this._boundInviteUid === liveUid) return;
             this._invitesPassiveOn = true;
+            this._boundInviteUid = liveUid;
     
             if (typeof this._listenInvites === "function") {
               this._listenInvites();
@@ -2674,21 +2700,33 @@
                 }
     
                 try {
-                  let inMatch = !!(
-                    this.isActive ||
-                    this._presenceStatus === "inPvP" ||
-                    this._presenceRole === "player" ||
-                    this.gameId
-                  );
-                  if (!inMatch && typeof this._getActivePlayerRoomId === "function") {
-                    const activeRoomId = await this._getActivePlayerRoomId();
-                    inMatch = !!activeRoomId;
+                  // Local game flags can survive a restored tab or an anonymous-UID
+                  // rotation. Only an active room confirmed for the current UID may
+                  // suppress an incoming invite in the lobby.
+                  const localGamePageActive = !!(isGamePage() && this.isActive && this.gameId);
+                  let activeRoomId = "";
+                  if (!localGamePageActive && typeof this._getActivePlayerRoomId === "function") {
+                    activeRoomId = String(
+                      (await settleWithin(this._getActivePlayerRoomId(), 6000, "")) || "",
+                    ).trim();
                   }
-                  if (inMatch) {
-                    try {
-                      snap.ref.remove();
-                    } catch (e) {}
+                  if (localGamePageActive || activeRoomId) {
+                    try { snap.ref.remove(); } catch (e) {}
                     return;
+                  }
+
+                  // Clear stale lobby-only markers instead of silently deleting the
+                  // invitation that belongs to the current authenticated UID.
+                  if (!isGamePage()) {
+                    this.isActive = false;
+                    this.isSpectator = false;
+                    this.gameId = null;
+                    this.gameRef = null;
+                    this.mySide = null;
+                    this._presenceStatus = "available";
+                    this._presenceRole = "lobby";
+                    this._presenceRoomId = null;
+                    try { this._clearPersistedActiveGame(); } catch (e) {}
                   }
                 } catch (e) {}
               }
@@ -2797,7 +2835,29 @@
             });
           };
     
-          this.invitesRef.on("child_added", handler);
+          const boundUid = String(this.myUid || "");
+          const generation = Number(this._inviteListenerGeneration || 0) + 1;
+          this._inviteListenerGeneration = generation;
+          this._boundInviteUid = boundUid;
+          const onInviteReadError = async (err) => {
+            try {
+              Logger.warn("invite_listener_failed", {
+                uid: boundUid,
+                code: String((err && err.code) || ""),
+                message: String((err && err.message) || ""),
+              });
+            } catch (e) {}
+            if (generation !== this._inviteListenerGeneration) return;
+            this._invitesPassiveOn = false;
+            this._inviteQuery = null;
+            try {
+              if (isPermissionDenied(err) && window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
+                await window.DhametEmergency.resetAnonymous();
+              }
+            } catch (e) {}
+            try { setTimeout(() => this.initInvitesPassive(), 500); } catch (e) {}
+          };
+          this.invitesRef.on("child_added", handler, onInviteReadError);
           this._inviteQuery = this.invitesRef;
           try {
             this._startInviteCleanup();
