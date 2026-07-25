@@ -3269,12 +3269,28 @@ function bindUI() {
 
   qs("#btnSave")?.addEventListener("click", saveGame);
   qs("#btnResume")?.addEventListener("click", resumeGame);
-  const endKillRow = qs(".timer-row");
   const endKillButton = qs("#btnEndKill");
-  if (endKillRow) {
-    endKillRow.addEventListener("pointerup", activateEndKillFromEvent, { passive: false });
-    endKillRow.addEventListener("click", activateEndKillFromEvent, { passive: false });
-  } else if (endKillButton) endKillButton.addEventListener("click", activateEndKillFromEvent, { passive: false });
+  if (endKillButton) endKillButton.addEventListener("click", endKillPressed);
+
+  const killTimerTile = qs(".timer-row");
+  if (killTimerTile) {
+    killTimerTile.setAttribute("role", "button");
+    killTimerTile.setAttribute("tabindex", "0");
+    killTimerTile.setAttribute("aria-label", t("buttons.endKill"));
+    killTimerTile.addEventListener("click", function (ev) {
+      if (!document.body || !document.body.classList.contains("z-mobile-on")) return;
+      if (ev) ev.preventDefault();
+      endKillPressed();
+    });
+    killTimerTile.addEventListener("keydown", function (ev) {
+      if (!document.body || !document.body.classList.contains("z-mobile-on")) return;
+      const key = ev && (ev.key || ev.code);
+      if (key === "Enter" || key === " " || key === "Spacebar") {
+        ev.preventDefault();
+        endKillPressed();
+      }
+    });
+  }
 
   qs("#board").addEventListener("click", Input.onBoardClick);
   const __boardPd = qs("#board");
@@ -3390,10 +3406,16 @@ const Board3D = (() => {
 
   function mountModeControls(mode, isSpectator) {
     try {
-      if (document.body && document.body.classList && document.body.classList.contains("z-mobile-on") && document.body.getAttribute("data-mobile-page") === "game") {
+      if (
+        document.body &&
+        document.body.classList &&
+        document.body.classList.contains("z-mobile-on") &&
+        document.body.getAttribute("data-mobile-page") === "game"
+      ) {
         return;
       }
     } catch (_) {}
+
     const pool = document.getElementById("controlsPool");
     const pvcBox = document.getElementById("pvcControlsBox");
     const pvpBox = document.getElementById("pvpControlsBox");
@@ -3401,9 +3423,7 @@ const Board3D = (() => {
     const row2 = document.getElementById("pvpRow2");
     const row3 = document.getElementById("pvpRow3");
     const specBar = document.getElementById("specBar");
-    // The online-only backup intentionally has no PvC controls box. Requiring it
-    // prevented every desktop PvP button from being mounted.
-    if (!pool || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;
+    if (!pool || !pvcBox || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;
 
     const els = {
       endLocal: document.getElementById("btnEndLocalMatch"),
@@ -3423,6 +3443,15 @@ const Board3D = (() => {
       while (node && node.firstChild) node.removeChild(node.firstChild);
     };
 
+    Object.values(els).forEach((el) => {
+      if (el && el.parentElement !== pool) pool.appendChild(el);
+    });
+
+    clear(pvcBox);
+    clear(row1);
+    clear(row2);
+    clear(row3);
+
     if (isSpectator) {
       const leaveRoom = document.getElementById("btnLeaveRoom");
       if (leaveRoom && leaveRoom.parentElement !== specBar) specBar.appendChild(leaveRoom);
@@ -3432,26 +3461,14 @@ const Board3D = (() => {
 
     if (mode === "pvp") {
       [els.endOnline, els.sync, els.undo].forEach((el) => el && row1.appendChild(el));
-
       [els.chat, els.settings].forEach((el) => el && row2.appendChild(el));
-
       [els.spk, els.mic].forEach((el) => el && row3.appendChild(el));
-      try {
-        const wrap = document.getElementById("controlsWrap");
-        if (wrap) { wrap.hidden = false; wrap.style.display = "block"; wrap.style.visibility = "visible"; wrap.style.opacity = "1"; wrap.style.pointerEvents = "auto"; }
-        pvpBox.hidden = false; pvpBox.style.display = "block"; pvpBox.style.visibility = "visible";
-        [row1,row2,row3].forEach((row) => { row.hidden=false; row.style.display="flex"; row.style.visibility="visible"; row.style.pointerEvents="auto"; });
-        releaseResolvedOnlineUiHold();
-      } catch (_) {}
-    } else if (pvcBox) {
-      Object.values(els).forEach((el) => { if (el && el.parentElement !== pool) pool.appendChild(el); });
-      clear(pvcBox);
+    } else {
       [els.endLocal, els.undo, els.settings, els.newBtn, els.save, els.resume].forEach(
         (el) => el && pvcBox.appendChild(el),
       );
     }
   }
-
   window.ZamatControls = window.ZamatControls || {};
   window.ZamatControls.mount = function (isOnline, isSpectator) {
     try {

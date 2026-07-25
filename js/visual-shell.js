@@ -194,6 +194,13 @@
       refresh.__dhametRefreshBound = true;
       refresh.addEventListener("click", function () { location.reload(); });
     }
+    const leaderboard = document.getElementById("btnShowLeaderboardLobby");
+    if (leaderboard && !leaderboard.__dhametLeaderboardBound) {
+      leaderboard.__dhametLeaderboardBound = true;
+      leaderboard.addEventListener("click", function () {
+        location.href = "https://ouglsoft.com/dhamet/pages/dashboard.html";
+      });
+    }
     try { window.I18N && window.I18N.apply && window.I18N.apply(document, currentLang()); } catch (_) {}
   }
 

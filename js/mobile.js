@@ -1238,11 +1238,7 @@ if (!icon) {
   }
 
   function restoreDesktopGameLayout() {
-    if (pageType() !== 'game') return;
-    if (!GAME_LAYOUT_MOBILE_ACTIVE) {
-      try { var online = gameMode() !== 'pvc'; var spectator = gameMode() === 'spectator'; if (window.ZamatControls && typeof window.ZamatControls.mount === 'function') window.ZamatControls.mount(online, spectator); } catch (_) {}
-      return;
-    }
+    if (pageType() !== 'game' || !GAME_LAYOUT_MOBILE_ACTIVE) return;
     markGameLayoutMutation(function () {
       setGameDrawer(false);
       restoreAllGameNodes();

@@ -1397,8 +1397,8 @@ body.z-mobile-on[data-mobile-page="lobby"] .z-mobile-lobby-rank-ico {
   width: 18px;
   height: 18px;
   background-color: currentColor;
-  -webkit-mask: url("../assets/icons/leaderboard.svg?v=20260724-ui1") center / contain no-repeat;
-  mask: url("../assets/icons/leaderboard.svg?v=20260724-ui1") center / contain no-repeat;
+  -webkit-mask: url("../assets/icons/leaderboard.svg?v=20260725-uiparity1") center / contain no-repeat;
+  mask: url("../assets/icons/leaderboard.svg?v=20260725-uiparity1") center / contain no-repeat;
 }
 
 body.z-mobile-on[data-mobile-page="lobby"] .z-invite-receive-row {
@@ -3699,8 +3699,8 @@ body.z-mobile-on .z-mobile-orient .z-mobile-orient-ico {
   height: 20px;
   display: block;
   background-color: currentColor;
-  -webkit-mask: url("../assets/icons/orientation-toggle.svg?v=20260724-ui1") center / contain no-repeat;
-  mask: url("../assets/icons/orientation-toggle.svg?v=20260724-ui1") center / contain no-repeat;
+  -webkit-mask: url("../assets/icons/orientation-toggle.svg?v=20260725-uiparity1") center / contain no-repeat;
+  mask: url("../assets/icons/orientation-toggle.svg?v=20260725-uiparity1") center / contain no-repeat;
 }
 
 html.dark body.z-mobile-on .z-mobile-orient {
@@ -3884,7 +3884,6 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-ro
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
   color: rgb(var(--rgb-white));
   background: var(--gradient-game-control);
   border: 1px solid rgb(var(--rgb-white) / .18);
@@ -3931,20 +3930,7 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-ro
 }
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row #btnEndKill {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: block;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  opacity: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  pointer-events: auto;
-  touch-action: manipulation;
+  display: none;
 }
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row.is-live {
@@ -3987,32 +3973,4 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="game"] .
 body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row.is-live {
   height: 60px;
   min-height: 60px;
-}
-
-
-/* Dhamet2 controlsfix2 */
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill {
-  position: relative !important;
-  z-index: 20 !important;
-  display: flex !important;
-  visibility: visible !important;
-  width: 100% !important;
-  height: auto;
-  margin: 0 !important;
-  padding: 0 !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  touch-action: manipulation !important;
-  isolation: isolate;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill .clock {
-  pointer-events: none !important;
-}
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill .end-kill-action {
-  display: none !important;
-}
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row#btnEndKill.is-live {
-  pointer-events: auto !important;
 }

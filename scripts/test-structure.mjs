@@ -11,6 +11,8 @@ assert.match(lobby, /https:\/\/ouglsoft\.com\/dhamet\/pages\/mode\.html/);
 const ui = read("js/ui.js");
 assert.match(ui, /z-postmatch-confirm-only/);
 assert.doesNotMatch(ui, /requestRematch/);
+assert.match(read("pages/game.html"), /id="controlsPool"/);
+assert.match(read("pages/game.html"), /id="pvcControlsBox"/);
 const online = read("js/online.js") + read("js/online.passive.js");
 assert.doesNotMatch(online, /rematch_request|rematch_accept|rematch_reject|requestRematch|_resetRoomForRematch/);
 console.log("structure tests passed");

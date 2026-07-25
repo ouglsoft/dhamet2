@@ -1,0 +1,14 @@
+/* Dhamet2 20260725-uiparity1: non-visual Firebase/legacy-renderer compatibility only. */
+#board3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: none;
+}
+#board3d canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}

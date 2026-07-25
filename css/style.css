@@ -140,7 +140,7 @@ body::before {
   background-repeat: no-repeat;
   pointer-events: none;
   z-index: -1;
-  background-image: radial-gradient(circle at 18% 12%, rgb(var(--rgb-white) / .92), rgb(var(--rgb-white) / 0) 26%), radial-gradient(circle at 84% 16%, rgb(var(--rgb-secondary-400) / .12), rgb(var(--rgb-secondary-400) / 0) 24%), radial-gradient(circle at 50% 100%, rgb(var(--rgb-primary-500) / .08), rgb(var(--rgb-primary-500) / 0) 34%), url("../assets/icons/icon.webp?v=20260724-ui1");
+  background-image: radial-gradient(circle at 18% 12%, rgb(var(--rgb-white) / .92), rgb(var(--rgb-white) / 0) 26%), radial-gradient(circle at 84% 16%, rgb(var(--rgb-secondary-400) / .12), rgb(var(--rgb-secondary-400) / 0) 24%), radial-gradient(circle at 50% 100%, rgb(var(--rgb-primary-500) / .08), rgb(var(--rgb-primary-500) / 0) 34%), url("../assets/icons/icon.webp?v=20260725-uiparity1");
   opacity: 0.28;
 }
 
@@ -2471,13 +2471,3 @@ body.z-game-page:not(.z-mobile-on) .controls-box .btn .btn-ico {
   filter: brightness(0) invert(1) drop-shadow(0 1px 1px rgb(var(--rgb-black) / .28));
   opacity: 1;
 }
-
-
-/* Dhamet2 controlsfix2 */
-body.z-game-page.mode-pvp:not(.z-mobile-on) #controlsWrap, body.z-game-page.mode-pvp.z-online-active:not(.z-mobile-on) #controlsWrap, html.ui-hold body.z-game-page.mode-pvp.z-online-active:not(.z-mobile-on) #controlsWrap, html.role-pending body.z-game-page.mode-pvp.z-online-active:not(.z-mobile-on) #controlsWrap { display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; }
-body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpControlsBox { display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; }
-body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpRow1, body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpRow2, body.z-game-page.mode-pvp:not(.z-mobile-on) #pvpRow3 { display:flex !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; }
-
-.timer-row#btnEndKill { width:100%; display:flex !important; align-items:center; justify-content:space-between; gap:8px; }
-.timer-row#btnEndKill .clock { flex:0 0 34%; }
-.timer-row#btnEndKill .end-kill-action { flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; gap:8px; }

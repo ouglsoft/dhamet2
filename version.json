@@ -1,5 +1,6 @@
 {
   "application": "dhamet2",
-  "version": "20260725-autodeploy2",
-  "source": "github-actions-cloudflare-pages-autodeploy"
+  "version": "20260725-uiparity1",
+  "source": "primary-interface-parity",
+  "uiReference": "ouglsoft-main"
 }
