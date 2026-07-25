@@ -628,6 +628,11 @@
     
             const ts = Number((sig && sig.ts) || 0) || 0;
             if (ts && nowTs() - ts > RECOVERY_SIGNAL_MAX_AGE_MS) return;
+
+            // A refresh or repair belongs only to the browser that requested it.
+            // Never reload or resync the opponent because a shared room field changed.
+            const byUid = String((sig && sig.byUid) || "").trim();
+            if (!byUid || byUid !== String(this.myUid || "")) return;
     
             const action = String((sig && sig.action) || "").trim();
             if (action === "sync") {
@@ -2681,6 +2686,17 @@
     
             try {
               if (typeof UI !== "undefined" && UI && typeof UI.updateAll === "function") UI.updateAll();
+              if (
+                typeof UI !== "undefined" &&
+                UI &&
+                typeof UI.restoreCaptureContinuationVisualState === "function" &&
+                Game &&
+                Game.inChain &&
+                Game.chainPos != null &&
+                Number(Game.player) === Number(this.mySide)
+              ) {
+                UI.restoreCaptureContinuationVisualState();
+              }
             } catch (e) {}
     
             try {
@@ -2899,9 +2915,8 @@
                 this._markLocalCommitSettled();
               }
             } catch (e) {}
-            try {
-              if (cfg.emitSignal) this._emitRecoverySignal("sync", "manual");
-            } catch (e) {}
+            // Synchronization is intentionally local. Writing a recoverySignal
+            // here would make the opponent react to this browser's refresh.
             return true;
           } catch (e) {
             showOnlineNotice(window.I18N.translateArgs("online.syncFail"));

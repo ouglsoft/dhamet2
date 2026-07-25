@@ -32,4 +32,17 @@ if (/Dhamet2 controlsfix|timer-row#btnEndKill/.test(mobileCss)) throw new Error(
 if (/\.btn|timer-row|controlsWrap/.test(runtimeCss)) throw new Error("runtime compatibility CSS changes visible controls");
 if (!headers.includes("connect-src 'self' https://www.gstatic.com")) throw new Error("gstatic CSP connect allowance missing");
 
+
+if (!ui.includes("const openingOptions = getForcedOpeningOptions()")) throw new Error("fourth/sixth forced-opening choice is missing");
+if (!ui.includes("Visual.setForcedOpeningArrows")) throw new Error("multiple forced-opening arrows are missing");
+if (!ui.includes("Input.selected = toIdx")) throw new Error("capture-chain piece selection is not preserved");
+if (!ui.includes("restoreCaptureContinuationVisualState")) throw new Error("capture-chain visual restoration is missing");
+if (!ui.includes("savedSouflaApplying") || !ui.includes("Game._souflaApplying = false")) throw new Error("Soufla preview render guard is missing");
+if (!ui.includes("Intentionally empty: mobile controls use the same SVG files")) throw new Error("backup-only mobile icon styling remains");
+if (!ui.includes("emitSignal: false")) throw new Error("manual sync must remain local");
+if (!passive.includes("No shared recoverySignal is written")) throw new Error("reconnect refresh must remain local");
+const online = fs.readFileSync(new URL("../js/online.js", import.meta.url), "utf8");
+if (!online.includes("byUid !== String(this.myUid")) throw new Error("peer recovery signals are not isolated");
+if (!online.includes("restoreCaptureContinuationVisualState")) throw new Error("online capture continuation restore is missing");
+
 console.log("runtime contract tests passed");

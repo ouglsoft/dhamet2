@@ -1856,11 +1856,9 @@
             this._autoReconnectActionAt = now;
             if (downtimeMs >= 40 * 1000) {
               try {
-                this._emitRecoverySignal("reload", "reconnect");
-              } catch (e) {}
-              try {
                 sessionStorage.setItem("zamat.forceResyncOnLoad", "1");
               } catch (e) {}
+              // Reload only this browser. No shared recoverySignal is written.
               setTimeout(() => {
                 try {
                   location.reload();
@@ -1869,11 +1867,9 @@
               return "reload";
             }
     
+            // A short reconnect performs a local read/apply only.
             try {
-              this._emitRecoverySignal("sync", "reconnect");
-            } catch (e) {}
-            try {
-              this.syncNow();
+              this.syncNow({ force: true, emitSignal: false, repairPresence: true });
             } catch (e) {}
             return "sync";
           } catch (e) {

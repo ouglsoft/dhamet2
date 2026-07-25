@@ -12,6 +12,7 @@ const Visual = (() => {
     souflaForcePathsAll: [],
     ignoredKills: [],
     forcedOpeningArrow: null,
+    forcedOpeningArrows: [],
     highlightCells: [],
     crownQueue: [],
     showCoords: false,
@@ -30,6 +31,7 @@ const Visual = (() => {
     S.capturedOrder = [];
     S.pendingTurnClear = false;
     S.forcedOpeningArrow = null;
+    S.forcedOpeningArrows = [];
     S.highlightCells = [];
     S.souflaRemove = null;
     S.souflaForcePath = [];
@@ -110,6 +112,7 @@ const Visual = (() => {
     S.capturedOrder = [];
     S.pendingTurnClear = false;
     S.forcedOpeningArrow = null;
+    S.forcedOpeningArrows = [];
     S.highlightCells = [];
 
     if (!preserveSoufla) {
@@ -152,6 +155,11 @@ const Visual = (() => {
   function renderSouflaPreview(canvas, payload) {
     if (!canvas) return;
     payload = payload || {};
+
+    const savedSuspendDraw = !!S._suspendDraw;
+    const savedSouflaApplying = !!(Game && Game._souflaApplying);
+    S._suspendDraw = false;
+    if (Game) Game._souflaApplying = false;
 
     const saved = {
       active: SouflaFX.active,
@@ -210,9 +218,12 @@ const Visual = (() => {
         : [];
 
       const __bs = Game.settings.boardStyle;
-      Game.settings.boardStyle = "2d";
-      draw(canvas);
-      Game.settings.boardStyle = __bs;
+      try {
+        Game.settings.boardStyle = "2d";
+        draw(canvas);
+      } finally {
+        Game.settings.boardStyle = __bs;
+      }
 
       if (payload.removeRingIdx != null) {
         const prevCv = S._activeCanvas;
@@ -250,6 +261,8 @@ const Visual = (() => {
       S._activeStyle = saved.activeStyle;
       S.showCoords = saved.showCoords;
       S._activeCanvas = saved.activeCanvas;
+      S._suspendDraw = savedSuspendDraw;
+      if (Game) Game._souflaApplying = savedSouflaApplying;
     }
   }
 
@@ -406,11 +419,22 @@ const Visual = (() => {
 
   function setForcedOpeningArrow(fr, to) {
     S.forcedOpeningArrow = { from: fr, to: to };
+    S.forcedOpeningArrows = [];
     draw();
   }
-  function clearForcedOpeningArrow() {
+  function setForcedOpeningArrows(items, noDraw) {
     S.forcedOpeningArrow = null;
-    draw();
+    S.forcedOpeningArrows = Array.isArray(items)
+      ? items
+          .filter((item) => item && item.from != null && item.to != null)
+          .map((item) => ({ from: Number(item.from), to: Number(item.to) }))
+      : [];
+    if (!noDraw) draw();
+  }
+  function clearForcedOpeningArrow(noDraw) {
+    S.forcedOpeningArrow = null;
+    S.forcedOpeningArrows = [];
+    if (!noDraw) draw();
   }
 
   function setHighlightCells(cells) {
@@ -463,9 +487,6 @@ const Visual = (() => {
       }
       const __numLabels = [];
       try { S._arrowStacks = new Map(); } catch (_) { S._arrowStacks = null; }
-
-      if (S.forcedOpeningArrow)
-        drawArrow(ctx, S.forcedOpeningArrow.from, S.forcedOpeningArrow.to, "#ef4444");
 
       if (S.souflaRemove != null) {
         drawX(ctx, S.souflaRemove, "#ef4444");
@@ -583,6 +604,15 @@ const Visual = (() => {
 
       for (const idx of S.crownQueue) {
         drawCrownPulse(ctx, idx);
+      }
+
+      // Mandatory-opening guidance is the highest-priority board effect.
+      if (Array.isArray(S.forcedOpeningArrows) && S.forcedOpeningArrows.length) {
+        for (const openingArrow of S.forcedOpeningArrows) {
+          drawArrow(ctx, openingArrow.from, openingArrow.to, "#ef4444");
+        }
+      } else if (S.forcedOpeningArrow) {
+        drawArrow(ctx, S.forcedOpeningArrow.from, S.forcedOpeningArrow.to, "#ef4444");
       }
     } finally {
       S._activeCanvas = prevCv;
@@ -989,6 +1019,7 @@ const Visual = (() => {
     setSouflaForcePath,
     setIgnoredKills,
     setForcedOpeningArrow,
+    setForcedOpeningArrows,
     clearForcedOpeningArrow,
     setHighlightCells,
     queueCrown,
@@ -1382,7 +1413,14 @@ const Input = {
     if (Game.forcedEnabled && Game.forcedPly < 10) {
       if (Game.player !== humanSide()) return;
 
-      const expected = getForcedOpeningExpectedAction();
+      const openingOptions = getForcedOpeningOptions();
+      if (!openingOptions.length) return;
+      const selectedOption = Input.selected == null
+        ? openingOptions.find((item) => Number(item.from) === Number(idx)) || null
+        : null;
+      const expected = getForcedOpeningExpectedAction(
+        Input.selected != null ? Input.selected : selectedOption && selectedOption.from,
+      );
       if (!expected) return;
 
       const info = expected.info;
@@ -1403,14 +1441,28 @@ const Input = {
 
       if (Input.selected == null) {
         const v = valueAt(idx);
-        const allowedStart = Game.inChain && Game.chainPos != null ? Game.chainPos : frExp;
+        const allowedStart = Game.inChain && Game.chainPos != null
+          ? Game.chainPos
+          : selectedOption && selectedOption.from;
+        const hintInfo = selectedOption || openingOptions[0];
+        const hintFrom = Game.inChain && Game.chainPos != null ? Game.chainPos : hintInfo.from;
+        const hintTo = hintInfo.toFirst;
 
-        if (idx !== allowedStart || pieceOwner(v) !== Game.player) {
-          Visual.setForcedOpeningArrow(frExp, toExp);
+        if (allowedStart == null || idx !== allowedStart || pieceOwner(v) !== Game.player) {
+          if (openingOptions.length > 1 && typeof Visual.setForcedOpeningArrows === "function") {
+            Visual.setForcedOpeningArrows(
+              openingOptions.map((item) => ({ from: item.from, to: item.toFirst })),
+              true,
+            );
+            Visual.setHighlightCells(openingOptions.map((item) => idxToRC(item.from)));
+            Visual.draw();
+          } else {
+            Visual.setForcedOpeningArrow(hintFrom, hintTo);
+          }
           UI.status(
             t("status.forcedMove", {
-              from: rcStr(frExp),
-              to: rcStr(toExp),
+              from: rcStr(hintFrom),
+              to: rcStr(hintTo),
             }),
           );
 
@@ -1424,6 +1476,9 @@ const Input = {
           return;
         }
         Input.selected = idx;
+        if (typeof Visual.clearForcedOpeningArrow === "function") {
+          Visual.clearForcedOpeningArrow(true);
+        }
         Visual.setHighlightCells([[r, c]]);
         Visual.draw();
         return;
@@ -1440,8 +1495,7 @@ const Input = {
           const msg = t("status.forcedChainStepByStep");
           UI.status(msg);
           showUiNotice(msg);
-          Input.selected = null;
-          Visual.setHighlightCells([]);
+          Visual.setHighlightCells([[Math.floor(Input.selected / BOARD_N), Input.selected % BOARD_N]]);
           Visual.draw();
           return;
         }
@@ -1457,8 +1511,7 @@ const Input = {
                 to: rcStr(toExp),
               }),
             );
-            Input.selected = null;
-            Visual.setHighlightCells([]);
+            Visual.setHighlightCells([[Math.floor(Input.selected / BOARD_N), Input.selected % BOARD_N]]);
             Visual.draw();
             return;
           }
@@ -1502,8 +1555,7 @@ const Input = {
               to: rcStr(toExp),
             }),
           );
-          Input.selected = null;
-          Visual.setHighlightCells([]);
+          Visual.setHighlightCells([[Math.floor(Input.selected / BOARD_N), Input.selected % BOARD_N]]);
           Visual.draw();
           return;
         }
@@ -1521,9 +1573,12 @@ const Input = {
         syncEndKillAvailability(true);
 
         Visual.setLastMovePath(Game.lastMoveFrom, Game.lastMovePath);
+        if (typeof Visual.clearForcedOpeningArrow === "function") {
+          Visual.clearForcedOpeningArrow(true);
+        }
 
-        Input.selected = null;
-        Visual.setHighlightCells([]);
+        Input.selected = idx;
+        Visual.setHighlightCells([[r, c]]);
         Visual.draw();
         return;
       }
@@ -1548,13 +1603,24 @@ const Input = {
       Visual.draw();
       return;
     } else {
+      if (!Game.inChain && v && pieceOwner(v) === Game.player && idx !== Input.selected) {
+        Input.selected = idx;
+        Visual.setHighlightCells([[r, c]]);
+        Visual.draw();
+        return;
+      }
+
       const fromIdx = Input.selected;
       const toIdx = idx;
       const { mask } = legalActions();
       const a = encodeAction(fromIdx, toIdx);
       if (!mask[a]) {
-        Input.selected = null;
-        Visual.setHighlightCells([]);
+        const keepIdx = Game.inChain && Game.chainPos != null ? Game.chainPos : Input.selected;
+        Input.selected = keepIdx;
+        if (keepIdx != null) {
+          const [keepR, keepC] = idxToRC(keepIdx);
+          Visual.setHighlightCells([[keepR, keepC]]);
+        }
         Visual.draw();
         return;
       }
@@ -1609,8 +1675,14 @@ const Input = {
         maybeQueueDeferredPromotion(toIdx);
         Turn.finishTurnAndSoufla();
       }
-      Input.selected = null;
-      Visual.setHighlightCells([]);
+      if (isCap) {
+        Input.selected = toIdx;
+        const [toR, toC] = idxToRC(toIdx);
+        Visual.setHighlightCells([[toR, toC]]);
+      } else {
+        Input.selected = null;
+        Visual.setHighlightCells([]);
+      }
       Visual.draw();
 
       if (
@@ -1624,84 +1696,27 @@ const Input = {
     }
   },
 };
+try { if (typeof window !== "undefined") window.Input = Input; } catch (_) {}
+
+function restoreCaptureContinuationVisualState() {
+  if (!Game.inChain || Game.chainPos == null) return false;
+
+  Input.selected = Game.chainPos;
+  const [r, c] = idxToRC(Game.chainPos);
+  Visual.setHighlightCells([[r, c]]);
+  syncEndKillAvailability(true);
+
+  if (!Game.killTimer.running && Game.player === humanSide()) {
+    Game.killTimer.start();
+  }
+
+  Visual.draw();
+  return true;
+}
 
 function normalizeMobileControlIcons() {
-  try {
-    const body = document.body;
-    if (!body || !body.classList || !body.classList.contains("z-mobile-on")) return;
-    if (String(body.getAttribute("data-mobile-page") || "") !== "game") return;
-    const grid = qs(".z-mobile-game-controls-grid");
-    if (!grid) return;
-    const tileBg = "linear-gradient(135deg, var(--btn-start), var(--btn-end))";
-    const tileBorder = "1px solid var(--btn-border)";
-    const tileShadow = "var(--btn-shadow)";
-    const actionTiles = qsa(
-      ".z-mobile-game-controls-grid .btn, .z-mobile-game-controls-grid .soufla-row .btn",
-      grid,
-    );
-    actionTiles.forEach((btn) => {
-      if (!btn || !btn.style) return;
-      if (btn.id === "btnEndKill") return;
-      btn.style.background = tileBg;
-      btn.style.backgroundColor = "var(--btn-start)";
-      btn.style.backgroundImage = tileBg;
-      btn.style.border = tileBorder;
-      btn.style.boxShadow = tileShadow;
-      btn.style.outline = "none";
-    });
-    const icons = qsa(
-      ".z-mobile-game-controls-grid .btn .btn-ico, .z-mobile-game-controls-grid #btnEndKill .btn-ico",
-      grid,
-    );
-    icons.forEach((ico) => {
-      if (!ico || !ico.style) return;
-      ico.style.background = "#ffffff";
-      ico.style.backgroundColor = "#ffffff";
-      ico.style.backgroundImage = "none";
-      ico.style.border = "none";
-      ico.style.boxShadow = "var(--shadow-sm)";
-      ico.style.filter = "none";
-      ico.style.outline = "none";
-      ico.style.padding = "6px";
-      ico.style.width = "40px";
-      ico.style.height = "40px";
-      ico.style.borderRadius = "12px";
-    });
-    [qs("#btnSync .btn-ico", grid), qs("#btnSoufla .btn-ico", grid)].forEach((ico) => {
-      if (!ico || !ico.style) return;
-      ico.style.background = "#ffffff";
-      ico.style.backgroundColor = "#ffffff";
-      ico.style.backgroundImage = "none";
-      ico.style.border = "none";
-      ico.style.boxShadow = "var(--shadow-sm)";
-      ico.style.filter = "none";
-      ico.style.opacity = "1";
-    });
-    const timerRow = qs(".timer-row", grid);
-    if (timerRow && timerRow.style) {
-      timerRow.style.background = tileBg;
-      timerRow.style.backgroundColor = "var(--btn-start)";
-      timerRow.style.backgroundImage = tileBg;
-      timerRow.style.border = tileBorder;
-      timerRow.style.boxShadow = tileShadow;
-    }
-    const endBtn = qs("#btnEndKill", grid);
-    if (endBtn && endBtn !== timerRow && endBtn.style) {
-      endBtn.style.background = "transparent";
-      endBtn.style.backgroundColor = "transparent";
-      endBtn.style.backgroundImage = "none";
-      endBtn.style.border = "none";
-      endBtn.style.boxShadow = "none";
-      endBtn.style.outline = "none";
-    }
-    const endIco = qs("#btnEndKill .btn-ico", grid);
-    if (endIco && endIco.style) {
-      const live = endBtn && endBtn.getAttribute("data-chain-active") === "true";
-      endIco.style.background = "#ffffff";
-      endIco.style.backgroundColor = "#ffffff";
-      endIco.style.opacity = live ? "0.24" : "1";
-    }
-  } catch (_) {}
+  // Intentionally empty: mobile controls use the same SVG files and CSS rules
+  // as desktop, matching the primary application.
 }
 
 function syncKillTimerVisualState() {
@@ -1823,6 +1838,10 @@ function endKillPressed() {
       return;
     }
 
+    if (info && info.ply === 3 && (info.exchangeChoice === 0 || info.exchangeChoice === 1)) {
+      Game.forcedOpeningExchangeChoice = info.exchangeChoice;
+      Game.openingExchangeFourthChoice = info.exchangeChoice;
+    }
     completeForcedOpeningPly();
   }
 
@@ -1866,6 +1885,7 @@ function endKillPressed() {
 
 const UI = {
   confirmMatchExit: confirmMatchExitAction,
+  restoreCaptureContinuationVisualState,
   updateAll() {
     this.updateStatus();
     this.updateAiLevelDisplay();
@@ -2704,7 +2724,7 @@ function bindUI() {
   qs("#btnUndo").addEventListener("click", confirmUndo);
   qs("#btnSync")?.addEventListener("click", async () => {
     try {
-      const ok = await window.Online?.syncNow?.({ force: true, emitSignal: true, repairPresence: true });
+      const ok = await window.Online?.syncNow?.({ force: true, emitSignal: false, repairPresence: true });
       if (ok !== false) return;
     } catch (e) {}
     try {
