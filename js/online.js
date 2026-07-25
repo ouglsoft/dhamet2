@@ -662,7 +662,7 @@
                 text: encodeSharedLogText({
                   kind: "i18n",
                   key: "online.matchEndedByPlayer",
-                  vars: { player: who, reason: window.I18N.translateArgs("online.matchEndedReason.absent") },
+                  vars: { player: who, reason: "" },
                 }),
               });
               if (g.log.length > 200) g.log = g.log.slice(-200);
@@ -1068,13 +1068,13 @@
           const wrap = document.createElement("div");
           wrap.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:10px;">
-              <div style="font-weight:700;">${window.I18N.translateArgs("online.playersTitle")}</div>
+              <div style="font-weight:700;">${window.I18N.translateArgs("lobby.playersTitle")}</div>
               <div id="playersList" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
           `;
     
           Modal.open({
-            title: window.I18N.translateArgs("online.playersTitle"),
+            title: window.I18N.translateArgs("lobby.playersTitle"),
             body: wrap,
             buttons: [
               {
@@ -1116,7 +1116,7 @@
                   : st === "available"
                     ? window.I18N.translateArgs("online.status.vsComputer")
                     : st === "spectating"
-                      ? window.I18N.translateArgs("online.status.spectating")
+                      ? window.I18N.translateArgs("online.status.inPvP")
                       : window.I18N.translateArgs("online.status.inPvP");
     
               const row = document.createElement("div");
@@ -1143,7 +1143,7 @@
                             const roomId = p && p.roomId ? String(p.roomId).trim() : "";
                             const inMatchAsPlayer = role === "player" && !!roomId;
                             return inMatchAsPlayer || !acceptsInvites ? "disabled" : "";
-                          })()}>${window.I18N.translateArgs(acceptsInvites ? "actions.invite" : "lobby.noInvites")}</button>
+                          })()}>${window.I18N.translateArgs(acceptsInvites ? "actions.invite" : "online.invites.disabled")}</button>
     
               `;
     
@@ -1195,6 +1195,117 @@
           );
         },
 
+    _returnToActiveMatch: async function (gameId) {
+          const gid = String(gameId || this.gameId || this._presenceRoomId || "").trim();
+          if (!gid) return false;
+          try {
+            const inPages = (location.pathname || "").includes("/pages/");
+            location.href = (inPages ? "game.html" : "pages/game.html") + "?gid=" + encodeURIComponent(gid);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        },
+
+    _leaveActiveMatchForInvite: async function (gameId) {
+          const gid = String(gameId || this.gameId || this._presenceRoomId || "").trim();
+          const uid = String(this.myUid || (auth && auth.currentUser && auth.currentUser.uid) || "").trim();
+          if (!gid || !uid || !db || !db.ref) return true;
+          const who = this.myNick || window.I18N.translateArgs("players.player");
+          try {
+            const gameRef = db.ref("games").child(gid);
+            const result = await gameRef.transaction((g) => {
+              if (!g || g.status !== "active") return g;
+              const whiteUid = String(g.players && g.players.white && g.players.white.uid || "");
+              const blackUid = String(g.players && g.players.black && g.players.black.uid || "");
+              if (uid !== whiteUid && uid !== blackUid) return;
+              g.status = "ended";
+              g.endedAt = nowTs();
+              g.endedReason = "ended_by_player";
+              g.endedBy = { uid, nickname: who };
+              return g;
+            });
+            if (!result || result.committed === false) {
+              showOnlineNotice(window.I18N.translateArgs("online.endFail"));
+              return false;
+            }
+            try { await this._removeRoomListEntry(gid); } catch (e) {}
+            try { await this._notifyMatchEndWatchers(gid, "ended_by_player", who); } catch (e) {}
+            try { this._schedulePurgeRoom(gid, "ended_by_player", ROOM_ENDED_PURGE_DELAY_MS); } catch (e) {}
+            try { this._clearPersistedActiveGame(); } catch (e) {}
+            if (String(this.gameId || "") === gid) {
+              try { this._teardownRoomComms && this._teardownRoomComms(); } catch (e) {}
+              try { this.gameRef && this.gameRef.off && this.gameRef.off(); } catch (e) {}
+              this.isActive = false;
+              this.isSpectator = false;
+              this.gameId = null;
+              this.gameRef = null;
+              this.mySide = null;
+            }
+            this._presenceStatus = "available";
+            this._presenceRole = "lobby";
+            this._presenceRoomId = null;
+            try { await this._setLobbyStatus("available"); } catch (e) {}
+            return true;
+          } catch (e) {
+            handleDbError(e, window.I18N.translateArgs("online.endFail"), { ctx: "invite.leaveActiveMatch" });
+            return false;
+          }
+        },
+
+    _confirmLeaveActiveMatchBeforeInvite: function (gameId) {
+          const gid = String(gameId || this.gameId || this._presenceRoomId || "").trim();
+          return new Promise((resolve) => {
+            let settled = false;
+            const done = (value) => {
+              if (settled) return;
+              settled = true;
+              resolve(!!value);
+            };
+            const text = window.I18N.translateArgs("online.invites.leaveActivePrompt");
+            if (!(typeof Modal !== "undefined" && Modal && typeof Modal.open === "function")) {
+              if (confirm(text)) this._leaveActiveMatchForInvite(gid).then(done).catch(() => done(false));
+              else done(false);
+              return;
+            }
+            const body = document.createElement("div");
+            body.style.whiteSpace = "pre-wrap";
+            body.textContent = text;
+            Modal.open({
+              title: window.I18N.translateArgs("online.invites.activeMatchTitle"),
+              body,
+              allowEsc: true,
+              onClose: (reason) => { if (reason !== "action") done(false); },
+              buttons: [
+                {
+                  label: window.I18N.translateArgs("online.invites.leaveAndSend"),
+                  className: "danger",
+                  onClick: async () => {
+                    try { if (Modal.setButtonsDisabled) Modal.setButtonsDisabled(true); } catch (e) {}
+                    const ok = await this._leaveActiveMatchForInvite(gid);
+                    done(ok);
+                    try { Modal.close("action"); } catch (e) {}
+                  },
+                },
+                {
+                  label: window.I18N.translateArgs("lobby.returnToMatch"),
+                  className: "ok",
+                  onClick: async () => {
+                    done(false);
+                    try { Modal.close("action"); } catch (e) {}
+                    try { await this._returnToActiveMatch(gid); } catch (e) {}
+                  },
+                },
+                {
+                  label: window.I18N.translateArgs("actions.cancel"),
+                  className: "ghost",
+                  onClick: () => { done(false); try { Modal.close("action"); } catch (e) {} },
+                },
+              ],
+            });
+          });
+        },
+
     _createGame: async function (opponentUid) {
           const ok = await this.initPresence();
           if (!ok) {
@@ -1205,8 +1316,8 @@
           try {
             const activeRoomId = await this._getActivePlayerRoomId();
             if (activeRoomId) {
-              showOnlineNotice(window.I18N.translateArgs("online.invites.inActiveMatch"));
-              return;
+              const shouldContinue = await this._confirmLeaveActiveMatchBeforeInvite(activeRoomId);
+              if (!shouldContinue) return;
             }
           } catch (e) {}
     
@@ -1787,7 +1898,6 @@
           try {
             this._enterPostMatch({ reason: "ended_by_player", byUid: this.myUid, byNick: who });
           } catch (e) {}
-          showOnlineNotice(window.I18N.translateArgs("buttons.endOnline"));
         },
 
     _clearPostMatchSession: function () {
@@ -1805,134 +1915,127 @@
           } catch (e) {}
         },
 
+    _buildOnlineEndPresentation: function (meta) {
+          const info = meta && typeof meta === "object" ? meta : {};
+          const gameData = info.game && typeof info.game === "object"
+            ? info.game
+            : (this._lastGameData && typeof this._lastGameData === "object" ? this._lastGameData : {});
+          const result = info.result && typeof info.result === "object"
+            ? info.result
+            : (gameData.result && typeof gameData.result === "object" ? gameData.result : {});
+          const resultMeta = result.meta && typeof result.meta === "object" ? result.meta : {};
+          const reason = String(result.reason || info.reason || info.endedReason || gameData.endedReason || "ended").trim();
+          const winnerValue = info.winner != null ? info.winner : (gameData.winner != null ? gameData.winner : result.winner);
+          const winner = Number(winnerValue) === TOP || Number(winnerValue) === BOT ? Number(winnerValue) : null;
+          const players = info.players || gameData.players || {};
+          const endedBy = info.endedBy || gameData.endedBy || null;
+          const endedBySide = endedBy && (Number(endedBy.side) === TOP || Number(endedBy.side) === BOT)
+            ? Number(endedBy.side)
+            : null;
+          const actionKind = String(resultMeta.kind || (gameData.lastMove && gameData.lastMove.action) || info.kind || "").trim();
+          const resultStatus = String(result.status || "").toLowerCase();
+          const countsAsResult = resultMeta.countsAsResult !== false;
+          const rejectionReason = String(resultMeta.rejectionReason || "").trim();
+          const missingOfficial = info.missingOfficial === true || reason === "room_unavailable";
+
+          const rowForSide = (side) => side === BOT ? players.white : side === TOP ? players.black : null;
+          const nameForSide = (side) => {
+            const row = rowForSide(side);
+            const name = row && String(row.nickname || "").trim();
+            if (name) return name;
+            try {
+              if (typeof Game !== "undefined" && Game && Game.names) {
+                const fallback = side === BOT ? Game.names.bot : side === TOP ? Game.names.top : "";
+                if (String(fallback || "").trim()) return String(fallback).trim();
+              }
+            } catch (e) {}
+            return window.I18N.translateArgs("players.player");
+          };
+          const actorName = (() => {
+            if (endedBy && String(endedBy.nickname || "").trim()) return String(endedBy.nickname).trim();
+            if (endedBySide != null) return nameForSide(endedBySide);
+            return String(info.byNick || "").trim();
+          })();
+          const otherSide = endedBySide === TOP ? BOT : endedBySide === BOT ? TOP : null;
+          const otherName = otherSide != null ? nameForSide(otherSide) : window.I18N.translateArgs("online.opponent");
+          const winnerName = winner != null ? nameForSide(winner) : "";
+          const loserSide = winner === TOP ? BOT : winner === BOT ? TOP : null;
+          const loserName = loserSide != null ? nameForSide(loserSide) : window.I18N.translateArgs("players.player");
+          const isDraw = resultStatus === "draw" || reason === "draw" || reason === "one_king_each";
+          const isAbsence = reason === "opponent_absent" || reason === "opponent_absent_late" || actionKind === "opponent-absent";
+          const isManual = isAbsence || reason === "ended_by_player" || reason === "late_exit" || ["leave", "resign"].includes(actionKind);
+          const adminCounted = countsAsResult && (reason === "late_exit" || reason === "opponent_absent_late" || resultMeta.adjudicated === true);
+          const lines = [];
+          const add = (text) => { const clean = String(text || "").trim(); if (clean && !lines.includes(clean)) lines.push(clean); };
+
+          if (missingOfficial) add(window.I18N.translateArgs("online.endPresentation.roomUnavailable"));
+          else if (winner != null) add(formatTpl(window.I18N.translateArgs("online.endPresentation.winner"), { player: winnerName }));
+          else if (isDraw) add(window.I18N.translateArgs("modals.gameOver.draw"));
+          else if (isManual && actorName) add(isAbsence
+            ? formatTpl(window.I18N.translateArgs("online.endPresentation.endedByAbsence"), { player: actorName, opponent: otherName })
+            : formatTpl(window.I18N.translateArgs("online.endPresentation.endedBy"), { player: actorName }));
+          else add(window.I18N.translateArgs("online.endPresentation.noRecordedResult"));
+
+          if (!missingOfficial) {
+            if (reason === "no_pieces") add(formatTpl(window.I18N.translateArgs("modals.gameOver.reason.noPieces"), { player: loserName }));
+            else if (reason === "no_legal_moves") add(formatTpl(window.I18N.translateArgs("online.endPresentation.reason.noLegalMoves"), { player: loserName }));
+            else if (reason === "one_king_each") add(window.I18N.translateArgs("online.endPresentation.reason.oneKingEach"));
+            if (winner != null && isManual) add(isAbsence
+              ? formatTpl(window.I18N.translateArgs("online.endPresentation.endedByAbsence"), { player: actorName || window.I18N.translateArgs("players.player"), opponent: otherName })
+              : formatTpl(window.I18N.translateArgs("online.endPresentation.endedBy"), { player: actorName || window.I18N.translateArgs("players.player") }));
+            if (countsAsResult === false) {
+              const key = rejectionReason === "administrative_early_or_midgame"
+                ? "online.resultNotCounted.early"
+                : rejectionReason === "administrative_position_not_clear"
+                  ? "online.resultNotCounted.unclear"
+                  : "online.resultNotCounted.generic";
+              add(window.I18N.translateArgs(key));
+            } else if (adminCounted) add(window.I18N.translateArgs("online.endPresentation.reason.positionDecisive"));
+          }
+          const primary = lines[0] || window.I18N.translateArgs("online.endPresentation.noRecordedResult");
+          return { title: window.I18N.translateArgs("modals.gameOver.title"), primary, details: lines.slice(1), text: lines.join("\n\n"), reason, winner, countsAsResult };
+        },
+
     _enterPostMatch: function (meta) {
-          try {
-            this._clearPostMatchSession();
-          } catch (e) {}
+          const info = meta && typeof meta === "object" ? meta : {};
+          const presentation = this._buildOnlineEndPresentation(info);
+          const winner = presentation.winner;
+          try { this._clearPostMatchSession(); } catch (e) {}
           this._inPostMatch = true;
-    
-          if (this._postMatchShown) return;
+          if (this._postMatchShown) return true;
           this._postMatchShown = true;
-    
-          const reason = (meta && (meta.reason || meta.endedReason)) || null;
-          const endedBy = (meta && (meta.endedBy || meta.ended_by)) || null;
-    
           try {
             const gid = this.gameId;
             const gd = this._lastGameData || null;
-            if (gid && gd && gd.status && gd.status !== "active") {
-              try {
-                this._armRoomCleanupAfterEnd(gid, reason || gd.endedReason || gd.status, gd);
-              } catch (e) {}
+            if (gid && gd && gd.status && gd.status !== "active") this._armRoomCleanupAfterEnd(gid, presentation.reason || gd.endedReason || gd.status, gd);
+          } catch (e) {}
+          try { this._stopOpponentAbsenceWatcher && this._stopOpponentAbsenceWatcher(); } catch (e) {}
+          try { this._teardownRoomComms && this._teardownRoomComms(); } catch (e) {}
+          try {
+            if (typeof Game !== "undefined" && Game) {
+              Game.gameOver = true;
+              Game.winner = winner === TOP || winner === BOT ? winner : null;
+              Game.terminationReason = presentation.reason;
+              Game.endStatusText = presentation.primary;
+              Game.inChain = false;
+              Game.chainPos = null;
+              Game.awaitingPenalty = false;
+              Game.souflaPending = null;
+              Game.availableSouflaForHuman = null;
+              Game.killTimer && Game.killTimer.hardStop && Game.killTimer.hardStop();
             }
           } catch (e) {}
-          const byUid = (meta && meta.byUid) || (endedBy && endedBy.uid) || null;
-          let byNick = (meta && meta.byNick) || (endedBy && endedBy.nickname) || "";
+          try { if (typeof Input !== "undefined" && Input) Input.selected = null; } catch (e) {}
+          try { if (typeof UI !== "undefined" && UI && typeof UI.updateStatus === "function") UI.updateStatus(); } catch (e) {}
+          try { this.refreshPvpControls && this.refreshPvpControls(); } catch (e) {}
           try {
-            byNick = String(byNick || "").trim();
-          } catch (e) {}
-          if (!byNick) byNick = window.I18N.translateArgs("online.opponent", "Opponent");
-    
-          let winner = null;
-          try {
-            const g = this._lastGameData;
-            if (g && typeof g.winner !== "undefined") winner = g.winner;
-          } catch (e) {}
-          try {
-            if (winner == null && typeof Game !== "undefined" && typeof Game.winner !== "undefined")
-              winner = Game.winner;
-          } catch (e) {}
-          try {
-            if (winner === 0) winner = null;
-          } catch (e) {}
-    
-          try {
-            const rr = String(reason || "").trim();
-            if (rr === "ended_by_player") {
-              try {
-                tryFinalizeTrainingOnExit("abort", 900);
-              } catch (e) {}
-            } else if (rr === "opponent_absent") {
-              try {
-                tryFinalizeTrainingOnExit("disconnect", 900);
-              } catch (e) {}
+            if (typeof UI !== "undefined" && UI && typeof UI.showOnlineGameOverModal === "function") {
+              const opened = UI.showOnlineGameOverModal(presentation);
+              if (opened !== false) return true;
             }
           } catch (e) {}
-    
-          if (reason === "ended_by_player") {
-            if (byUid && this.myUid && byUid === this.myUid) {
-              try {
-                showOnlineNotice(window.I18N.translateArgs("buttons.endOnline"));
-              } catch (e) {}
-              return;
-            }
-    
-            const title = window.I18N.translateArgs("online.pvpEndTitle", window.I18N.translateArgs("modals.gameOver.drawTitle"));
-            const body = formatTpl(window.I18N.translateArgs("online.matchEndedByPlayer", "Player {player} ended the match{reason}."), {
-              player: byNick,
-              reason: "",
-            });
-    
-            const go = async () => {
-              try {
-                await this.exitToMode();
-              } catch (e) {}
-            };
-    
-            try {
-              if (typeof Modal !== "undefined" && Modal && typeof Modal.alert === "function") {
-                Modal.alert({
-                  title,
-                  text: body,
-                  okLabel: window.I18N.translateArgs("actions.ok", "OK"),
-                  okClassName: "ok",
-                  allowSpectator: true,
-                  onClick: go,
-                  onClose: () => {
-                    go();
-                  },
-                });
-                return;
-              }
-            } catch (e) {}
-    
-            try {
-              showOnlineNotice(body);
-            } catch (e) {}
-            try {
-              go();
-            } catch (e) {}
-            return;
-          }
-    
-          if (!this._isNaturalOnlineEndReason(reason)) {
-            try {
-              const msg = reason === "opponent_absent"
-                ? formatTpl(window.I18N.translateArgs("online.matchEndedByPlayer"), {
-                    player: byNick || this.myNick || window.I18N.translateArgs("players.player"),
-                    reason: window.I18N.translateArgs("online.matchEndedReason.absent"),
-                  })
-                : window.I18N.translateArgs("online.errors.noGame");
-              showOnlineNotice(msg, { allowSpectator: true });
-            } catch (e) {}
-            try {
-              setTimeout(() => {
-                try { this.exitToMode(); } catch (e) {}
-              }, 900);
-            } catch (e) {}
-            return;
-          }
-    
-          try {
-            if (typeof UI !== "undefined" && UI && typeof UI.showGameOverModal === "function") {
-              UI.showGameOverModal(winner == null ? null : winner);
-              return;
-            }
-          } catch (e) {}
-    
-          try {
-            showOnlineNotice(window.I18N.translateArgs("modals.gameOver.drawTitle"));
-          } catch (e) {}
+          try { showOnlineNotice(presentation.text, { allowSpectator: true }); } catch (e) {}
+          return true;
         },
 
     _getOpponentInfoFromData: function (data) {
@@ -2303,45 +2406,8 @@
             if (!data) {
               try {
                 if (this.isActive) {
-                  try {
-                    tryFinalizeTrainingOnExit("disconnect", 900);
-                  } catch (e) {}
-                  const title = window.I18N.translateArgs("online.pvpEndTitle");
-                  const body = window.I18N.translateArgs("online.ended.remoteOrCleaned");
-    
-                  const go = async () => {
-                    try {
-                      this._clearPersistedActiveGame();
-                    } catch (e) {}
-                    try {
-                      await this.exitToMode();
-                    } catch (e) {
-                      try {
-                        const inPages = (location.pathname || "").includes("/pages/");
-                        location.replace("https://ouglsoft.com/dhamet/pages/mode.html");
-                      } catch (_) {}
-                    }
-                  };
-    
-                  if (typeof Modal !== "undefined" && Modal && typeof Modal.alert === "function") {
-                    try { setTimeout(go, 1800); } catch (e) {}
-                    Modal.alert({
-                      title,
-                      body: `<div>${body}</div>`,
-                      okLabel: window.I18N.translateArgs("buttons.home"),
-                      okClassName: "ok",
-                      allowSpectator: true,
-                      onClick: go,
-                      onClose: () => {
-                        go();
-                      },
-                    });
-                  } else {
-                    try {
-                      showOnlineNotice(body);
-                    } catch (e) {}
-                    go();
-                  }
+                  try { tryFinalizeTrainingOnExit("disconnect", 900); } catch (e) {}
+                  try { this._enterPostMatch({ reason: "room_unavailable", missingOfficial: true }); } catch (e) {}
                 }
               } catch (e) {}
               return;
@@ -3061,7 +3127,7 @@
                   this._checkMoveCommitHealth();
                 } catch (e) {}
                 try {
-                  UI.status(window.I18N.translateArgs("online.offline"));
+                  UI.status(window.I18N.translateArgs("status.reconnecting"));
                 } catch (e) {}
               }
             };
@@ -3153,7 +3219,7 @@
           };
     
           if (btnChat) {
-            setBtn(btnChat, "chat.svg", window.I18N.translateArgs("pvp.chat.open"));
+            setBtn(btnChat, "chat.svg", window.I18N.translateArgs("pvp.chat.title"));
           }
           setBtn(
             btnSpk,
@@ -3389,11 +3455,11 @@
     
             const _chatDisplayName = (m) => {
               try {
-                const fallback = String((m && m.fromNick) || "").trim() || window.I18N.translateArgs("online.player");
+                const fallback = String((m && m.fromNick) || "").trim() || window.I18N.translateArgs("players.player");
                 const base = this._displayNameForGameUid(m && m.fromUid, fallback) || fallback;
                 return `${base} (${_chatRoleLabel(_chatMessageRole(m))})`;
               } catch (e) {
-                return String((m && m.fromNick) || "").trim() || window.I18N.translateArgs("online.player");
+                return String((m && m.fromNick) || "").trim() || window.I18N.translateArgs("players.player");
               }
             };
             const _chatDir = () => {
@@ -3459,7 +3525,7 @@
     
             const send = document.createElement("button");
             send.className = "btn primary pvp-chat-send";
-            send.textContent = window.I18N.translateArgs("pvp.chat.send");
+            send.textContent = window.I18N.translateArgs("actions.send");
             send.type = "button";
     
             form.appendChild(input);
@@ -3947,18 +4013,31 @@
           } catch (e) {}
         },
 
-    _voiceShowFailureNotice: function () {
+    _voiceShowFailureNotice: function (kind, error) {
           try {
-            showOnlineNotice(
-              window.I18N.translateArgs(
-                "pvp.voice.failedBody",
-                "تعذر تشغيل الدردشة الصوتية. تحقق من إذن الميكروفون ثم أعد المحاولة.",
-              ),
-              {
-                title: window.I18N.translateArgs("pvp.voice.failedTitle", "فشل الدردشة الصوتية"),
-                allowSpectator: true,
-              },
-            );
+            const rawKind = String(kind || "generic").trim().toLowerCase();
+            const keyByKind = {
+              permission: "pvp.voice.failure.permission",
+              "no-device": "pvp.voice.failure.noDevice",
+              busy: "pvp.voice.failure.busy",
+              unsupported: "pvp.voice.failure.unsupported",
+              session: "pvp.voice.failure.session",
+              service: "pvp.voice.failure.service",
+              generic: "pvp.voice.failure.generic",
+            };
+            const resolvedKind = keyByKind[rawKind] ? rawKind : "generic";
+            try {
+              Logger.warn("voice_start_failed", {
+                kind: resolvedKind,
+                name: String(error && error.name || ""),
+                code: String(error && error.code || ""),
+                status: Number(error && error.status || 0) || 0,
+              });
+            } catch (_) {}
+            showOnlineNotice(window.I18N.translateArgs(keyByKind[resolvedKind]), {
+              title: window.I18N.translateArgs("pvp.voice.failedTitle"),
+              allowSpectator: true,
+            });
           } catch (e) {}
         },
 
@@ -3987,12 +4066,16 @@
             authReady = await ensureAuthReady();
           } catch (e) {}
           if (!authReady || !requireAuthUid(this.myUid)) {
-            this._voiceShowFailureNotice();
+            this._voiceShowFailureNotice("session");
             return false;
           }
     
           let acquiredLocalStream = false;
           if (!opts.noMicPrompt) {
+            if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+              this._voiceShowFailureNotice("unsupported");
+              return false;
+            }
             try {
               const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
               this._voice.localStream = stream;
@@ -4006,7 +4089,17 @@
             } catch (e) {
               this._voice.localStream = null;
               this._voice.micMuted = true;
-              this._voiceShowFailureNotice();
+              const mediaErrorName = String(e && e.name || "");
+              const kind = /^(NotAllowedError|SecurityError)$/.test(mediaErrorName)
+                ? "permission"
+                : /^(NotFoundError|DevicesNotFoundError)$/.test(mediaErrorName)
+                  ? "no-device"
+                  : /^(NotReadableError|TrackStartError|AbortError)$/.test(mediaErrorName)
+                    ? "busy"
+                    : /^(NotSupportedError|TypeError)$/.test(mediaErrorName)
+                      ? "unsupported"
+                      : "generic";
+              this._voiceShowFailureNotice(kind, e);
               return false;
             }
           }
@@ -4060,7 +4153,7 @@
                 if (this._voice) this._voice.writeDenied = true;
               } catch (e) {}
               if (acquiredLocalStream) this._voiceReleaseLocalStream();
-              this._voiceShowFailureNotice();
+              this._voiceShowFailureNotice("service");
               return false;
             }
           } catch (e) {
@@ -4080,7 +4173,7 @@
               handleDbError(e);
             }
             if (acquiredLocalStream) this._voiceReleaseLocalStream();
-            this._voiceShowFailureNotice();
+            this._voiceShowFailureNotice("service", e);
             return false;
           }
     
@@ -4664,7 +4757,11 @@
 
     _renderSharedLog: function (logArr) {
           try {
-            const arr = Array.isArray(logArr) ? logArr : [];
+            const rawArr = Array.isArray(logArr) ? logArr : [];
+            const arr = rawArr.filter((it) => {
+              const type = String(it && it.type || "");
+              return type !== "invite_sent" && type !== "invite_accepted" && type !== "invite_rejected";
+            });
             const last = arr.length ? arr[arr.length - 1] : null;
             const key = `${arr.length}:${last && last.ts ? last.ts : ""}`;
             if (key === this._lastRenderedLogKey) return;
@@ -5177,11 +5274,11 @@
                 return g;
               },
               (err) => {
-                if (err) handleDbError(err, window.I18N.translateArgs("online.logFailed"), { ctx: "log.soufla" });
+                if (err) handleDbError(err, window.I18N.translateArgs("online.syncFail"), { ctx: "log.soufla" });
               },
             );
           } catch (e) {
-            handleDbError(e, window.I18N.translateArgs("online.logFailed"), { ctx: "log.soufla" });
+            handleDbError(e, window.I18N.translateArgs("online.syncFail"), { ctx: "log.soufla" });
           }
         },
 
@@ -5521,7 +5618,7 @@
                   return;
                 }
                 if (committed === false) {
-                  showOnlineNotice(window.I18N.translateArgs("soufla.notCommitted"));
+                  showOnlineNotice(window.I18N.translateArgs("soufla.sendFailed"));
                 } else {
                   try { this._touchRoomListActivity(this.gameId, true); } catch (e) {}
                 }
@@ -5576,14 +5673,14 @@
     
             showOnlineNotice(window.I18N.translateArgs("undo.wait.body"), {
               title: window.I18N.translateArgs("modals.undo.title"),
-              onClose: () => {
+              onClose: (reason) => {
                 const k = this._undoWaitKey;
                 this._undoWaitOpen = false;
                 this._undoWaitKey = null;
     
                 if (this._undoWaitAutoClose) {
                   this._undoWaitAutoClose = false;
-                } else if (k) {
+                } else if (k && reason !== "replaced" && reason !== "state-change") {
                   this._undoWaitDismissedKey = k;
                 }
     
@@ -5726,7 +5823,7 @@
             const name = ur.requesterNick || window.I18N.translateArgs("online.opponent");
             Modal.twoAction({
               title: window.I18N.translateArgs("undo.request.title"),
-              body: `<div>${formatTpl(window.I18N.translateArgs("undo.request.body"), { name })}</div>`,
+              body: `<div>${formatTpl(window.I18N.translateArgs("undo.request.body"), { name: `<span class="z-player-name">${escapeHtml(name)}</span>` })}</div>`,
               firstLabel: window.I18N.translateArgs("actions.accept"),
               firstClassName: "ok",
               onFirst: () => {
@@ -5749,7 +5846,11 @@
     
           if (ur.status === "rejected" && ur.requesterUid === this.myUid) {
             this._closeUndoWaitModal();
-            showOnlineNotice(window.I18N.translateArgs("undo.rejected"), { title: window.I18N.translateArgs("undo.rejectedTitle") });
+            const key = this._undoWaitKeyOf(ur) || [ur.requesterUid || "", ur.respondedAt || ur.requestedAt || "", "rejected"].join("|");
+            if (!this._lastUndoRejectedKey || this._lastUndoRejectedKey !== key) {
+              this._lastUndoRejectedKey = key;
+              showOnlineNotice(window.I18N.translateArgs("undo.rejected"), { title: window.I18N.translateArgs("undo.rejectedTitle") });
+            }
             try {
               this.gameRef.child("undoRequest").remove();
             } catch (e) {}
@@ -6016,7 +6117,7 @@
                         : st === "inPvP"
                           ? window.I18N.translateArgs("online.status.inPvP")
                           : st === "spectating"
-                            ? window.I18N.translateArgs("online.status.spectating")
+                            ? window.I18N.translateArgs("online.status.inPvP")
                             : st;
     
                   const roomId = (p.roomId || "").trim();
@@ -6070,8 +6171,8 @@
                   }
     
                   const dis = r.canInvite ? "" : 'disabled aria-disabled="true"';
-                  const title = r.canInvite ? "" : `title=\"${window.I18N.translateArgs(r.acceptsInvites ? "lobby.inviteDisabled" : "lobby.noInvites")}\"`;
-                  const inviteLabel = r.acceptsInvites ? window.I18N.translateArgs("actions.invite") : window.I18N.translateArgs("lobby.noInvites");
+                  const title = r.canInvite ? "" : `title=\"${window.I18N.translateArgs(r.acceptsInvites ? "lobby.inviteDisabled" : "online.invites.disabled")}\"`;
+                  const inviteLabel = r.acceptsInvites ? window.I18N.translateArgs("actions.invite") : window.I18N.translateArgs("online.invites.disabled");
                   return `
                     <div class="z-row" data-uid="${r.uid}">
                       <div class="z-row-main">

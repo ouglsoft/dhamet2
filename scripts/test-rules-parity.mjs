@@ -10,7 +10,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const digest = (relative) => crypto.createHash('sha256').update(fs.readFileSync(path.join(root, relative))).digest('hex');
 
 const manifest = JSON.parse(read('scripts/rules-reference-manifest.json'));
-assert.equal(manifest.release, '20260725-rulesparity1');
+assert.equal(manifest.release, '20260725-messageparity1');
 for (const [name, expected] of Object.entries(manifest.files)) {
   const relative = `shared/${name}`;
   assert.ok(fs.existsSync(path.join(root, relative)), `Missing primary rules module: ${relative}`);

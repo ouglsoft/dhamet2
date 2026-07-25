@@ -1,11 +1,12 @@
-# Final review
+# Final review — 20260725-messageparity1
 
-This repository is the independent `dhamet2.ouglsoft.com` emergency online client.
+The backup application remains online-only and Firebase-backed. Its common Arabic, English and French messages, modal engine, dropdowns, Soufla windows, settings window, invitation windows, undo windows, voice failures and game-over presentation now match the primary application.
 
-- Firebase project configuration is intentionally placeholder-only.
-- Do not point it at the Firebase project used by `dhamet.ouglsoft.com`.
-- Authentication is anonymous and automatic.
-- Account, ranking, persistent result, training, dashboard and computer-player files are removed.
-- Direct non-online access to `pages/game.html` returns to the official application's computer mode.
-- The deploy output is static `_site`; no Pages Functions or Workers are included.
-- Run `npm test` and `npm run build` before deployment.
+Intentional differences retained:
+
+1. Firebase anonymous-session errors use temporary-session wording instead of account sign-in wording.
+2. Firebase join/write failures retain concise recovery instructions.
+3. The legacy 3D renderer keeps its own failure fallback.
+4. The final confirmation returns to the primary mode page because the backup has no mode page.
+
+No Firebase rule, secret, authentication or console setting change is required.

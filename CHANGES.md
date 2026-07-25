@@ -1,3 +1,24 @@
+# Changes
+
+## 2026-07-25 — messageparity1
+
+- Replaced the backup translation dictionary with the primary Arabic, English and French message dictionary.
+- Retained only two backup-only technical messages and five Firebase-anonymous-session wording overrides.
+- Matched the primary invite, active-match, nickname, room-name, undo, Soufla, chat, voice, settings and post-match modal behavior.
+- Removed backup-only game-over, invitation-rejection, chat-button, AI-settings and visible invite-log messages.
+- Added the primary dropdown and Soufla modal modules byte-for-byte.
+- Added message/modal parity regression tests and release-specific cache busting.
+
+## 2026-07-25 — rulesparity1
+
+- Copied the primary shared state, turn-resolution, move, Soufla, control, result, and match-end modules byte-for-byte.
+- Added a Firebase compatibility runtime that applies the primary forced-opening, capture-chain, deferred-promotion, Soufla, terminal-result, snapshot, and turn-history behavior.
+- Matched the primary undo policy, including last-mover ownership and opening/capture-chain restrictions.
+- Preserved canonical opening and promotion fields in Firebase synchronization.
+- Added exact SHA-256 rule-reference tests and behavioral regression tests.
+- Retained the previously verified primary UI CSS, icons, and visible DOM parity.
+- Updated automatic deployment and browser cache versions to `20260725-messageparity1-<commit>`.
+
 # التغييرات الرئيسية
 
 ## محذوف
@@ -51,18 +72,18 @@
 - Removed Firebase writes from unload handlers to prevent browser-wide freezes.
 
 
-## 20260725-autodeploy1
+## 20260725-messageparity1
 - Desktop controls are pre-mounted in visible rows.
 - Mobile capture timer uses delegated pointer/click activation.
 - Active online games recover stale UI hold classes.
 - CSS and asset cache headers added.
-- All page URLs use build `20260725-autodeploy1`.
+- All page URLs use build `20260725-messageparity1`.
 
-## 20260725-autodeploy1
+## 20260725-messageparity1
 
 - Added GitHub Actions production deployment after every push to `main`.
 - Added manual `workflow_dispatch` deployment.
 - Added explicit validation for Cloudflare account ID, API token, and Pages project name.
 - The workflow runs all tests, builds `_site`, validates the output, and deploys through Wrangler.
-- Updated all browser cache-busting references and `version.json` to `20260725-autodeploy1`.
+- Updated all browser cache-busting references and `version.json` to `20260725-messageparity1`.
 - Each deployment now receives a unique cache version derived from the Git commit SHA.

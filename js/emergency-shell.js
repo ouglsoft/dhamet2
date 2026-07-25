@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const BUILD_VERSION = "20260725-rulesparity1";
+  const BUILD_VERSION = "20260725-messageparity1";
   window.DHAMET2_BUILD_VERSION = BUILD_VERSION;
   try { console.info("Dhamet2 build", BUILD_VERSION); } catch (_) {}
 

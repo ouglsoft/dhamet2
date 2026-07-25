@@ -2236,7 +2236,7 @@ window.AI = AI;
           if (ev.kind === "undo") {
             const from = ev.from != null ? _isoLtr(_rc(ev.from)) : "";
             const to = ev.to != null ? _isoLtr(_rc(ev.to)) : "";
-            return _t("undo.applied", { movePart: (from && to) ? _t("undo.appliedMovePart", { from, to }) : "" });
+            return _t("undo.applied", { movePart: "" });
           }
 
           if (ev.kind === "i18n_suffix") {

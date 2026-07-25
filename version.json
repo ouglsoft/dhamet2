@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260725-rulesparity1",
-  "source": "primary-rules-parity",
+  "version": "20260725-messageparity1",
+  "source": "messages-and-modals-parity",
   "uiReference": "ouglsoft-main",
-  "release": "20260725-rulesparity1"
+  "release": "20260725-messageparity1"
 }

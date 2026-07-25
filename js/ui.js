@@ -1,3 +1,4 @@
+const SouflaViewModule = globalThis.DhametSouflaView;
 const Visual = (() => {
   const S = {
     lastMove: null,
@@ -2013,47 +2014,19 @@ const UI = {
     set("#botCapturedM", 40 - bot);
   },
   showGameOverModal(winner) {
-    const title = t("modals.gameOver.drawTitle");
-    const bodyTxt =
-      winner == null
-        ? t("modals.gameOver.drawBody") || t("status.draw")
-        : winner === humanSide()
-          ? t("modals.gameOver.winBody") || t("status.win")
-          : t("modals.gameOver.loseBody") || t("status.lose");
-
-    let leaving = false;
-    const returnToOfficialMode = () => {
-      if (leaving) return;
-      leaving = true;
-      try {
-        if (window.Online && typeof window.Online.exitToMode === "function") {
-          window.Online.exitToMode();
-          return;
-        }
-      } catch (_) {}
-      try {
-        location.replace("https://ouglsoft.com/dhamet/pages/mode.html");
-      } catch (_) {
-        location.href = "https://ouglsoft.com/dhamet/pages/mode.html";
+    try {
+      if (window.Online && typeof window.Online._buildOnlineEndPresentation === "function" && typeof UI.showOnlineGameOverModal === "function") {
+        return UI.showOnlineGameOverModal(window.Online._buildOnlineEndPresentation({ winner }));
       }
-    };
-
-    Modal.open({
-      title,
-      text: bodyTxt,
-      modalClassName: "z-postmatch-confirm-only",
-      allowEsc: false,
-      buttons: [
-        {
-          label: t("actions.ok") || "موافق",
-          className: "ok",
-          onClick: () => {
-            try { Modal.close(); } catch (_) {}
-          },
-        },
-      ],
-      onClose: returnToOfficialMode,
-    });
+    } catch (_) {}
+    const player = winner === TOP ? (Game.names && Game.names.top) : winner === BOT ? (Game.names && Game.names.bot) : "";
+    const text = winner === TOP || winner === BOT
+      ? t("online.endPresentation.winner", { player: player || t("players.player") })
+      : t("modals.gameOver.draw");
+    if (typeof UI.showOnlineGameOverModal === "function") {
+      return UI.showOnlineGameOverModal({ title: t("modals.gameOver.title"), text });
+    }
+    return Modal.alert({ title: t("modals.gameOver.title"), body: `<div>${text}</div>`, okLabel: t("actions.ok"), okClassName: "ok" });
   },
 
   status() {
@@ -2096,9 +2069,9 @@ const UI = {
       ? window.AI_LEVEL_ORDER
       : ["beginner", "easy", "medium", "hard", "strong", "expert"];
     const normalizeLevel = (value) => typeof normalizeAILevel === "function"
-      ? normalizeAILevel(value || "medium")
-      : String(value || "medium");
-    const selectedLevel = normalizeLevel(Game.pendingAILevel || adv.aiLevel || "medium");
+      ? normalizeAILevel(value || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"))
+      : String(value || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
+    const selectedLevel = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
 
     const esc = (value) => String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -2142,21 +2115,6 @@ const UI = {
         t("settings.aiLevelHint"),
       )}
       ${row(
-        t("settings.aiCapture"),
-        `<select id="advAICap">
-          <option value="mandatory" ${Game.settings.aiCaptureMode === "mandatory" ? "selected" : ""}>${t("settings.mandatory")}</option>
-          <option value="random" ${Game.settings.aiCaptureMode === "random" ? "selected" : ""}>${t("settings.random")}</option>
-        </select>`,
-      )}
-      ${row(
-        t("settings.aiIgnoreRate"),
-        `<div class="range-control ai-ignore-range">
-          <input id="advAIIgnorePct" type="range" min="0" max="100" step="1" value="${Number(Game.settings.aiRandomIgnoreCaptureRatePct || 0)}" />
-          <span id="advAIIgnorePctVal" class="mono">${Number(Game.settings.aiRandomIgnoreCaptureRatePct || 0)}%</span>
-        </div>`,
-        t("settings.aiIgnoreHint"),
-      )}
-      ${row(
         t("settings.starter"),
         `<select id="setStarter">${starterChoices
           .map(([value, label]) => `<option value="${value}" ${Game.settings.starter === value ? "selected" : ""}>${label}</option>`)
@@ -2186,43 +2144,24 @@ const UI = {
       </div>
     `;
 
+    const settingsDropdowns = [];
     try {
       qsa("select", wrap).forEach((selectEl) => {
         selectEl.addEventListener("change", () => {
           setTimeout(() => { try { selectEl.blur(); } catch (_) {} }, 0);
         });
+        try {
+          if (window.DhametDropdownView) {
+            window.DhametDropdownView.enhance(selectEl);
+            settingsDropdowns.push(selectEl);
+          }
+        } catch (_) {}
       });
-    } catch (_) {}
-
-    const syncIgnoreRateControl = () => {
-      try {
-        const capEl = qs("#advAICap", wrap);
-        const rangeEl = qs("#advAIIgnorePct", wrap);
-        const valEl = qs("#advAIIgnorePctVal", wrap);
-        if (!rangeEl || !valEl) return;
-        const pct = Math.max(0, Math.min(100, parseInt(rangeEl.value || "0", 10) || 0));
-        rangeEl.value = String(pct);
-        valEl.textContent = `${pct}%`;
-        const disabled = !!(capEl && capEl.value !== "random");
-        rangeEl.disabled = disabled;
-        valEl.classList.toggle("is-disabled", disabled);
-        const holder = rangeEl.closest(".range-control");
-        if (holder) holder.classList.toggle("is-disabled", disabled);
-      } catch (_) {}
-    };
-
-    try {
-      const capEl = qs("#advAICap", wrap);
-      const rangeEl = qs("#advAIIgnorePct", wrap);
-      if (capEl) capEl.addEventListener("change", syncIgnoreRateControl);
-      if (rangeEl) rangeEl.addEventListener("input", syncIgnoreRateControl);
-      syncIgnoreRateControl();
     } catch (_) {}
 
     const onlineNow = () => !!(window.Online && window.Online.isActive);
     const levelLabel = (value) => t("settings.levels." + normalizeLevel(value));
     const starterLabel = (value) => value === "black" ? t("players.black") : t("players.white");
-    const captureLabel = (value) => value === "random" ? t("settings.random") : t("settings.mandatory");
     const themeLabel = (value) => value === "dark" ? t("settings.dark") : t("settings.light");
     const boardLabel = (value) => value === "3d" ? t("settings.board3d") : t("settings.board2d");
     const boolLabel = (value) => value ? t("settings.enabled") : t("settings.disabled");
@@ -2248,9 +2187,7 @@ const UI = {
       };
 
       const starterBefore = Game.settings.starter;
-      const captureBefore = Game.settings.aiCaptureMode === "random" ? "random" : "mandatory";
-      const ignoreBefore = Math.max(0, Math.min(100, parseInt(Game.settings.aiRandomIgnoreCaptureRatePct || "0", 10) || 0));
-      const levelBefore = normalizeLevel(Game.pendingAILevel || adv.aiLevel || "medium");
+      const levelBefore = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
       const themeBefore = Game.settings.theme === "dark" ? "dark" : "light";
       const boardBefore = (Game.settings.boardStyle || "2d") === "3d" ? "3d" : "2d";
       const coordsBefore = !!Game.settings.showCoords;
@@ -2259,21 +2196,17 @@ const UI = {
       let starterDeferred = false;
 
       if (!onlineNow()) {
-        const level = normalizeLevel(qs("#advAILevel", wrap)?.value || "medium");
+        const level = normalizeLevel(qs("#advAILevel", wrap)?.value || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
         if (level !== levelBefore) {
-          Game.pendingAILevel = level;
+          if (!Game.settings) Game.settings = {};
+          if (window.DhametAIConfig && typeof DhametAIConfig.createDefaultAdvancedSettings === "function") {
+            Game.settings.advanced = DhametAIConfig.createDefaultAdvancedSettings(level);
+          } else {
+            Game.settings.advanced = Object.assign({}, Game.settings.advanced || {}, { aiLevel: level });
+          }
+          Game.pendingAILevel = null;
           addChange(t("settings.aiLevel"), levelLabel(levelBefore), levelLabel(level), t("settings.aiLevelNextMoveNote"));
         }
-
-        const cap = qs("#advAICap", wrap);
-        const nextCapture = cap && cap.value === "random" ? "random" : "mandatory";
-        if (nextCapture !== captureBefore) addChange(t("settings.aiCapture"), captureLabel(captureBefore), captureLabel(nextCapture));
-        Game.settings.aiCaptureMode = nextCapture;
-
-        const pct = parseInt(qs("#advAIIgnorePct", wrap)?.value || "0", 10);
-        const nextIgnore = Math.max(0, Math.min(100, Number.isFinite(pct) ? pct : 0));
-        if (nextIgnore !== ignoreBefore) addChange(t("settings.aiIgnoreRate"), `${ignoreBefore}%`, `${nextIgnore}%`);
-        Game.settings.aiRandomIgnoreCaptureRatePct = nextIgnore;
 
         const starterEl = qs("#setStarter", wrap);
         if (starterEl) {
@@ -2312,13 +2245,8 @@ const UI = {
           try { SessionGame.clear(); } catch (_) {}
           setupInitialBoard();
           try {
-            Visual.clearCapturedOrder();
-            Visual.clearSouflaFX();
-            Visual.setHighlightCells([]);
-            Visual.clearForcedOpeningArrow();
-            Visual.setLastMove(null, null);
-            Visual.setUndoMove(null, null);
-            Visual.draw();
+            if (window.DhametMatchCoordinator) DhametMatchCoordinator.resetPresentation({ draw: true });
+            else Visual.draw();
             Turn.start();
             scheduleForcedOpeningAutoIfNeeded();
           } catch (_) {}
@@ -2366,7 +2294,14 @@ const UI = {
     Modal.open({
       title: t("buttons.settings"),
       body: wrap,
-      onClose: () => document.removeEventListener("keydown", keyHandler),
+      modalClassName: "z-apply-settings",
+      onEnter: applyNow,
+      onClose: () => {
+        document.removeEventListener("keydown", keyHandler);
+        try {
+          if (window.DhametDropdownView) settingsDropdowns.forEach((selectEl) => window.DhametDropdownView.destroy(selectEl));
+        } catch (_) {}
+      },
       buttons: [
         { label: t("modals.apply"), className: "ok", onClick: applyNow },
         ...(!isOnline ? [{ label: t("advHelp.title"), className: "adv-help", onClick: () => UI.showAdvancedSettingsHelp(prefill) }] : []),
@@ -2401,454 +2336,13 @@ const UI = {
   },
 
   showSouflaModal(pending) {
-    if (!pending) return;
-
-    (function ensureSouflaModalStyles() {
-      if (document.getElementById("souflaModalStyles")) return;
-      const st = document.createElement("style");
-      st.id = "souflaModalStyles";
-      st.textContent = `
-  .soufla-root{ width:100%; }
-  
-  .soufla-boardwrap { position: relative; display: block; width: 100%; margin: 0 auto; overflow: visible; padding-top: 12px; }
-  .soufla-board { width: 100%; height: auto; display: block; border-radius: 14px; border: 1px solid rgba(148,163,184,0.35); background: rgba(2,6,23,0.04); max-height: 74vh; }
-  .soufla-toast{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:4; pointer-events:none; }
-  .soufla-toast > div{ max-width: min(90%, 520px); padding: 12px 16px; border-radius: 14px; font-weight: 900; font-size: var(--fs-title); line-height: 1.55; background: rgba(0,0,0,0.72); color: #fff; box-shadow: 0 18px 50px rgba(0,0,0,0.35); text-align:center; }
-  :root:not(.dark) .soufla-toast > div{ background: rgba(255,255,255,0.95); color: #111827; box-shadow: 0 18px 50px rgba(0,0,0,0.18); }
-  
-  .soufla-actionbar {
-    scrollbar-width: thin;
-    position: absolute;
-    display: none;
-    z-index: 3;
-    align-items: center;
-    gap: 8px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    user-select: none;
-    white-space: nowrap;
-    flex-wrap: nowrap;
-    max-width: calc(100% - 18px);
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
-  }
-  .soufla-actionbar button {
-    padding: 8px 12px;
-    border-radius: 999px;
-    font-weight: 900;
-    border: 2px solid rgba(239,68,68,0.92);
-    background: rgba(15, 23, 42, 0.65);
-    color: #fff;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  :root:not(.dark) .soufla-actionbar button {
-    background: rgba(255,255,255,0.78);
-    color: #0f172a;
-  }
-  .soufla-actionbar button:active { transform: translateY(1px); }
-  .soufla-forces{ display:flex; gap:8px; flex-wrap:nowrap; align-items:center; }
-
-  
-  #modalBackdrop .modal.soufla-modal{ width: min(1040px, 96vw) !important; max-height: 92vh; }
-  #modalBackdrop .modal.soufla-modal .modal-body{ padding: 14px; }
-`;
-      document.head.appendChild(st);
-    })();
-
-    Game.awaitingPenalty = true;
-    Game.souflaPending = pending;
-    Game.availableSouflaForHuman = pending;
-
-    const offenders = Array.isArray(pending.offenders) ? pending.offenders.slice() : [];
-    const offenderSet = new Set(offenders);
-
-    const forceByOffender = new Map();
-    try {
-      const opts = Array.isArray(pending.options) ? pending.options : [];
-      for (const opt of opts) {
-        if (!opt || opt.kind !== "force") continue;
-        const off = opt.offenderIdx;
-        if (off == null) continue;
-        if (!Array.isArray(opt.path) || !opt.path.length) continue;
-        let arr = forceByOffender.get(off);
-        if (!arr) {
-          arr = [];
-          forceByOffender.set(off, arr);
-        }
-        arr.push({
-          path: opt.path.slice(),
-          jumps: Array.isArray(opt.jumps) ? opt.jumps.slice() : opt.jumps,
-        });
-      }
-
-      for (const [off, arr] of forceByOffender.entries()) {
-        const seen = new Set();
-        const uniq = [];
-        for (const o of arr) {
-          const k = JSON.stringify(o.path);
-          if (seen.has(k)) continue;
-          seen.add(k);
-          uniq.push(o);
-        }
-        uniq.sort((a, b) =>
-          JSON.stringify(a.path) < JSON.stringify(b.path)
-            ? -1
-            : JSON.stringify(a.path) > JSON.stringify(b.path)
-              ? 1
-              : 0,
-        );
-        forceByOffender.set(off, uniq);
-      }
-    } catch {}
-
-    let applied = false;
-
-    const cv = document.createElement("canvas");
-    const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
-    cv.width = Math.round(1125 * dpr);
-    cv.height = Math.round(900 * dpr);
-    cv.className = "soufla-board";
-
-    const root = document.createElement("div");
-    root.className = "soufla-root";
-    const wrap = document.createElement("div");
-    wrap.className = "soufla-boardwrap";
-    wrap.appendChild(cv);
-
-    const toast = document.createElement("div");
-    toast.className = "soufla-toast";
-    const toastBox = document.createElement("div");
-    toast.appendChild(toastBox);
-    wrap.appendChild(toast);
-
-    const actionBar = document.createElement("div");
-    actionBar.className = "soufla-actionbar";
-
-    const btnRemove = document.createElement("button");
-    btnRemove.className = "danger";
-    btnRemove.textContent = t("soufla.pick.btnRemove");
-
-    const forcesWrap = document.createElement("div");
-    forcesWrap.className = "soufla-forces";
-
-    actionBar.appendChild(btnRemove);
-    actionBar.appendChild(forcesWrap);
-    wrap.appendChild(actionBar);
-
-    root.appendChild(wrap);
-
-    const title = t("soufla.pick.title");
-
-    let toastTimer = null;
-    function showToast(msg) {
-      try {
-        toastBox.textContent = String(msg ?? "");
-        toast.style.display = "flex";
-        if (toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-          toast.style.display = "none";
-        }, 1500);
-      } catch {}
-    }
-
-    let selected = null;
-    function drawPlain() {
-      try {
-        Visual.renderSouflaPreview(cv, {
-          redPaths: [],
-          marks: [],
-          forcePathsAll: [],
-          highlightForcePath: [],
-          removeRingIdx: null,
-        });
-      } catch {}
-    }
-    function clearSelection() {
-      selected = null;
-      actionBar.style.display = "none";
-      drawPlain();
-    }
-    function positionActionBar(ringIdx) {
-      const cvRect = cv.getBoundingClientRect();
-      const wrapRect = wrap.getBoundingClientRect();
-
-      const ox = cvRect.left - wrapRect.left;
-      const oy = cvRect.top - wrapRect.top;
-
-      const stepX = cvRect.width / BOARD_N;
-      const stepY = cvRect.height / BOARD_N;
-
-      const [r, c] = idxToRC(ringIdx);
-      const [vr, vc] = toViewRC(r, c);
-
-      const padX = 10;
-      const maxW = Math.max(180, cvRect.width - padX * 2);
-      actionBar.style.maxWidth = `${maxW}px`;
-      actionBar.style.width = "auto";
-
-      const contentW = Math.max(actionBar.scrollWidth || 0, 180);
-      const usableW = Math.min(contentW, maxW);
-      actionBar.style.width = `${usableW}px`;
-
-      let x = ox + (vc + 0.5) * stepX;
-      const halfW = usableW / 2;
-      const minX = ox + padX + halfW;
-      const maxX2 = ox + cvRect.width - padX - halfW;
-      if (Number.isFinite(minX) && Number.isFinite(maxX2) && maxX2 > minX) {
-        x = Math.max(minX, Math.min(maxX2, x));
-      }
-
-      const yLine = oy + vr * stepY;
-      const barH = actionBar.offsetHeight || 44;
-
-      let bottomY = yLine - 8;
-
-      const minBottomY = barH + 10;
-      if (bottomY < minBottomY) bottomY = minBottomY;
-
-      const maxBottomY = oy + cvRect.height - 6;
-      if (bottomY > maxBottomY) bottomY = maxBottomY;
-
-      actionBar.style.left = `${x}px`;
-      actionBar.style.top = `${bottomY}px`;
-      actionBar.style.transform = "translate(-50%, -100%)";
-    }
-
-    function pickOffenderForClickedIdx(clickedIdx) {
-      if (offenderSet.has(clickedIdx)) return { offenderIdx: clickedIdx, ringIdx: clickedIdx };
-
-      if (
-        pending.startedFrom != null &&
-        pending.lastPieceIdx != null &&
-        offenderSet.has(pending.startedFrom) &&
-        clickedIdx === pending.lastPieceIdx
-      ) {
-        return { offenderIdx: pending.startedFrom, ringIdx: clickedIdx };
-      }
-      return null;
-    }
-
-    function selectOffender(offenderIdx, ringIdx) {
-      const forces = forceByOffender.get(offenderIdx) || [];
-      selected = {
-        offenderIdx,
-        ringIdx,
-        forces,
-        forceIndex: forces.length ? 0 : -1,
-      };
-
-      function renderWithForceIndex(fi) {
-        const f = forces && fi >= 0 ? forces[fi] : null;
-        let highlight = [];
-        if (f && Array.isArray(f.path)) highlight = [offenderIdx, ...f.path];
-
-        try {
-          Visual.renderSouflaPreview(cv, {
-            redPaths: [],
-            marks: [],
-            forcePathsAll: [],
-            highlightForcePath: highlight,
-            removeRingIdx: ringIdx,
-          });
-        } catch {}
-
-        actionBar.style.display = "flex";
-        positionActionBar(ringIdx);
-      }
-
-      forcesWrap.textContent = "";
-      for (let i = 0; i < forces.length; i++) {
-        const f = forces[i];
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "primary";
-        b.textContent = t("soufla.pick.btnForcePath", { n: i + 1 });
-
-        b.addEventListener("mouseenter", () => {
-          if (!selected) return;
-          selected.forceIndex = i;
-          renderWithForceIndex(i);
-        });
-        b.addEventListener("focus", () => {
-          if (!selected) return;
-          selected.forceIndex = i;
-          renderWithForceIndex(i);
-        });
-        b.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          if (!selected) return;
-          const pick = selected.forces && selected.forces[i];
-          if (!pick) return;
-          applied = true;
-          try {
-            if (
-              typeof TrainRecorder !== "undefined" &&
-              TrainRecorder &&
-              typeof TrainRecorder.recordSouflaPenaltyChoice === "function"
-            )
-              TrainRecorder.recordSouflaPenaltyChoice({
-                pending,
-                kind: "force",
-                actor: Game.player,
-              });
-          } catch {}
-          applySouflaDecision(
-            {
-              kind: "force",
-              offenderIdx: selected.offenderIdx,
-              path: pick.path,
-              jumps: pick.jumps,
-            },
-            pending,
-          );
-          Modal.close();
-        });
-
-        forcesWrap.appendChild(b);
-      }
-
-      if (forces.length) renderWithForceIndex(0);
-      else renderWithForceIndex(-1);
-    }
-
-    drawPlain();
-
-    cv.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      const idx = boardIdxFromClient(cv, ev.clientX, ev.clientY);
-      if (idx == null) return;
-
-      const v = valueAt(idx);
-      if (!v) {
-        clearSelection();
-        return;
-      }
-
-      const hit = pickOffenderForClickedIdx(idx);
-      if (!hit) {
-        clearSelection();
-        showToast(t("soufla.pick.toastNotOffender"));
-        return;
-      }
-
-      selectOffender(hit.offenderIdx, hit.ringIdx);
+    return SouflaViewModule.showSouflaModal(pending, {
+      game: Game, t, Modal, Visual, BOARD_N, idxToRC, toViewRC, valueAt, boardIdxFromClient,
+      applySouflaDecision, UI,
     });
-
-    root.addEventListener("click", (ev) => {
-      if (actionBar.contains(ev.target)) return;
-
-      if (ev.target === cv) return;
-      clearSelection();
-    });
-
-    btnRemove.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      if (!selected) return;
-      applied = true;
-      try {
-        if (
-          typeof TrainRecorder !== "undefined" &&
-          TrainRecorder &&
-          typeof TrainRecorder.recordSouflaPenaltyChoice === "function"
-        )
-          TrainRecorder.recordSouflaPenaltyChoice({ pending, kind: "remove", actor: Game.player });
-      } catch {}
-      applySouflaDecision({ kind: "remove", offenderIdx: selected.offenderIdx }, pending);
-      Modal.close();
-    });
-
-    Modal.open({
-      title,
-      body: root,
-      buttons: [],
-      onClose: () => {
-        try {
-          Modal.toggleModalClass("soufla-modal", false);
-        } catch {}
-        if (applied) return;
-
-        Game.awaitingPenalty = false;
-        try {
-          UI.updateAll();
-        } catch {}
-      },
-    });
-    try {
-      Modal.toggleModalClass("soufla-modal", true);
-    } catch {}
   },
   showSouflaAgainstHuman(decision, pending) {
-    const offenderStart = rcStr(decision.offenderIdx);
-    const startedFrom = pending.startedFrom != null ? rcStr(pending.startedFrom) : null;
-    const endedAt = pending.lastPieceIdx != null ? rcStr(pending.lastPieceIdx) : null;
-    const Lmax = pending.longestGlobal || 0;
-
-    const startedFromPart = startedFrom ? t("soufla.cpu.startedFromPart", { startedFrom }) : "";
-
-    let title = t("modals.soufla.header");
-    let body = "";
-
-    if (decision.kind === "remove") {
-      const removeCell =
-        pending.startedFrom === decision.offenderIdx && pending.lastPieceIdx != null
-          ? rcStr(pending.lastPieceIdx)
-          : offenderStart;
-
-      const reasonLine = t("soufla.cpu.reason", {
-        offender: offenderStart,
-        startedFromPart,
-        len: Lmax,
-      });
-      body = `
-  <div><b>${t("soufla.cpu.title")}</b></div>
-  <div>${reasonLine}</div>
-  <div>${t("soufla.cpu.penaltyRemove", { cell: removeCell })}</div>
-      `;
-    } else {
-      const pathStr = (decision.path || []).map(rcStr).join("→");
-      const reasonLine = t("soufla.cpu.reason", {
-        offender: offenderStart,
-        startedFromPart,
-        len: Lmax,
-      });
-
-      const forceInline = t("soufla.cpu.penaltyForceInline", {
-        from: offenderStart,
-        path: pathStr,
-      });
-
-      const forcePicked = t("soufla.cpu.penaltyForcePicked");
-
-      const revertNotice = t("soufla.cpu.revertNotice");
-
-      const forcedIntro = t("soufla.cpu.forcedPathIntro");
-
-      const forcedLine = t("soufla.cpu.forcedPathLine", { from: offenderStart, path: pathStr });
-
-      body = `
-  <div><b>${t("soufla.cpu.title")}</b></div>
-  <div>${reasonLine}</div>
-  ${
-    startedFrom && endedAt
-      ? `<div>${forcePicked}</div>
-             <div class="notice">${revertNotice}</div>
-             <div>${forcedIntro}</div>
-             <div class="mono">${forcedLine}</div>`
-      : `<div>${forceInline}</div>`
-  }
-`;
-    }
-
-    Modal.alert({
-      title,
-      body,
-      okLabel: t("actions.close"),
-      okClassName: "primary",
-    });
+    return SouflaViewModule.showSouflaAgainstHuman(decision, pending, { t, Modal, rcStr });
   },
 };
 

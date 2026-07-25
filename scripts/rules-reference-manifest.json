@@ -1,5 +1,5 @@
 {
-  "release": "20260725-rulesparity1",
+  "release": "20260725-messageparity1",
   "source": "primary-application-shared-rules",
   "files": {
     "dhamet-utils.js": {

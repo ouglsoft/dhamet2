@@ -1504,10 +1504,13 @@
         return nick || resolveFallbackNick();
       },
       getCancelValue: () => resolveFallbackNick(),
+      getCloseValue: () => resolveFallbackNick(),
+      fallbackValue: () => ({ value: resolveFallbackNick(), submitted: false }),
       cancelClassName: "secondary",
     }).then((result) => {
-      const nick = result && typeof result === "object" ? result.value : result;
-      if (result && typeof result === "object" && result.submitted) saveNickSession(nick, true);
+      const nick = String(result && typeof result === "object" ? result.value : result || "").trim() || resolveFallbackNick();
+      const explicit = !!(result && typeof result === "object" && result.submitted);
+      saveNickSession(nick, explicit, true);
       return nick;
     });
   }
@@ -2575,11 +2578,6 @@
                 ref.remove();
               } catch (e) {}
     
-              if (st === "rejected") {
-                try {
-                  showOnlineNotice(window.I18N.translateArgs("online.inviteRejected"));
-                } catch (e) {}
-              }
               return;
             }
           };
@@ -2704,15 +2702,16 @@
               }
             } catch (e) {}
 
-            const name = inv.fromNick || window.I18N.translateArgs("players.player");
+            const name = String(inv.fromNick || window.I18N.translateArgs("players.player")).trim();
             const title = window.I18N.translateArgs("online.newInviteTitle");
-            const roomName = (inv.roomName || "").trim();
+            const roomName = String(inv.roomName || "").trim();
+            const safeName = `<span class="z-player-name">${escapeHtml(name)}</span>`;
             const body = roomName
               ? window.I18N.translateArgs("online.newInviteBody", {
-                  fromName: name,
-                  roomPart: window.I18N.translateArgs("online.newInviteRoomPart", { roomName }),
+                  fromName: safeName,
+                  roomPart: window.I18N.translateArgs("online.newInviteRoomPart", { roomName: escapeHtml(roomName) }),
                 })
-              : window.I18N.translateArgs("online.newInviteBody", { fromName: name, roomPart: "" });
+              : window.I18N.translateArgs("online.newInviteBody", { fromName: safeName, roomPart: "" });
     
             const canModal = typeof Modal !== "undefined" && Modal && typeof Modal.open === "function";
             const plainText = (html) => {

@@ -9,7 +9,8 @@ for (const removed of ["index.html", "pages/mode.html", "pages/dashboard.html", 
 const lobby = read("pages/loby.html");
 assert.match(lobby, /https:\/\/ouglsoft\.com\/dhamet\/pages\/mode\.html/);
 const ui = read("js/ui.js");
-assert.match(ui, /z-postmatch-confirm-only/);
+const messageRuntime = read("js/message-parity-runtime.js");
+assert.match(messageRuntime, /z-postmatch-confirm-only/);
 assert.doesNotMatch(ui, /requestRematch/);
 assert.match(read("pages/game.html"), /id="controlsPool"/);
 assert.match(read("pages/game.html"), /id="pvcControlsBox"/);
