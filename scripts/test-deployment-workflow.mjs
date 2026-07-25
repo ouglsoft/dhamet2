@@ -12,7 +12,7 @@ const required = [
   "branches:",
   "- main",
   "npm ci --no-audit --no-fund",
-  "DHAMET_BUILD_VERSION=20260725-uiparity1-$SHORT_SHA",
+  "DHAMET_BUILD_VERSION=20260725-rulesparity1-$SHORT_SHA",
   "npm run build",
   "cloudflare/wrangler-action@v3",
   "pages deploy _site",
@@ -30,8 +30,8 @@ for (const token of required) {
 }
 
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
-if (version.version !== "20260725-uiparity1") {
-  throw new Error("version.json does not identify the UI parity build");
+if (version.version !== "20260725-rulesparity1") {
+  throw new Error("version.json does not identify the rules parity build");
 }
 
 console.log("Cloudflare Pages deployment workflow contract passed");

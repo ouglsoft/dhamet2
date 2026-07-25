@@ -120,6 +120,29 @@
 
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
 
+  function deferredPromotionQueue(stateRecord) {
+    const State = window.DhametState;
+    if (!State || typeof State.normalizeDeferredPromotions !== "function") {
+      throw new Error("Dhamet2 online runtime requires DhametState.normalizeDeferredPromotions");
+    }
+    return State.normalizeDeferredPromotions(stateRecord || {}).map((entry) => ({
+      idx: Number(entry.idx),
+      side: Number(entry.side),
+    }));
+  }
+
+  function stateRecordWithPromotionQueue(snapshot, stateRecord) {
+    const queue = deferredPromotionQueue(stateRecord || snapshot || {});
+    return {
+      snapshot: Object.assign({}, snapshot || {}, {
+        deferredPromotions: queue,
+        deferredPromotion: queue.length ? Object.assign({}, queue[0]) : null,
+      }),
+      deferredPromotions: queue,
+      deferredPromotion: queue.length ? Object.assign({}, queue[0]) : null,
+    };
+  }
+
   Object.assign(Online, {
     _resolveSlotDisplayName: function (side, fallback) {
           try {
@@ -919,8 +942,12 @@
               moveCount: 0,
               forcedEnabled: true,
               forcedPly: 0,
+              openingPly: 0,
+              openingStarter: BOT,
+              forcedOpeningExchangeChoice: null,
               openingExchangeFourthChoice: null,
-              opening: { starter: BOT, exchangeFourthChoice: null },
+              opening: { starter: BOT },
+              deferredPromotions: [],
               deferredPromotion: null,
             };
           } catch (e) {
@@ -1255,12 +1282,9 @@
               white: { uid: this.myUid, nickname: this.myNick },
               black: { uid: opponentUid, nickname: opponentNick || "" },
             },
-            state: {
-              snapshot: initSnap,
-              deferredPromotion: null,
-            },
+            state: stateRecordWithPromotionQueue(initSnap, initSnap),
             states: {
-              0: { snapshot: initSnap, deferredPromotion: null },
+              0: stateRecordWithPromotionQueue(initSnap, initSnap),
             },
             lastMove: null,
             soufla: null,
@@ -2393,19 +2417,21 @@
                 null;
     
               if (stateSnap) {
-                const dp =
-                  (data.state && data.state.deferredPromotion) ||
-                  (data.states &&
-                    data.ply != null &&
-                    data.states[data.ply] &&
-                    data.states[data.ply].deferredPromotion) ||
-                  null;
-    
+                const stateRecord =
+
+                  (data.state && typeof data.state === "object" && data.state) ||
+
+                  (data.states && data.ply != null && data.states[data.ply]) ||
+
+                  {};
+
+                const normalizedState = stateRecordWithPromotionQueue(stateSnap, stateRecord);
+
+
                 const patched = Object.assign({}, data, {
-                  state: Object.assign({}, data.state || {}, {
-                    snapshot: stateSnap,
-                    deferredPromotion: dp,
-                  }),
+
+                  state: Object.assign({}, stateRecord, normalizedState),
+
                 });
                 this._applyRemoteState(patched);
               } else if (typeof data.turn === "number") {
@@ -2549,7 +2575,9 @@
             } catch (e) {}
     
             try {
-              Game.deferredPromotion = (data.state && data.state.deferredPromotion) || null;
+              const queue = deferredPromotionQueue(data.state || {});
+              Game.deferredPromotions = queue;
+              Game.deferredPromotion = queue.length ? Object.assign({}, queue[0]) : null;
             } catch (e) {}
     
             try {
@@ -2760,19 +2788,21 @@
             }
     
             if (stateSnap) {
-              const dp =
-                (data.state && data.state.deferredPromotion) ||
-                (data.states &&
-                  data.ply != null &&
-                  data.states[data.ply] &&
-                  data.states[data.ply].deferredPromotion) ||
-                null;
-    
+              const stateRecord =
+
+                (data.state && typeof data.state === "object" && data.state) ||
+
+                (data.states && data.ply != null && data.states[data.ply]) ||
+
+                {};
+
+              const normalizedState = stateRecordWithPromotionQueue(stateSnap, stateRecord);
+
+
               const patched = Object.assign({}, data, {
-                state: Object.assign({}, data.state || {}, {
-                  snapshot: stateSnap,
-                  deferredPromotion: dp,
-                }),
+
+                state: Object.assign({}, stateRecord, normalizedState),
+
               });
               this._applyRemoteState(patched);
             } else if (typeof data.turn === "number") {
@@ -5193,11 +5223,14 @@
               ? Visual.getCapturedOrder()
               : [];
     
-          const statePayload = {
-            snapshot: typeof snapshotState === "function" ? snapshotState() : null,
-            deferredPromotion: Game.deferredPromotion || null,
-            capturedOrder: capOrder,
-          };
+          const stateSnapshot = typeof snapshotState === "function" ? snapshotState() : null;
+          const statePayload = Object.assign(
+            stateRecordWithPromotionQueue(stateSnapshot, {
+              deferredPromotions: Array.isArray(Game.deferredPromotions) ? Game.deferredPromotions : undefined,
+              deferredPromotion: Game.deferredPromotion || null,
+            }),
+            { capturedOrder: capOrder },
+          );
     
           const souflaPlain = this._cachedSouflaPlain;
           this._cachedSouflaPlain = null;
@@ -5403,11 +5436,14 @@
     
           move.souflaMeta = souflaMeta;
     
-          const statePayload = {
-            snapshot: typeof snapshotState === "function" ? snapshotState() : null,
-            deferredPromotion: Game.deferredPromotion || null,
-            capturedOrder: capOrder,
-          };
+          const stateSnapshot = typeof snapshotState === "function" ? snapshotState() : null;
+          const statePayload = Object.assign(
+            stateRecordWithPromotionQueue(stateSnapshot, {
+              deferredPromotions: Array.isArray(Game.deferredPromotions) ? Game.deferredPromotions : undefined,
+              deferredPromotion: Game.deferredPromotion || null,
+            }),
+            { capturedOrder: capOrder },
+          );
     
           this._cachedSouflaPlain = null;
     
@@ -5588,56 +5624,84 @@
 
     requestUndo: function () {
           if (!guardOnlineWrite()) return;
-          if (!this.isActive || !this.gameRef) return;
-    
+          if (!this.isActive || !this.gameRef || this.isSpectator) return;
+
+          const Control = window.DhametControl;
+          let undoCheck = null;
           try {
-            if (Game && Game.forcedEnabled && Game.forcedPly < 10) {
-              showOnlineNotice(window.I18N.translateArgs("modals.undo.notAllowedBody"), { title: window.I18N.translateArgs("modals.undo.notAllowedTitle") });
-              return;
-            }
-          } catch (e) {}
-    
-          try {
-            if (Game && (Game.inChain || Game.awaitingPenalty)) {
-              showOnlineNotice(window.I18N.translateArgs("ui.noUndo"), { title: window.I18N.translateArgs("modals.undo.title") });
-              return;
-            }
-          } catch (e) {}
-    
-          if ((this.ply || 0) <= 0) {
-            showOnlineNotice(window.I18N.translateArgs("ui.noUndo"), { title: window.I18N.translateArgs("modals.undo.title") });
+            undoCheck = Control && typeof Control.canRequestUndo === "function"
+              ? Control.canRequestUndo(this._lastGameData, this.mySide)
+              : null;
+          } catch (e) {
+            undoCheck = null;
+          }
+          if (!undoCheck || !undoCheck.ok) {
+            const error = undoCheck && undoCheck.error;
+            const openingError = error === "control/opening-undo-disabled";
+            const ownMoveError = error === "control/not-last-mover";
+            showOnlineNotice(
+              window.I18N.translateArgs(
+                openingError
+                  ? "modals.undo.notAllowedBody"
+                  : ownMoveError
+                    ? "ui.undoOwnLastOnly"
+                    : "ui.noUndo",
+              ),
+              { title: window.I18N.translateArgs(openingError ? "modals.undo.notAllowedTitle" : "modals.undo.title") },
+            );
             return;
           }
-    
-          const undoRef = this.gameRef.child("undoRequest");
+
+          const clientActionId = `undo:req:${this.myUid || "anon"}:${this.gameId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
           let tx = null;
-    
           try {
-            tx = undoRef.transaction((cur) => {
-              if (cur && (cur.status === "pending" || cur.status === "active")) return cur;
-              return {
-                status: "pending",
-                acceptedAt: 0,
+            tx = this.gameRef.transaction((g) => {
+              if (!g || g.status !== "active") return;
+              if (!this._isCurrentAuthPlayerInGame(g)) return;
+              const check = Control && typeof Control.canRequestUndo === "function"
+                ? Control.canRequestUndo(g, this.mySide)
+                : null;
+              if (!check || !check.ok) return;
+              const created = Control.createUndoRequest({
                 requesterUid: this.myUid,
+                requesterSide: this.mySide,
                 requesterNick: this.myNick,
                 requestedAt: nowTs(),
-                ply: this.ply,
+                ply: g.ply,
+                moveIndex: g.moveIndex,
+                clientActionId,
+              });
+              // Keep the Firebase record within the published RTDB schema. The
+              // side and move index are derived from the immutable players and
+              // current game record whenever the request is validated.
+              g.undoRequest = {
+                status: created.status,
+                acceptedAt: 0,
+                requesterUid: created.requesterUid,
+                requesterNick: created.requesterNick,
+                requestedAt: created.requestedAt,
+                ply: created.ply,
               };
+              return g;
             });
           } catch (e) {
             handleDbError(e, window.I18N.translateArgs("undo.requestFailed"), { ctx: "undo.request" });
             return;
           }
-    
+
           try {
             if (tx && typeof tx.then === "function") {
               tx.then((res) => {
-                try {
-                  const snap = res && res.snapshot ? res.snapshot : null;
-                  const ur = snap && typeof snap.val === "function" ? snap.val() : null;
-                  this._openUndoWaitModal(ur);
-                } catch (e) {}
-              }).catch((e) => handleDbError(e, window.I18N.translateArgs("undo.requestFailed")));
+                const committed = !!(res && res.committed);
+                const snap = res && res.snapshot ? res.snapshot : null;
+                const game = snap && typeof snap.val === "function" ? snap.val() : null;
+                if (!committed || !game || !game.undoRequest) {
+                  showOnlineNotice(window.I18N.translateArgs("undo.requestFailed"), { title: window.I18N.translateArgs("modals.undo.title") });
+                  return;
+                }
+                this._lastGameData = game;
+                this._openUndoWaitModal(game.undoRequest);
+              }).catch((e) => handleDbError(e, window.I18N.translateArgs("undo.requestFailed"), { ctx: "undo.request" }));
             }
           } catch (e) {}
         },
@@ -5693,112 +5757,128 @@
         },
 
     _respondUndo: function (accept) {
-          this.gameRef.child("undoRequest").transaction((cur) => {
-            if (!cur || (cur.status !== "pending" && cur.status !== "active")) return cur;
-            cur.status = accept ? "accepted" : "rejected";
-            cur.respondedAt = nowTs();
-            cur.responderUid = this.myUid;
-            cur.responderNick = this.myNick;
-            return cur;
+          if (!this.gameRef || !this.myUid || this.isSpectator) return;
+          const Control = window.DhametControl;
+          this.gameRef.transaction((g) => {
+            if (!g || g.status !== "active") return;
+            if (!this._isCurrentAuthPlayerInGame(g)) return;
+            const current = Control && typeof Control.normalizeUndoRequest === "function"
+              ? Control.normalizeUndoRequest(g.undoRequest)
+              : g.undoRequest;
+            if (!current || (current.status !== "pending" && current.status !== "active")) return;
+            if (current.requesterUid === this.myUid) return;
+            const requesterSide = g.players && g.players.white && g.players.white.uid === current.requesterUid
+              ? -1
+              : g.players && g.players.black && g.players.black.uid === current.requesterUid
+                ? 1
+                : null;
+            if (requesterSide == null || Number(requesterSide) === Number(this.mySide)) return;
+            g.undoRequest = {
+              status: accept ? "accepted" : "rejected",
+              acceptedAt: accept ? nowTs() : 0,
+              requesterUid: current.requesterUid,
+              requesterNick: current.requesterNick || "",
+              requestedAt: current.requestedAt || nowTs(),
+              ply: Number(current.ply || g.ply || 0),
+              respondedAt: nowTs(),
+              responderUid: this.myUid,
+              responderNick: this.myNick,
+            };
+            return g;
+          }, (err, committed) => {
+            if (err) handleDbError(err, window.I18N.translateArgs("undo.failed"), { ctx: "undo.respond" });
+            else if (!committed) showOnlineNotice(window.I18N.translateArgs("undo.notCommitted"));
           });
         },
 
     _performUndoTransaction: function () {
           if (this._undoTxnInFlight) return;
           this._undoTxnInFlight = true;
-    
+          const Control = window.DhametControl;
+
           this.gameRef.transaction(
             (g) => {
-              if (!g || g.status !== "active") return g;
-              if (!g.undoRequest || g.undoRequest.status !== "accepted") return g;
-    
-              const undoneMove = g.lastMove && g.lastMove.kind === "move" ? g.lastMove : null;
-    
-              const undoneFrom = undoneMove && undoneMove.from != null ? undoneMove.from : null;
-              const undonePath =
-                undoneMove && Array.isArray(undoneMove.path) && undoneMove.path.length
-                  ? undoneMove.path.slice()
-                  : undoneMove && undoneMove.to != null
-                    ? [undoneMove.to]
-                    : null;
-    
-              try {
-                const curSnap = g.state && g.state.snapshot ? g.state.snapshot : null;
-                if (curSnap && curSnap.forcedEnabled && curSnap.forcedPly < 10) {
-                  g.undoRequest = null;
-                  return g;
-                }
-              } catch (e) {}
-    
-              const curPly = g.ply || 0;
-              const prevPly = curPly - 1;
-              if (prevPly < 0) {
+              if (!g || g.status !== "active") return;
+              if (!this._isCurrentAuthPlayerInGame(g)) return;
+              const ur = Control && typeof Control.normalizeUndoRequest === "function"
+                ? Control.normalizeUndoRequest(g.undoRequest)
+                : g.undoRequest;
+              if (!ur || ur.status !== "accepted") return;
+
+              const requesterSide = g.players && g.players.white && g.players.white.uid === ur.requesterUid
+                ? -1
+                : g.players && g.players.black && g.players.black.uid === ur.requesterUid
+                  ? 1
+                  : null;
+              const check = Control && typeof Control.canRequestUndo === "function"
+                ? Control.canRequestUndo(g, requesterSide, { ignorePending: true })
+                : null;
+              if (!check || !check.ok) {
                 g.undoRequest = null;
                 return g;
               }
-    
-              const prevState = g.states && g.states[prevPly];
-              if (!prevState || !prevState.snapshot) {
+              const previous = Control.previousStateForUndo(g);
+              if (!previous || !previous.state || !previous.state.snapshot) {
                 g.undoRequest = null;
                 return g;
               }
-    
-              g.moveIndex = (g.moveIndex || 0) + 1;
-              g.ply = prevPly;
-    
-              g.state = prevState;
-              g.turn = prevState.snapshot.player;
-    
+
+              const fx = check.undoFx || Control.undoFxFromSnapshot(check.snapshot);
+              const responderSide = requesterSide == null ? null : -Number(requesterSide);
+              const moveIndex = Number(g.moveIndex || 0) + 1;
+              const previousPly = Number(previous.ply || 0);
+
+              g.moveIndex = moveIndex;
+              g.ply = previousPly;
+              g.state = previous.state;
+              g.turn = Number(previous.state.snapshot.player);
+              g.soufla = null;
+              g.undoRequest = null;
+              // Assigning null removes a possible winner child without adding
+              // fields that are outside the published Firebase game schema.
+              g.winner = null;
+              g.status = "active";
               g.lastMove = {
                 kind: "undo",
-                by: g.turn,
+                by: responderSide,
+                requesterUid: ur.requesterUid || null,
+                responderUid: ur.responderUid || this.myUid || null,
+                undoneFrom: fx && fx.undoneFrom != null ? fx.undoneFrom : null,
+                undonePath: fx && Array.isArray(fx.undonePath) ? fx.undonePath.slice() : null,
+                undoneTo: fx && fx.undoneTo != null ? fx.undoneTo : null,
+                ply: previousPly,
+                moveIndex,
                 ts: nowTs(),
-                undoneFrom: undoneFrom,
-                undonePath: undonePath,
-                ply: prevPly,
-                moveIndex: g.moveIndex,
               };
-    
-              g.undoRequest = null;
-              g.soufla = null;
-    
-              g.log = g.log || [];
-    
+
+              g.log = Array.isArray(g.log) ? g.log : [];
               normalizeLogArrayForWrite(g.log);
-              const from =
-                undoneMove && undoneMove.from != null
-                  ? typeof rcStr === "function"
-                    ? rcStr(undoneMove.from)
-                    : ""
-                  : "";
-              const to =
-                undoneMove && undoneMove.to != null
-                  ? typeof rcStr === "function"
-                    ? rcStr(undoneMove.to)
-                    : ""
-                  : "";
               g.log.push({
                 ts: nowTs(),
                 type: "undo",
                 text: encodeSharedLogText({
                   kind: "undo",
-                  from: undoneMove && undoneMove.from != null ? undoneMove.from : null,
-                  to: undoneMove && undoneMove.to != null ? undoneMove.to : null,
+                  from: fx && fx.undoneFrom != null ? fx.undoneFrom : null,
+                  to: fx && fx.undoneTo != null ? fx.undoneTo : null,
                 }),
               });
               if (g.log.length > 50) g.log = g.log.slice(-50);
-    
               return g;
             },
-            (err, committed) => {
+            (err, committed, snap) => {
               this._undoTxnInFlight = false;
               if (err) {
                 handleDbError(err, window.I18N.translateArgs("undo.failed"), { ctx: "undo" });
                 return;
               }
-              if (committed === false) {
+              if (!committed) {
                 showOnlineNotice(window.I18N.translateArgs("undo.notCommitted"));
+                return;
               }
+              try {
+                const data = snap && typeof snap.val === "function" ? snap.val() : null;
+                if (data) this._lastGameData = data;
+              } catch (e) {}
             },
           );
         },

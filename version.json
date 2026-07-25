@@ -1,6 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260725-uiparity1",
-  "source": "primary-interface-parity",
-  "uiReference": "ouglsoft-main"
+  "version": "20260725-rulesparity1",
+  "source": "primary-rules-parity",
+  "uiReference": "ouglsoft-main",
+  "release": "20260725-rulesparity1"
 }

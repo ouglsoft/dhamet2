@@ -16,7 +16,7 @@ if (!passive.includes("Never mark the new session busy")) throw new Error("stale
 if (!passive.includes("Starting Firebase writes from beforeunload/pagehide")) throw new Error("unload freeze prevention is missing");
 if (/addEventListener\("beforeunload", cleanup/.test(passive)) throw new Error("Firebase cleanup must not run from beforeunload");
 
-if (!game.includes('data-build-version="20260725-uiparity1"')) throw new Error("new build version is missing");
+if (!game.includes('data-build-version="20260725-rulesparity1"')) throw new Error("new build version is missing");
 if (!game.includes('<div class="timer-row">')) throw new Error("primary timer row structure is missing");
 if (!game.includes('class="btn ok keep-text"') || !game.includes('id="btnEndKill"')) throw new Error("primary end-capture button structure is missing");
 if (!game.includes('id="pvcControlsBox"') || !game.includes('id="controlsPool"')) throw new Error("primary controls pool structure is missing");

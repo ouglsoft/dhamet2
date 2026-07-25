@@ -83,6 +83,7 @@ const excludedFileNames = [
   "FINAL_REVIEW.md",
   "AUTO_DEPLOY_CLOUDFLARE.md",
   "BUILD_SYNC_REPORT.md",
+  "RULES_PARITY_REPORT.md",
   "REPLACEMENT_MANIFEST.md",
   "DELETE_THESE_FILES.txt"
 ];

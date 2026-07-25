@@ -274,6 +274,12 @@
   function buildSouflaFxFromDecisionAndPending(decision, pending) {
     try {
       if (!decision || !pending) return null;
+      try {
+        if (window.DhametSoufla && typeof window.DhametSoufla.buildFx === "function") {
+          const sharedFx = window.DhametSoufla.buildFx(pending, decision);
+          if (sharedFx) return sharedFx;
+        }
+      } catch (e) {}
       const fx = {};
 
       try {

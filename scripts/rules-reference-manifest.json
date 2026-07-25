@@ -1,0 +1,42 @@
+{
+  "release": "20260725-rulesparity1",
+  "source": "primary-application-shared-rules",
+  "files": {
+    "dhamet-utils.js": {
+      "sha256": "ebccfaa51fa93669d0bcb4e16deb0de9a9a5f3cad67aba5ae11878c7fa4bee37",
+      "bytes": 2994
+    },
+    "dhamet-rules.js": {
+      "sha256": "6088e7b9a6676b7b221d6eafc779bb74c7ccdbdbc4c56ce97e25c8c0ea167777",
+      "bytes": 58110
+    },
+    "dhamet-state.js": {
+      "sha256": "e5abbdcddec5adb5f0c32f37341d019b9d0ddbf6ecfd49969514739c635cc4ed",
+      "bytes": 13816
+    },
+    "dhamet-turn-resolution.js": {
+      "sha256": "3ebf1f1ac272f65e4c5c4b35c3d8d17a808e563d8c43ed483788754e96ff314d",
+      "bytes": 5761
+    },
+    "dhamet-move.js": {
+      "sha256": "4bd7ab24b10a9bdf7d68463fcd56d0017dc4ca057cea145e184ac52fe5169ff9",
+      "bytes": 9742
+    },
+    "dhamet-soufla.js": {
+      "sha256": "a8cfc9495c0b5a4aa9bd50dacebb887548d5fba285c0425eb7cebbe5f613b470",
+      "bytes": 7287
+    },
+    "dhamet-control.js": {
+      "sha256": "6371fd0cff1c83678cf944aa2f82e38237cf4104fe0cdf428aa72c60fb22233b",
+      "bytes": 8942
+    },
+    "dhamet-result.js": {
+      "sha256": "fb4fb0c889f2ac024ae01e9b48cba773be75f46c2da907eb4f789ef75b2b4313",
+      "bytes": 4547
+    },
+    "dhamet-match-end.js": {
+      "sha256": "21cd33a97ec8772dadadadb4dba5bcc2044efa4c4e7ef3d9b5a7c10800826252",
+      "bytes": 11439
+    }
+  }
+}
