@@ -1,0 +1,80 @@
+name: Deploy Dhamet2 to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: dhamet2-cloudflare-pages-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    name: Build and deploy production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Validate Cloudflare deployment settings
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          set -eu
+          if [ -z "$CF_ACCOUNT_ID" ]; then
+            echo "::error::Missing GitHub Actions secret: CLOUDFLARE_ACCOUNT_ID"
+            exit 1
+          fi
+          if [ -z "$CF_API_TOKEN" ]; then
+            echo "::error::Missing GitHub Actions secret: CLOUDFLARE_API_TOKEN"
+            exit 1
+          fi
+          if [ -z "$CF_PAGES_PROJECT" ]; then
+            echo "::error::Missing GitHub Actions variable: CLOUDFLARE_PAGES_PROJECT_NAME"
+            exit 1
+          fi
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Create unique deployment version
+        run: |
+          set -eu
+          SHORT_SHA="$(printf '%s' "$GITHUB_SHA" | cut -c1-12)"
+          echo "DHAMET_BUILD_VERSION=20260725-autodeploy1-$SHORT_SHA" >> "$GITHUB_ENV"
+          echo "DHAMET_COMMIT_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+
+      - name: Test and build static site
+        run: npm run build
+
+      - name: Verify deployment output
+        run: |
+          set -eu
+          test -f _site/version.json
+          test -f _site/pages/loby.html
+          test -f _site/pages/game.html
+          echo "Deploying build:"
+          cat _site/version.json
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }} --branch=main --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
