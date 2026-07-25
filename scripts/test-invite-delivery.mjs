@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import vm from "node:vm";
 
 const passive = fs.readFileSync("js/online.passive.js", "utf8");
 const online = fs.readFileSync("js/online.js", "utf8");
@@ -22,5 +23,26 @@ assert.match(online, /Logger\.capture\(e,\s*\{\s*ctx:\s*"invite\.create\.click"/
   "unexpected invitation creation errors must not be swallowed silently");
 assert.match(online, /updates\[`invites\/\$\{opponentUid\}\/\$\{inviteKey\}`\]\s*=\s*inviteObj/,
   "the invitation must be written atomically under the recipient UID");
+
+
+assert.doesNotMatch(online, /requires DhametState\.normalizeDeferredPromotions/,
+  "creating an invitation from the lobby must not require the gameplay-only DhametState runtime");
+assert.match(online, /if \(State && typeof State\.normalizeDeferredPromotions === "function"\)/,
+  "the game page should still use the shared promotion normalizer when it is loaded");
+assert.match(online, /else if \(Array\.isArray\(source\.deferredPromotions\)\)/,
+  "the lobby must have a safe promotion-queue fallback before writing the pending Firebase game");
+
+const helperStart = online.indexOf("  function deferredPromotionQueue(stateRecord) {");
+const helperEnd = online.indexOf("\n\n  Object.assign(Online, {", helperStart);
+assert.ok(helperStart >= 0 && helperEnd > helperStart,
+  "the invitation state helper must remain extractable for the lobby regression test");
+const helperSource = online.slice(helperStart, helperEnd) +
+  "\nresult = stateRecordWithPromotionQueue({ player: -1 }, { player: -1 });";
+const lobbyContext = { window: {}, Number, Array, Object, result: null };
+vm.runInNewContext(helperSource, lobbyContext);
+assert.equal(lobbyContext.result.snapshot.player, -1,
+  "the lobby must build the initial pending-game state without loading DhametState");
+assert.deepEqual(Array.from(lobbyContext.result.deferredPromotions), [],
+  "the lobby fallback must produce an empty deferred-promotion queue for a new match");
 
 console.log("Invite delivery regression tests passed");

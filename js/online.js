@@ -121,14 +121,28 @@
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
 
   function deferredPromotionQueue(stateRecord) {
+    const source = stateRecord || {};
     const State = window.DhametState;
-    if (!State || typeof State.normalizeDeferredPromotions !== "function") {
-      throw new Error("Dhamet2 online runtime requires DhametState.normalizeDeferredPromotions");
+    let entries = [];
+
+    // The lobby creates the pending Firebase game before loading the gameplay
+    // engine. DhametState exists on game.html, but it is intentionally absent
+    // from loby.html. Keep the shared normalizer when available and use the
+    // same compact compatibility normalization in the lobby.
+    if (State && typeof State.normalizeDeferredPromotions === "function") {
+      entries = State.normalizeDeferredPromotions(source);
+    } else if (Array.isArray(source.deferredPromotions)) {
+      entries = source.deferredPromotions;
+    } else if (source.deferredPromotion && typeof source.deferredPromotion === "object") {
+      entries = [source.deferredPromotion];
     }
-    return State.normalizeDeferredPromotions(stateRecord || {}).map((entry) => ({
-      idx: Number(entry.idx),
-      side: Number(entry.side),
-    }));
+
+    return entries
+      .map((entry) => ({
+        idx: Number(entry && entry.idx),
+        side: Number(entry && entry.side),
+      }))
+      .filter((entry) => Number.isFinite(entry.idx) && (entry.side === -1 || entry.side === 1));
   }
 
   function stateRecordWithPromotionQueue(snapshot, stateRecord) {
