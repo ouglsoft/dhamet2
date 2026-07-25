@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const release = "20260725-messageparity1";
+  const release = "__DHAMET_BUILD__";
 
   function t(key, vars) {
     try {

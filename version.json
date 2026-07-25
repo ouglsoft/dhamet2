@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260725-messageparity1",
-  "source": "messages-and-modals-parity",
+  "version": "20260725-deployparity1",
+  "source": "stable-incremental-cloudflare-pages-deployment",
   "uiReference": "ouglsoft-main",
-  "release": "20260725-messageparity1"
+  "release": "20260725-deployparity1"
 }

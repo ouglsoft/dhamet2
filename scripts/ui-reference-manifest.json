@@ -1,5 +1,4 @@
 {
-  "release": "20260725-messageparity1",
   "css": {
     "css/style.css": "ef31d98d78bbc558580b57b9d677953f02d0db1c7bb7bf360335dee3db9fd74a",
     "css/pages.css": "89a6453cd3cb5572a15a63ebdd91fedde96ccf451d9ec3f25b307e11671290eb",
@@ -60,5 +59,6 @@
     "assets/icons/volume-off.svg": "9b4a79937a7939566c6a6ad3840b8d751715e7efd83e6969a0c1fb50f9475a95",
     "assets/icons/volume-on.svg": "73e013292d31db6cf44a2cd55756ab00497f10e3b5df64786cd43e81afe35f98",
     "assets/icons/watch.svg": "fb6d23592cedaa942f8c6ee2633e81abc778a848bbc2f6b5e43f1404472f8cd1"
-  }
+  },
+  "reference": "ouglsoft-main"
 }

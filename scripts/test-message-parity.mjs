@@ -84,9 +84,9 @@ for (const key of manifest.bannedLegacyKeys) {
 
 const game = read("pages/game.html");
 for (const file of ["ui/dropdown-view.js", "ui/soufla-view.js", "ui.js", "message-parity-runtime.js"]) {
-  if (!game.includes(`../js/${file}?v=${manifest.release}`)) throw new Error(`Game page does not load ${file} with the release version`);
+  if (!game.includes(`../js/${file}?v=__DHAMET_BUILD__`)) throw new Error(`Game page does not load ${file} with the stable build token`);
 }
-if (!game.includes('data-build-version="20260725-messageparity1"')) throw new Error("message parity build version missing");
+if (!game.includes('data-build-version="__DHAMET_BUILD__"')) throw new Error("message parity build token missing");
 
 const online = read("js/online.js");
 const passive = read("js/online.passive.js");

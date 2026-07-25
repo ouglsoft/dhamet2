@@ -1,6 +1,9 @@
 {
-  "release": "20260725-messageparity1",
-  "languages": ["ar", "en", "fr"],
+  "languages": [
+    "ar",
+    "en",
+    "fr"
+  ],
   "mainLeafCount": 397,
   "backupLeafCount": 399,
   "allowedExtraKeys": [
@@ -40,5 +43,6 @@
     "status.win",
     "status.draw",
     "status.lose"
-  ]
+  ],
+  "reference": "ouglsoft-main"
 }

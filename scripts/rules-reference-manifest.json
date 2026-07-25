@@ -1,5 +1,4 @@
 {
-  "release": "20260725-messageparity1",
   "source": "primary-application-shared-rules",
   "files": {
     "dhamet-utils.js": {
@@ -38,5 +37,6 @@
       "sha256": "21cd33a97ec8772dadadadb4dba5bcc2044efa4c4e7ef3d9b5a7c10800826252",
       "bytes": 11439
     }
-  }
+  },
+  "reference": "ouglsoft-main"
 }
