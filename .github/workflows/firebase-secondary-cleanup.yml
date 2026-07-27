@@ -1,0 +1,36 @@
+name: Dhamet2 Firebase Secondary Cleanup
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Read and report without deleting"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dhamet2-firebase-secondary-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIREBASE_DATABASE_URL: ${{ vars.FIREBASE_DATABASE_URL || 'https://dhamet2-default-rtdb.firebaseio.com' }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      FIREBASE_CLEANUP_TOKEN: ${{ secrets.FIREBASE_CLEANUP_TOKEN }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Clean stale Firebase data
+        run: node scripts/firebase-secondary-cleanup.mjs
