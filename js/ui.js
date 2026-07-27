@@ -486,19 +486,13 @@ const Visual = (() => {
         H = cv.height;
       ctx.clearRect(0, 0, W, H);
 
-      const __is3d = !!(Game.settings && Game.settings.boardStyle === "3d");
-
-      if (!__is3d) {
-        drawGrid(ctx, W, H);
-      }
+      drawGrid(ctx, W, H);
       if (S.showCoords || Game.settings.showCoords) drawCoords(ctx, W, H);
 
       for (const [r, c] of S.highlightCells) {
         drawCellHighlight(ctx, r, c);
       }
-      if (!__is3d) {
-        drawPieces(ctx);
-      }
+      drawPieces(ctx);
       const __numLabels = [];
       try { S._arrowStacks = new Map(); } catch (_) { S._arrowStacks = null; }
 
@@ -632,9 +626,6 @@ const Visual = (() => {
       S._activeCanvas = prevCv;
     }
 
-    try {
-      if (Game.settings.boardStyle === "3d") Board3D.syncIfNeeded();
-    } catch {}
   }
 
   function cellCenter(idx) {
@@ -3658,71 +3649,33 @@ function ensure3DInputBridge() {
 }
 
 function applyBoardStyle(style) {
-  const cv = qs("#board");
+  const requested = style === "3d" ? "3d" : "2d";
+  Game.settings.boardStyle = requested;
+
+  // The shared primary renderer draws both 2D and dimensional boards on the
+  // same canvas. Keeping one interactive canvas prevents z-index, transform,
+  // backface, and delayed-WebGL initialization from hiding pieces or lines.
+  try {
+    document.body && document.body.classList.toggle("board-depth", requested === "3d");
+    document.body && document.body.classList.remove("board-3d");
+  } catch {}
+
+  try {
+    Board3D.disable();
+    Board3D.hide();
+  } catch {}
   const w3 = qs("#board3d");
-
-  const v = style === "3d" ? "3d" : "2d";
-  Game.settings.boardStyle = v;
-
-  if (v === "3d") {
-    if (!window.THREE) {
-      try {
-        showUiNotice(t("errors.render3d.failed"));
-      } catch {}
-      Game.settings.boardStyle = "2d";
-    }
+  if (w3) w3.style.display = "none";
+  const cv = qs("#board");
+  if (cv) {
+    cv.style.opacity = "";
+    cv.style.pointerEvents = "";
+    cv.style.background = "";
+    cv.style.backgroundColor = "";
+    cv.style.visibility = "visible";
   }
 
-  const finalStyle = Game.settings.boardStyle;
-
-  try {
-    document.body && document.body.classList.toggle("board-3d", finalStyle === "3d");
-  } catch {}
-
-  if (finalStyle === "3d") {
-    try {
-      ensure3DInputBridge();
-    } catch {}
-    if (w3) w3.style.display = "block";
-    if (cv) {
-      cv.style.opacity = "1";
-      cv.style.pointerEvents = "auto";
-
-      cv.style.background = "transparent";
-      cv.style.backgroundColor = "transparent";
-    }
-    try {
-      Board3D.show();
-      Board3D.enable();
-    } catch {}
-
-    setTimeout(() => {
-      try {
-        if (Game.settings.boardStyle === "3d" && !Board3D.ready) {
-          try {
-            showUiNotice(t("errors.render3d.failed"));
-          } catch {}
-          applyBoardStyle("2d");
-        }
-      } catch {}
-    }, 250);
-  } else {
-    try {
-      Board3D.disable();
-      Board3D.hide();
-    } catch {}
-    if (w3) w3.style.display = "none";
-    if (cv) {
-      cv.style.opacity = "";
-      cv.style.pointerEvents = "";
-      cv.style.background = "";
-      cv.style.backgroundColor = "";
-    }
-  }
-
-  try {
-    Visual.draw();
-  } catch {}
+  try { Visual.draw(); } catch {}
 }
 
 function bindEndKillShortcut() {

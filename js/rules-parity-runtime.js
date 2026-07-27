@@ -182,7 +182,7 @@
     Turn.ctx = null;
   };
 
-  normalizeDeferredPromotionQueue = function normalizeDeferredPromotionQueueParity() {
+  function normalizeDeferredPromotionQueue() {
     const queue = State.sanitizeDeferredPromotions(Game.board, {
       deferredPromotions: Array.isArray(Game.deferredPromotions) ? Game.deferredPromotions : undefined,
       deferredPromotion: Game.deferredPromotion || null,
@@ -190,7 +190,7 @@
     Game.deferredPromotions = queue.map(copyEntry);
     Game.deferredPromotion = queue.length ? copyEntry(queue[0]) : null;
     return Game.deferredPromotions;
-  };
+  }
 
   maybeQueueDeferredPromotion = function maybeQueueDeferredPromotionParity(idx) {
     const cellValue = valueAt(idx);

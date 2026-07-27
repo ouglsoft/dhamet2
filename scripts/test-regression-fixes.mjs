@@ -37,7 +37,42 @@ const tr = parseTranslations(i18n);
 assert.equal(tr.ar.soufla.pick.toastNotOffender, 'هذه القطعة ليست مسوفلة/مخالفة، اختر القطعة التي تجاهلت الأسر.');
 assert.equal(tr.ar.status.moveSendFail, 'فشل إرسال النقلة، يرجى الضغط على زر التحديث ثم إعادة النقلة.');
 assert.equal(tr.ar.online.endPresentation.selfEndedBy, 'أنهيت المباراة.');
-assert.ok(tr.ar.soufla.spectator.reason && tr.ar.undo.spectatorRequested);
+assert.ok(tr.ar.soufla.spectator.remove && tr.ar.soufla.spectator.force);
+assert.doesNotMatch(tr.ar.undo.applied, /movePart|\$\{/);
+assert.match(tr.ar.undo.spectatorAccepted, /\{responder\}/);
+assert.match(tr.ar.undo.spectatorAccepted, /\{requester\}/);
+assert.match(tr.ar.undo.spectatorRejected, /\{responder\}/);
+assert.match(tr.ar.undo.spectatorRejected, /\{requester\}/);
+
+
+assert.match(soufla, /mySide === by\) return false/);
+assert.match(soufla, /decision\.kind === "remove" \? "remove" : "force"/);
+assert.doesNotMatch(online, /translateArgs\("undo\.applied"\)/);
+
+const rulesParityRuntime = read('js/rules-parity-runtime.js');
+assert.match(rulesParityRuntime, /function normalizeDeferredPromotionQueue\(\)/);
+assert.doesNotMatch(rulesParityRuntime, /normalizeDeferredPromotionQueue\s*=\s*function/);
+
+assert.match(ui, /drawGrid\(ctx, W, H\);[\s\S]*drawPieces\(ctx\);/);
+assert.match(ui, /classList\.toggle\("board-depth", requested === "3d"\)/);
+assert.match(ui, /Board3D\.disable\(\);[\s\S]*Board3D\.hide\(\)/);
+assert.match(ui, /w3\.style\.display = "none"/);
+assert.match(ui, /cv\.style\.visibility = "visible"/);
+assert.match(theme, /body\.board-depth canvas#board[\s\S]*opacity:\s*1 !important[\s\S]*visibility:\s*visible !important/);
+
+assert.match(online, /let initialUiHold = false/);
+assert.match(online, /contains\("ui-hold"\) && !root\.classList\.contains\("ui-ready"\)/);
+assert.match(online, /if \(initialUiHold\) this\._applyUiHold\(true\)/);
+
+const mobile = read('js/mobile.js');
+assert.match(mobile, /screen\.orientation\.lock\(target\)/);
+assert.doesNotMatch(mobile, /target \+ ['"]-primary['"]|landscape-primary/);
+assert.match(mobile, /orientationchange/);
+assert.doesNotMatch(mobile, /location\.reload|location\.replace/);
+assert.match(theme, /Unified capture timer colors/);
+assert.match(theme, /timer-row[\s\S]*color:\s*rgb\(var\(--rgb-white\)\)/);
+assert.match(theme, /gradient-game-control/);
+assert.match(theme, /btnEndKill[\s\S]*gradient-game-control-danger/);
 
 assert.match(soufla, /Rules\.resolveOffenderCurrentCell\(pending, offenderIdx\)/);
 assert.doesNotMatch(soufla, /if \(offenderSet\.has\(clickedIdx\)\) return/);
@@ -49,7 +84,9 @@ assert.equal(R.resolveOffenderCurrentCell({ startedFrom: 8, lastPieceIdx: 26 }, 
 assert.equal(R.resolveOffenderCurrentCell({ lastMoveFrom: 15, lastPieceIdx: 33 }, 15), 33);
 assert.equal(R.resolveOffenderCurrentCell({ startedFrom: 8, lastPieceIdx: 26 }, 9), 9);
 
-assert.match(online, /if \(this\.isSpectator\)[\s\S]*undo\.spectatorRequested/);
+assert.doesNotMatch(online, /undo\.spectatorRequested/);
+assert.match(online, /undo\.spectatorAccepted/);
+assert.match(online, /undo\.spectatorRejected/);
 assert.match(online, /const silentSpectatorLeave = !!this\._spectatorLeaving/);
 assert.match(passive, /!cfg\.allowSpectator[\s\S]*contains\("z-spectator"\)[\s\S]*return/);
 assert.doesNotMatch(online, /status\.moveSendFail"\),\s*\{\s*allowSpectator:\s*true/);
