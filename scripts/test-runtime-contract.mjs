@@ -6,7 +6,6 @@ const passive = fs.readFileSync(new URL("../js/online.passive.js", import.meta.u
 const shell = fs.readFileSync(new URL("../js/emergency-shell.js", import.meta.url), "utf8");
 const headers = fs.readFileSync(new URL("../_headers", import.meta.url), "utf8");
 const mobileCss = fs.readFileSync(new URL("../css/mobile.css", import.meta.url), "utf8");
-const runtimeCss = fs.readFileSync(new URL("../css/backup-runtime.css", import.meta.url), "utf8");
 
 if (!shell.includes("waitForInitialAuthState")) throw new Error("auth persistence restoration is not awaited");
 if (!shell.includes("Auth.Persistence.SESSION")) throw new Error("anonymous auth must be tab/session scoped");
@@ -20,7 +19,8 @@ if (!game.includes('data-build-version="__DHAMET_BUILD__"')) throw new Error("st
 if (!game.includes('<div class="timer-row">')) throw new Error("primary timer row structure is missing");
 if (!game.includes('class="btn ok keep-text"') || !game.includes('id="btnEndKill"')) throw new Error("primary end-capture button structure is missing");
 if (!game.includes('id="pvcControlsBox"') || !game.includes('id="controlsPool"')) throw new Error("primary controls pool structure is missing");
-if (!game.includes('id="board3d"')) throw new Error("legacy 3D renderer mount is missing");
+if (game.includes('id="board3d"')) throw new Error("obsolete parallel 3D renderer mount must not exist");
+if (/three(?:\.min)?\.js/i.test(game)) throw new Error("obsolete Three.js dependency must not be loaded");
 
 if (!ui.includes('if (!pool || !pvcBox || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;')) {
   throw new Error("desktop controls mount is not synchronized with the primary app");
@@ -29,8 +29,8 @@ if (!ui.includes('killTimerTile.addEventListener("click"')) throw new Error("pri
 if (!ui.includes("releaseResolvedOnlineUiHold")) throw new Error("active game hold recovery missing");
 if (!mobileCss.includes('.timer-row #btnEndKill')) throw new Error("primary mobile timer styling is missing");
 if (/Dhamet2 controlsfix|timer-row#btnEndKill/.test(mobileCss)) throw new Error("old backup-only control overrides remain");
-if (/\.btn|timer-row|controlsWrap/.test(runtimeCss)) throw new Error("runtime compatibility CSS changes visible controls");
 if (!headers.includes("connect-src 'self' https://www.gstatic.com")) throw new Error("gstatic CSP connect allowance missing");
+if (headers.includes('cdn.jsdelivr.net')) throw new Error('obsolete Three.js CDN CSP allowance must not remain');
 
 
 if (!ui.includes("const openingOptions = getForcedOpeningOptions()")) throw new Error("fourth/sixth forced-opening choice is missing");

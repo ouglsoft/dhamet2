@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260727-gameplay-ui-fixes1",
-  "source": "firebase-route-control-gameplay-parity-timers-cleanup-ui-fixes",
+  "version": "20260727-audit-clean1",
+  "source": "firebase-route-control-gameplay-parity-timers-cleanup-audit-clean",
   "uiReference": "ouglsoft-main",
-  "release": "20260727-gameplay-ui-fixes1"
+  "release": "20260727-audit-clean1"
 }

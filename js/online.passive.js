@@ -3335,13 +3335,10 @@
             await db.ref("roomList").child(gid).remove();
             return true;
           } catch (e) {
-            try {
-              await db.ref("roomList").child(gid).remove();
-              return true;
-            } catch (removeErr) {
-              Logger.warn("stale_room_sweep_failed", { gameId: gid, err: String(e && (e.message || e)), removeErr: String(removeErr && (removeErr.message || removeErr)) });
-              return false;
-            }
+            // A temporary read failure is not evidence that the room is stale.
+            // Leave the record intact and retry on the next client or scheduled sweep.
+            Logger.warn("stale_room_sweep_failed", { gameId: gid, err: String(e && (e.message || e)) });
+            return false;
           }
         },
 
@@ -3686,9 +3683,7 @@
     MAX_SIMULTANEOUS_CONNECTIONS: MAX_SIMULTANEOUS_CONNECTIONS,
     ASSET_PREFIX: ASSET_PREFIX,
     getDb: function () { return db; },
-    getAuth: function () { return auth; },
-    setDb: function (v) { db = v; },
-    setAuth: function (v) { auth = v; }
+    getAuth: function () { return auth; }
   };
 
   window.addEventListener("load", function () {

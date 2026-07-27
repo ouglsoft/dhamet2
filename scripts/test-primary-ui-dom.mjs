@@ -38,7 +38,6 @@ function findFragment(html, selector) {
 }
 
 function canonicalize(fragment, { removeBoard3d = false } = {}) {
-  if (removeBoard3d) fragment = fragment.replace(/<div\b[^>]*id="board3d"[^>]*><\/div>/i, "");
   fragment = fragment.replace(/\?v=[^"'#\s>]+/g, "?v=__BUILD__");
   const tokens = tokenize(fragment);
   const stack = [];

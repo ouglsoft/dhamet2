@@ -11,7 +11,6 @@ for (const required of [
   "css/pages.css",
   "css/mobile.css",
   "css/theme.css",
-  "css/backup-runtime.css",
   "js/theme-colors.js",
   "js/visual-shell.js",
   "js/mobile.js",
@@ -39,7 +38,6 @@ for (const id of [
 assert.match(game, /<div class="timer-row">[\s\S]*?<button[^>]*class="btn ok keep-text"[^>]*id="btnEndKill"/);
 assert.match(game, /<div[^>]*class="controls-pool"[^>]*id="controlsPool"[\s\S]*?id="btnEndOnline"/);
 assert.match(game, /<div[^>]*class="pvp-row"[^>]*id="pvpRow1"><\/div>/);
-assert.match(game, /backup-runtime\.css/);
 assert.match(game, /theme\.css/);
 assert.match(game, /visual-shell\.js/);
 assert.doesNotMatch(game, /نظام احتياطي|المباراة غير مصنفة|z-emergency-banner/);
@@ -61,9 +59,6 @@ assert.match(i18n, /"title": "الغرف النشطة واللاعبون الم�
 assert.match(i18n, /"syncIssueNotice": "لم تظهر آخر تغييرات المباراة/);
 assert.match(i18n, /"confirm": "هل تريد إنهاء المباراة الحالية؟"/);
 
-const runtimeCss = read("css/backup-runtime.css");
-assert.match(runtimeCss, /#board3d/);
-assert.doesNotMatch(runtimeCss, /\.btn|timer-row|pvpRow|controlsWrap|background:|color:/);
 
 // Validate every local src/href reference in the two deployable pages.
 for (const pagePath of ["pages/loby.html", "pages/game.html"]) {
@@ -79,7 +74,7 @@ for (const pagePath of ["pages/loby.html", "pages/game.html"]) {
 }
 
 // Validate local asset URLs used by the synchronized stylesheets.
-for (const cssPath of ["css/style.css", "css/pages.css", "css/mobile.css", "css/theme.css", "css/backup-runtime.css"]) {
+for (const cssPath of ["css/style.css", "css/pages.css", "css/mobile.css", "css/theme.css"]) {
   const css = read(cssPath);
   const base = path.dirname(path.join(root, cssPath));
   for (const match of css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)) {

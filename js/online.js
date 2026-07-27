@@ -598,27 +598,6 @@
           } catch (e) {}
         },
 
-    _emitRecoverySignal: function (action, reason) {
-          try {
-            if (!this.isActive || !this.gameRef) return false;
-            const now = nowTs();
-            const payload = {
-              nonce: `${String(this.myUid || "anon")}:${now}:${Math.random().toString(36).slice(2, 8)}`,
-              action: String(action || "sync"),
-              reason: String(reason || "manual"),
-              byUid: this.myUid || null,
-              ts: now,
-            };
-            return safeDbWriteNoAwait("set", this.gameRef.child("recoverySignal"), payload, {
-              uid: this.myUid,
-              path: "/games/" + (this.gameId || "") + "/recoverySignal",
-              ctx: "game.recoverySignal",
-              suppressGlobalDenied: true,
-            });
-          } catch (e) {}
-          return false;
-        },
-
     _handleRecoverySignal: function (data) {
           try {
             if (!this.isActive || !data) return;
@@ -1033,9 +1012,6 @@
           this.gameRef = db.ref("games").child(gameId);
     
           this._cleanupArmedFor = null;
-          try {
-            this._cancelRoomPurgeOnDisconnect();
-          } catch (e) {}
           try {
             await this.syncNow({ repairPresence: true });
           } catch (e) {}
@@ -1559,9 +1535,6 @@
     
           try {
             this._cleanupArmedFor = null;
-          } catch (e) {}
-          try {
-            this._cancelRoomPurgeOnDisconnect();
           } catch (e) {}
     
           try {
@@ -2476,37 +2449,6 @@
                 ? ROOM_PENDING_PURGE_DELAY_MS
                 : ROOM_ENDED_PURGE_DELAY_MS;
           this._schedulePurgeRoom(gid, reason || "postmatch", purgeDelay);
-        },
-
-    _armRoomPurgeOnDisconnect: function (gameId, reason) {
-          const gid = String(gameId || "").trim();
-          if (!gid || this.isSpectator) return;
-          if (typeof firebase === "undefined" || !firebase || !firebase.database) return;
-          if (this._purgeOnDisconnectGameId === gid) return;
-    
-          try {
-            const rootRef = firebase.database().ref();
-            rootRef.onDisconnect().update(this._buildRoomDeleteUpdates(gid));
-            this._purgeOnDisconnectGameId = gid;
-          } catch (e) {
-            Logger.warn("room_purge_ondisconnect_failed", { gameId: gid, reason, err: String(e && (e.message || e)) });
-          }
-        },
-
-    _cancelRoomPurgeOnDisconnect: function () {
-          if (typeof firebase === "undefined" || !firebase || !firebase.database) {
-            this._purgeOnDisconnectGameId = null;
-            return;
-          }
-          try {
-            const cancel = firebase.database().ref().onDisconnect().cancel();
-            if (cancel && typeof cancel.catch === "function") {
-              cancel.catch((e) => Logger.warn("room_purge_ondisconnect_cancel_failed", { err: String(e && (e.message || e)) }));
-            }
-          } catch (e) {
-            Logger.warn("room_purge_ondisconnect_cancel_failed", { err: String(e && (e.message || e)) });
-          }
-          this._purgeOnDisconnectGameId = null;
         },
 
     _bindGameListeners: function () {
@@ -6684,11 +6626,6 @@
           }
         },
 
-    _isNaturalOnlineEndReason: function (reason) {
-          const r = String(reason || "").trim();
-          return r === "natural_win" || r === "draw" || r === "no_legal_moves";
-        },
-
     _autoEnterFromUrl: async function () {
           if (!isGamePage()) return;
           try {
@@ -6807,9 +6744,6 @@
     
           try {
             this._cleanupArmedFor = null;
-          } catch (e) {}
-          try {
-            this._cancelRoomPurgeOnDisconnect();
           } catch (e) {}
           try {
             this._bindInviteListener();

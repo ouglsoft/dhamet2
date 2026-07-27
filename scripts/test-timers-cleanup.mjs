@@ -43,4 +43,10 @@ for (const token of ['schedule:', '7,22,37,52 * * * *', 'FIREBASE_SERVICE_ACCOUN
 for (const token of ['activeAbandoned: 30 * 60_000', 'ended: 60 * 60_000', 'rejected: 15 * 60_000', 'pending: 2 * 24 * 60 * 60_000', 'maxChatMessages: 200', 'undo: 5 * 60_000']) {
   if (!cleanup.includes(token)) throw new Error(`Secondary cleanup policy missing: ${token}`);
 }
+if (!/Unknown\/future states[\s\S]*LIMITS\.pending/.test(cleanup)) {
+  throw new Error('Unknown game states must use the conservative pending retention window');
+}
+if (/catch \(e\) \{[\s\S]{0,350}roomList[\s\S]{0,100}remove\(\)[\s\S]{0,100}return true/.test(passive)) {
+  throw new Error('A transient stale-room read failure must not remove the room');
+}
 console.log('timer and Firebase secondary cleanup tests passed');

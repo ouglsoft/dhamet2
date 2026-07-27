@@ -55,9 +55,7 @@ assert.doesNotMatch(rulesParityRuntime, /normalizeDeferredPromotionQueue\s*=\s*f
 
 assert.match(ui, /drawGrid\(ctx, W, H\);[\s\S]*drawPieces\(ctx\);/);
 assert.match(ui, /classList\.toggle\("board-depth", requested === "3d"\)/);
-assert.match(ui, /Board3D\.disable\(\);[\s\S]*Board3D\.hide\(\)/);
-assert.match(ui, /w3\.style\.display = "none"/);
-assert.match(ui, /cv\.style\.visibility = "visible"/);
+assert.doesNotMatch(ui, /\bBoard3D\b|ensure3DInputBridge|#board3d/);
 assert.match(theme, /body\.board-depth canvas#board[\s\S]*opacity:\s*1 !important[\s\S]*visibility:\s*visible !important/);
 
 assert.match(online, /let initialUiHold = false/);
@@ -120,4 +118,6 @@ for (const file of ['mic-on.svg', 'mic-off.svg', 'volume-on.svg', 'volume-off.sv
 assert.match(read('assets/icons/mic-off.svg'), /#b42318/);
 assert.match(read('assets/icons/volume-off.svg'), /#b42318/);
 
-console.log('requested gameplay, spectator, lobby, visual, and Firebase migration regressions passed');
+assert.doesNotMatch(passive, /stale_room_sweep_failed[\s\S]{0,500}roomList[\s\S]{0,100}remove\(/, "transient stale-room read failures must not delete the room");
+assert.doesNotMatch(online, /_armRoomPurgeOnDisconnect|_cancelRoomPurgeOnDisconnect|_emitRecoverySignal|_isNaturalOnlineEndReason/);
+console.log('requested gameplay and audit-clean regressions passed');

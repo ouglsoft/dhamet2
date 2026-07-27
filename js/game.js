@@ -328,13 +328,6 @@ const DIRS_DIAG_B = [
   [1, 1],
 ];
 
-function isDirAllowedFrom(r, c, dr, dc) {
-  if (DIRS_ORTHO.some(([rr, cc]) => rr === dr && cc === dc)) return true;
-  if (DIRS_DIAG_A.some(([rr, cc]) => rr === dr && cc === dc) && IS_IN_DIAG_A[r][c]) return true;
-  if (DIRS_DIAG_B.some(([rr, cc]) => rr === dr && cc === dc) && IS_IN_DIAG_B[r][c]) return true;
-  return false;
-}
-
 const Game = {
   board: new Array(BOARD_N).fill(0).map(() => new Array(BOARD_N).fill(0)),
   player: TOP,
@@ -725,8 +718,6 @@ function handleForcedOpeningOver() {
 
 function pieceOwner(v) { return window.DhametRules.owner(v); }
 function pieceKind(v) { return window.DhametRules.kind(v); }
-function forwardDir(side) { return window.DhametRules.forward(side); }
-
 function isBackRank(idx, forSide) { return window.DhametRules.isBackRank(Number(idx), Number(forSide)); }
 
 function encodeAction(frIdx, toIdx) {
@@ -875,18 +866,6 @@ function applyMove(fromIdx, toIdx, isCapture, jumpedIdx) {
   try {
     SessionGame.saveSoon();
   } catch {}
-}
-
-function promoteIfNeeded(idx) {
-  const v = valueAt(idx);
-  if (!v) return;
-  if (pieceKind(v) !== MAN) return;
-  const owner = pieceOwner(v);
-  if (isBackRank(idx, owner)) {
-    setValueAt(idx, owner === TOP ? KING : -KING);
-    Visual.queueCrown(idx);
-    UI.log({ kind: "promote", idx: idx, side: owner, ts: Date.now() });
-  }
 }
 
 function maybeQueueDeferredPromotion(idx) {
@@ -1548,17 +1527,10 @@ function applySouflaDecision(decision, pending) {
   try {
     Visual.setSuspended(true);
   } catch {}
-  try {
-    Board3D.setSuspended(true);
-  } catch {}
 
   try {
     setTimeout(() => {
       if (Game._souflaApplying) {
-        try {
-          Board3D.setSuspended(false);
-          Board3D.invalidate();
-        } catch {}
         try {
           Game._souflaApplying = false;
           Visual.setSuspended(false);
@@ -1774,10 +1746,6 @@ function applySouflaDecision(decision, pending) {
         UI.updateAll();
       } catch {}
 
-      try {
-        Board3D.setSuspended(false);
-        Board3D.invalidate();
-      } catch {}
       try {
         Game._souflaApplying = false;
         Visual.setSuspended(false);
