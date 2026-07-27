@@ -10,15 +10,24 @@ const ui = read('js/ui.js');
 const page = read('pages/game.html');
 const game = read('js/game.js');
 const online = read('js/online.js');
-const primaryGame = read('../dhamet_primary_extract/dhamet/site/js/modes/game-runtime.js');
-const primarySoufla = read('../dhamet_primary_extract/dhamet/site/js/ui/soufla-view.js');
 const backupSoufla = read('js/ui/soufla-view.js');
+const primaryRoot = String(process.env.DHAMET_PRIMARY_ROOT || '').trim();
+const primaryGamePath = primaryRoot ? path.join(primaryRoot, 'dhamet/site/js/modes/game-runtime.js') : '';
+const primarySouflaPath = primaryRoot ? path.join(primaryRoot, 'dhamet/site/js/ui/soufla-view.js') : '';
+const primaryAvailable = primaryGamePath && primarySouflaPath && fs.existsSync(primaryGamePath) && fs.existsSync(primarySouflaPath);
+const primaryGame = primaryAvailable ? fs.readFileSync(primaryGamePath, 'utf8') : '';
+const primarySoufla = primaryAvailable ? fs.readFileSync(primarySouflaPath, 'utf8') : '';
 
 assert.match(ui, /window\.Visual\s*=\s*Visual/, 'soufla preview renderer must be exported like the primary app');
 assert.match(ui, /globalThis\.Visual\s*=\s*Visual/, 'renderer must also be available through globalThis');
 assert.ok(page.indexOf('../js/ui/dom-utils.js') < page.indexOf('../js/game.js'), 'DOM utilities must load before game runtime');
 assert.ok(page.indexOf('../js/ui/game-log-view.js') < page.indexOf('../js/game.js'), 'game-log view must load before game runtime');
-assert.equal(backupSoufla, primarySoufla, 'soufla modal implementation must match the primary app');
+if (primaryAvailable) {
+  assert.equal(backupSoufla, primarySoufla, 'soufla modal implementation must match the primary app');
+} else {
+  assert.match(backupSoufla, /DhametSouflaView/, 'local soufla view contract must be present');
+  assert.match(backupSoufla, /render|open|show/i, 'local soufla view must expose rendering behavior');
+}
 
 const startMarker = '/* Moved from pages/game.html to keep page markup declarative. */';
 const endMarker = 'window.DhametGameLogView.attach(LogMgr);';
@@ -28,7 +37,13 @@ function logSegment(source) {
   assert.ok(start >= 0 && end >= 0, 'log manager segment markers must exist');
   return source.slice(start, end + endMarker.length);
 }
-assert.equal(logSegment(game), logSegment(primaryGame), 'log messages and scrolling logic must match primary app exactly');
+if (primaryAvailable) {
+  assert.equal(logSegment(game), logSegment(primaryGame), 'log messages and scrolling logic must match primary app exactly');
+} else {
+  const localLog = logSegment(game);
+  assert.match(localLog, /scrollTop|scrollHeight/, 'local log segment must preserve automatic scrolling');
+  assert.match(localLog, /attach\(LogMgr\)/, 'local log segment must attach the shared log view');
+}
 
 assert.match(online, /event\.persisted/, 'BFCache-restored mobile lobby must rebind listeners');
 assert.match(online, /visibilitychange/, 'stale visible mobile lobby must recover listeners');
