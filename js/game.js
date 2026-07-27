@@ -1749,7 +1749,7 @@ function applySouflaDecision(decision, pending) {
       try {
         Visual.applySouflaFXBatch(
           {
-            redSegments: _fxRedSegments,
+            redPaths: _fxRedSegments,
             removeIdx: _fxRemoveIdx,
             forcePath: _fxForcePath,
             undoArrow: _fxUndoArrow,
@@ -2181,6 +2181,9 @@ window.AI = AI;
         };
 
         const _isSelfActor = (actor) => {
+          try {
+            if (window.Online && window.Online.isActive && window.Online.isSpectator) return false;
+          } catch (_) {}
           const normalized = _normalizeName(actor);
           const you = _normalizeName(_t("players.you"));
           return !!normalized && !!you && normalized.localeCompare(you, undefined, { sensitivity: "accent" }) === 0;
@@ -2225,8 +2228,9 @@ window.AI = AI;
             const from = _isoLtr(_rc(ev.from));
             const to = _isoLtr(_rc(ev.to));
             const n = (ev.captures | 0);
-            if (n > 0) return _t("log.turnCaptureFmt", { side, from, to, n });
-            return _t("log.turnMoveFmt", { side, from, to });
+            const self = _isSelfActor(side);
+            if (n > 0) return _t(self ? "log.turnCaptureSelf" : "log.turnCaptureFmt", { side, from, to, n });
+            return _t(self ? "log.turnMoveSelf" : "log.turnMoveFmt", { side, from, to });
           }
 
           if (ev.kind === "game_started") return _t("log.gameStarted");
@@ -2263,7 +2267,11 @@ window.AI = AI;
 
           if (ev.kind === "game_result") {
             const winner = _normalizeName(ev.actor || (ev.winner != null ? _actorFromSide(ev.winner) : ""));
-            return winner ? _t("log.gameWinner", { winner }) : _t("log.gameDraw");
+            if (!winner) return _t("log.gameDraw");
+            if (_isSelfActor(winner)) return _t("log.gameWinnerSelf");
+            const hasSelfSide = _isSelfActor(_actorFromSide(TOP)) || _isSelfActor(_actorFromSide(BOT));
+            if (hasSelfSide) return _t("log.gameLoserSelf");
+            return _t("log.gameWinner", { winner });
           }
 
           if (ev.kind === "i18n_suffix") {

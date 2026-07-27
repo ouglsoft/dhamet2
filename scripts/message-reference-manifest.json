@@ -4,8 +4,8 @@
     "en",
     "fr"
   ],
-  "mainLeafCount": 397,
-  "backupLeafCount": 399,
+  "mainLeafCount": 416,
+  "backupLeafCount": 418,
   "allowedExtraKeys": [
     "errors.render3d.failed",
     "online.errors.joinFailed"
@@ -20,7 +20,7 @@
   "primaryModuleHashes": {
     "js/modal.js": "95761005785fb1a6c65210d29a3e86eb53544c739f657431b24dd40098677d74",
     "js/ui/dropdown-view.js": "f3b4ce6d922a9cbfcf633132c4f391fec1329d58cd9189ede62cf0deaa0d8de4",
-    "js/ui/soufla-view.js": "0c77d872a24069bb3c6ba67f247b8caea6bbf1e97c4ef6d39ba668fa1e61bd15"
+    "js/ui/soufla-view.js": "fde23496c9a569ae9022cb5b051ee13ed73f48cdc0eff2a1ae54689c87df6c7e"
   },
   "bannedLegacyKeys": [
     "modals.gameOver.drawTitle",

@@ -1,4 +1,14 @@
+const BoardGeometryModule = globalThis.DhametBoardGeometry;
+const BoardViewModule = globalThis.DhametBoardView;
 const SouflaViewModule = globalThis.DhametSouflaView;
+const ThemeModule = globalThis.DhametTheme;
+if (!BoardGeometryModule || !BoardViewModule) throw new Error("Primary board modules must load before ui.js");
+function themeColor(name) {
+  return ThemeModule && typeof ThemeModule.get === "function" ? ThemeModule.get(name) : "";
+}
+function themeChannels(name, alpha) {
+  return ThemeModule && typeof ThemeModule.channels === "function" ? ThemeModule.channels(name, alpha) : "";
+}
 const Visual = (() => {
   const S = {
     lastMove: null,
@@ -183,23 +193,23 @@ const Visual = (() => {
         arrowStrong: { lineWidth: 9.2, head: 28 },
         forceAllAlpha: 0.55,
         colors: {
-          souflaRed: "#dc2626",
-          souflaRedText: "#7f1d1d",
+          souflaRed: themeColor("--mark-danger"),
+          souflaRedText: themeColor("--mark-danger-strong"),
 
-          souflaGreen: "#166534",
-          souflaGreenStrong: "#14532d",
-          removeRing: "rgba(220, 38, 38, 0.95)",
+          souflaGreen: themeColor("--mark-move"),
+          souflaGreenStrong: themeColor("--mark-move-strong"),
+          removeRing: themeChannels("--rgb-danger-500", ".95"),
         },
         coords: {
           font: "bold 18px Calibri, Carlito, Segoe UI, sans-serif",
           lineWidth: 4,
           radiusMul: 0.28,
-          bgLight: "rgba(255,255,255,0.72)",
-          bgDark: "rgba(0,0,0,0.55)",
-          fillLight: "#111827",
-          fillDark: "#f8fafc",
-          strokeLight: "rgba(255,255,255,1)",
-          strokeDark: "rgba(0,0,0,0.95)",
+          bgLight: themeChannels("--rgb-white", ".72"),
+          bgDark: themeChannels("--rgb-black", ".55"),
+          fillLight: themeColor("--color-text-strong"),
+          fillDark: themeColor("--color-on-dark"),
+          strokeLight: themeChannels("--rgb-white", "1"),
+          strokeDark: themeChannels("--rgb-black", ".95"),
         },
       };
       S.showCoords = !!(Game && Game.settings && Game.settings.showCoords);
@@ -238,8 +248,8 @@ const Visual = (() => {
           ctx.lineWidth = Math.max(6, rad * 0.18);
           ctx.strokeStyle =
             (S._activeStyle && S._activeStyle.colors && S._activeStyle.colors.removeRing) ||
-            "rgba(220, 38, 38, 0.95)";
-          ctx.shadowColor = "rgba(0,0,0,0.35)";
+            themeChannels("--rgb-danger-500", ".95");
+          ctx.shadowColor = themeChannels("--rgb-black", ".35");
           ctx.shadowBlur = 10;
           ctx.stroke();
           ctx.restore();
@@ -303,13 +313,17 @@ const Visual = (() => {
     opts = opts || {};
     const noDraw = !!opts.noDraw;
 
-    const redSegments = payload.redSegments;
+    // Soufla replaces the ordinary turn trace; do not leave stale move,
+    // capture numbering, highlights, or an old undo marker underneath it.
+    _clearTurnFx(false);
+
+    const redPaths = payload.redPaths;
     const removeIdx = payload.removeIdx;
     const forcePath = payload.forcePath;
     const undoArrow = payload.undoArrow;
 
     const hasAny =
-      (Array.isArray(redSegments) && redSegments.length) ||
+      (Array.isArray(redPaths) && redPaths.length) ||
       removeIdx != null ||
       (Array.isArray(forcePath) && forcePath.length) ||
       (undoArrow &&
@@ -318,7 +332,7 @@ const Visual = (() => {
           (undoArrow.from != null && undoArrow.to != null)));
 
     SouflaFX.active = !!hasAny;
-    SouflaFX.redPaths = Array.isArray(redSegments) ? redSegments.slice() : [];
+    SouflaFX.redPaths = Array.isArray(redPaths) ? redPaths.slice() : [];
 
     SouflaFX.undoArrow = null;
     try {
@@ -348,9 +362,9 @@ const Visual = (() => {
 
   function moveColorForSide(side) {
     const s = side != null ? side : Game.lastMoveSide != null ? Game.lastMoveSide : Game.player;
-    if (s === TOP) return "#166534";
-    if (s === BOT) return "#1e3a8a";
-    return "#166534";
+    if (s === TOP) return themeColor("--mark-move");
+    if (s === BOT) return themeColor("--color-primary");
+    return themeColor("--mark-move");
   }
 
   function _setLastMoveInternal(fr, path, side) {
@@ -378,28 +392,28 @@ const Visual = (() => {
     S.pendingTurnClear = true;
   }
 
-  function setUndoMove(fr, to) {
+  function setUndoMove(fr, to, noDraw) {
     if (fr == null || to == null) {
       S.undoMove = null;
-      draw();
+      if (!noDraw) draw();
       return;
     }
     clearAllFxExceptUndo();
     S.undoMove = { from: fr, path: [to] };
     S.pendingTurnClear = true;
-    draw();
+    if (!noDraw) draw();
   }
 
-  function setUndoMovePath(fr, path) {
+  function setUndoMovePath(fr, path, noDraw) {
     if (fr == null || !Array.isArray(path) || !path.length) {
       S.undoMove = null;
-      draw();
+      if (!noDraw) draw();
       return;
     }
     clearAllFxExceptUndo();
     S.undoMove = { from: fr, path: path.slice() };
     S.pendingTurnClear = true;
-    draw();
+    if (!noDraw) draw();
   }
 
   function setSouflaRemove(idx) {
@@ -489,19 +503,19 @@ const Visual = (() => {
       try { S._arrowStacks = new Map(); } catch (_) { S._arrowStacks = null; }
 
       if (S.souflaRemove != null) {
-        drawX(ctx, S.souflaRemove, "#ef4444");
+        drawX(ctx, S.souflaRemove, themeColor("--mark-danger"));
       }
 
       if (S.souflaMarks && S.souflaMarks.length) {
-        for (const mi of S.souflaMarks) drawX(ctx, mi, "#ef4444");
+        for (const mi of S.souflaMarks) drawX(ctx, mi, themeColor("--mark-danger"));
       }
 
       if (SouflaFX.active) {
         const colR =
-          (S._activeStyle && S._activeStyle.colors && S._activeStyle.colors.souflaRed) || "#ef4444";
+          (S._activeStyle && S._activeStyle.colors && S._activeStyle.colors.souflaRed) || themeColor("--mark-danger");
         const colJump =
           (S._activeStyle && S._activeStyle.colors && S._activeStyle.colors.souflaRedText) ||
-          "#7f1d1d";
+          themeColor("--mark-danger-strong");
         for (const seg of SouflaFX.redPaths) {
           let cur = seg.from;
           for (let i = 0; i < seg.path.length; i++) {
@@ -521,17 +535,17 @@ const Visual = (() => {
       if (S.prevMove) {
         ctx.save();
         ctx.globalAlpha = 0.75;
-        drawPath(ctx, S.prevMove.from, S.prevMove.path, S.prevMove.color || "#166534");
+        drawPath(ctx, S.prevMove.from, S.prevMove.path, S.prevMove.color || themeColor("--mark-move"));
         ctx.restore();
       }
 
       if (S.lastMove)
-        drawPath(ctx, S.lastMove.from, S.lastMove.path, S.lastMove.color || "#166534");
+        drawPath(ctx, S.lastMove.from, S.lastMove.path, S.lastMove.color || themeColor("--mark-move"));
 
       if (S.souflaForcePathsAll && S.souflaForcePathsAll.length) {
         const colG =
           (S._activeStyle && S._activeStyle.colors && S._activeStyle.colors.souflaGreen) ||
-          "#16a34a";
+          themeColor("--mark-move");
         ctx.save();
         ctx.globalAlpha =
           S._activeStyle && typeof S._activeStyle.forceAllAlpha === "number"
@@ -550,7 +564,7 @@ const Visual = (() => {
         const p = S.souflaForcePath;
         const colGS =
           (S._activeStyle && S._activeStyle.colors && S._activeStyle.colors.souflaGreenStrong) ||
-          "#16a34a";
+          themeColor("--mark-move");
         const strong =
           S._activeStyle && S._activeStyle.arrowStrong ? S._activeStyle.arrowStrong : null;
         for (let i = 0; i < p.length - 1; i++) {
@@ -571,7 +585,7 @@ const Visual = (() => {
             .filter(Number.isFinite);
           if (nodes.length >= 2) {
             for (let i = nodes.length - 1; i >= 1; i--) {
-              drawArrow(ctx, nodes[i], nodes[i - 1], "#facc15");
+              drawArrow(ctx, nodes[i], nodes[i - 1], themeColor("--mark-undo"));
             }
           }
         } catch {}
@@ -582,7 +596,7 @@ const Visual = (() => {
           const nodes = SouflaFX.undoArrow.nodes.map((n) => Number(n)).filter(Number.isFinite);
           if (nodes.length >= 2) {
             for (let i = nodes.length - 1; i >= 1; i--) {
-              drawArrow(ctx, nodes[i], nodes[i - 1], "#facc15");
+              drawArrow(ctx, nodes[i], nodes[i - 1], themeColor("--mark-undo"));
             }
           }
         } catch {}
@@ -593,7 +607,7 @@ const Visual = (() => {
         const order = S.capturedOrder;
         if (order && order.length) {
           const isDark = document.documentElement.classList.contains("dark");
-          const fill = isDark ? "#166534" : "#14532d";
+          const fill = isDark ? themeColor("--mark-move") : themeColor("--mark-move-strong");
           for (let i = 0; i < order.length; i++) {
             __numLabels.push({ idx: order[i], text: String(i + 1), fill: fill });
           }
@@ -609,10 +623,10 @@ const Visual = (() => {
       // Mandatory-opening guidance is the highest-priority board effect.
       if (Array.isArray(S.forcedOpeningArrows) && S.forcedOpeningArrows.length) {
         for (const openingArrow of S.forcedOpeningArrows) {
-          drawArrow(ctx, openingArrow.from, openingArrow.to, "#ef4444");
+          drawArrow(ctx, openingArrow.from, openingArrow.to, themeColor("--mark-danger"));
         }
       } else if (S.forcedOpeningArrow) {
-        drawArrow(ctx, S.forcedOpeningArrow.from, S.forcedOpeningArrow.to, "#ef4444");
+        drawArrow(ctx, S.forcedOpeningArrow.from, S.forcedOpeningArrow.to, themeColor("--mark-danger"));
       }
     } finally {
       S._activeCanvas = prevCv;
@@ -624,386 +638,69 @@ const Visual = (() => {
   }
 
   function cellCenter(idx) {
-    const [r0, c0] = idxToRC(idx);
-    const [r, c] = toViewRC(r0, c0);
-
     const cv = S._activeCanvas || qs("#board");
-    const stepX = cv.width / BOARD_N;
-    const stepY = cv.height / BOARD_N;
-    const x = c * stepX + stepX / 2;
-    const y = r * stepY + stepY / 2;
-    return [x, y, stepX, stepY];
+    return BoardGeometryModule.cellCenter(idx, cv, {
+      boardSize: BOARD_N,
+      idxToRC: idxToRC,
+      toViewRC: toViewRC,
+    });
+  }
+
+  function boardViewOptions(extra) {
+    extra = extra || {};
+    const cv = S._activeCanvas || qs("#board");
+    return {
+      canvas: cv,
+      activeCanvas: cv,
+      boardSize: BOARD_N,
+      idxToRC: idxToRC,
+      rcToIdx: rcToIdx,
+      toViewRC: toViewRC,
+      cellCenter: cellCenter,
+      pieceOwner: pieceOwner,
+      pieceKind: pieceKind,
+      BOT: BOT,
+      board: Game && Game.board,
+      diagA: DIAG_A_SEGMENTS,
+      diagB: DIAG_B_SEGMENTS,
+      rules: globalThis.DhametRules,
+      documentElement: typeof document !== "undefined" ? document.documentElement : null,
+      activeStyle: S._activeStyle || null,
+      arrowStacks: S._arrowStacks || null,
+      boardStyle: Game && Game.settings && Game.settings.boardStyle === "3d" ? "3d" : "2d",
+      requestRedraw: () => { try { draw(); } catch (_) {} },
+      ...extra,
+    };
   }
 
   function drawGrid(ctx, W, H) {
-    ctx.save();
-    const stepX = W / BOARD_N;
-    const stepY = H / BOARD_N;
-
-    const cssRoot = getComputedStyle(document.documentElement);
-    const minSide = Math.min(W, H);
-    ctx.strokeStyle =
-      cssRoot.getPropertyValue("--board-diag").trim() ||
-      cssRoot.getPropertyValue("--diag").trim() ||
-      "#b8c7f0";
-    ctx.lineWidth = Math.max(2.2, minSide * 0.0032);
-    for (const line of DIAG_A_LINES) {
-      ctx.beginPath();
-      for (let i = 0; i < line.length; i++) {
-        const [r0, c0] = line[i];
-        const [r, c] = toViewRC(r0, c0);
-        const x = c * stepX + stepX / 2,
-          y = r * stepY + stepY / 2;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-    for (const line of DIAG_B_LINES) {
-      ctx.beginPath();
-      for (let i = 0; i < line.length; i++) {
-        const [r0, c0] = line[i];
-        const [r, c] = toViewRC(r0, c0);
-        const x = c * stepX + stepX / 2,
-          y = r * stepY + stepY / 2;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    ctx.strokeStyle =
-      cssRoot.getPropertyValue("--board-grid").trim() ||
-      cssRoot.getPropertyValue("--grid").trim() ||
-      "#cbd5e1";
-    ctx.lineWidth = Math.max(1.8, minSide * 0.0025);
-    for (let r = 0; r < BOARD_N; r++) {
-      const y = r * stepY + stepY / 2;
-      ctx.beginPath();
-      ctx.moveTo(stepX / 2, y);
-      ctx.lineTo(W - stepX / 2, y);
-      ctx.stroke();
-    }
-    for (let c = 0; c < BOARD_N; c++) {
-      const x = c * stepX + stepX / 2;
-      ctx.beginPath();
-      ctx.moveTo(x, stepY / 2);
-      ctx.lineTo(x, H - stepY / 2);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = "#667085";
-    for (let r = 0; r < BOARD_N; r++) {
-      for (let c = 0; c < BOARD_N; c++) {
-        const x = c * stepX + stepX / 2;
-        const y = r * stepY + stepY / 2;
-        ctx.beginPath();
-        ctx.arc(x, y, Math.max(2.8, minSide * 0.0042), 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.restore();
+    return BoardViewModule.drawGrid(ctx, W, H, boardViewOptions());
   }
   function drawCoords(ctx, W, H) {
-    ctx.save();
-
-    const style = S._activeStyle && S._activeStyle.coords ? S._activeStyle.coords : null;
-    const isDark = document.documentElement.classList.contains("dark");
-
-    if (!style) {
-      ctx.fillStyle = isDark ? "#ffffff" : "#020617";
-      ctx.font = "900 16px Calibri, Carlito, Segoe UI, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const stepX = W / BOARD_N;
-      const stepY = H / BOARD_N;
-      for (let r = 0; r < BOARD_N; r++) {
-        for (let c = 0; c < BOARD_N; c++) {
-          const [vr, vc] = toViewRC(r, c);
-          const x = vc * stepX + stepX / 2;
-          const y = vr * stepY + stepY / 2;
-          ctx.fillText(`${vr}.${vc}`, x, y);
-        }
-      }
-      ctx.restore();
-      return;
-    }
-
-    ctx.font = style.font || "900 17px Calibri, Carlito, Segoe UI, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    const stepX = W / BOARD_N;
-    const stepY = H / BOARD_N;
-    const minSide = Math.min(stepX, stepY);
-    const radiusMul = style.radiusMul || 0.22;
-    const radius = Math.max(10, minSide * radiusMul);
-
-    const bg = isDark
-      ? style.bgDark || "rgba(0,0,0,0.68)"
-      : style.bgLight || "rgba(255,255,255,0.86)";
-    const fill = isDark ? style.fillDark || "#ffffff" : style.fillLight || "#020617";
-    const stroke = isDark
-      ? style.strokeDark || "rgba(0,0,0,0.95)"
-      : style.strokeLight || "rgba(255,255,255,1)";
-
-    for (let r = 0; r < BOARD_N; r++) {
-      for (let c = 0; c < BOARD_N; c++) {
-        const [vr, vc] = toViewRC(r, c);
-        const x = vc * stepX + stepX / 2;
-        const y = vr * stepY + stepY / 2;
-
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = bg;
-        ctx.fill();
-
-        ctx.lineWidth = style.lineWidth != null ? style.lineWidth : 4;
-        ctx.strokeStyle = stroke;
-        ctx.strokeText(`${vr}.${vc}`, x, y);
-
-        ctx.fillStyle = fill;
-        ctx.fillText(`${vr}.${vc}`, x, y);
-      }
-    }
-
-    ctx.restore();
+    return BoardViewModule.drawCoords(ctx, W, H, boardViewOptions({
+      style: S._activeStyle && S._activeStyle.coords ? S._activeStyle.coords : null,
+    }));
   }
   function drawCellHighlight(ctx, r, c) {
-    ctx.save();
-    const cv = S._activeCanvas || qs("#board");
-    const stepX = cv.width / BOARD_N;
-    const stepY = cv.height / BOARD_N;
-    const minSide = Math.min(stepX, stepY);
-    const [vr, vc] = toViewRC(r, c);
-    const cx = vc * stepX + stepX / 2;
-    const cy = vr * stepY + stepY / 2;
-
-    const radius = minSide * 0.28;
-    ctx.translate(cx, cy);
-    ctx.rotate(Math.PI / 4);
-
-    ctx.fillStyle = "#ef4444";
-    ctx.globalAlpha = 0.18;
-    ctx.fillRect(-radius, -radius, 2 * radius, 2 * radius);
-
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = Math.max(3.5, minSide * 0.05);
-    ctx.strokeStyle = "#b91c1c";
-    ctx.strokeRect(-radius, -radius, 2 * radius, 2 * radius);
-
-    ctx.restore();
+    return BoardViewModule.drawCellHighlight(ctx, r, c, boardViewOptions());
   }
-
-  function pieceFill(v) {
-    const owner = pieceOwner(v);
-    return owner === BOT ? ["#fafafa", "#d4d4d4"] : ["#0b1220", "#1f2937"];
-  }
-
   function drawPieces(ctx) {
-    const cv = S._activeCanvas || qs("#board");
-    const stepX = cv.width / BOARD_N;
-    const stepY = cv.height / BOARD_N;
-    for (let r = 0; r < BOARD_N; r++) {
-      for (let c = 0; c < BOARD_N; c++) {
-        const v = Game.board[r][c];
-        if (!v) continue;
-        const [vr, vc] = toViewRC(r, c);
-        const x = vc * stepX + stepX / 2;
-        const y = vr * stepY + stepY / 2;
-
-        const rad = Math.max(1, Math.min(stepX, stepY) / 2 - 25);
-        const [c1, c2] = pieceFill(v);
-        const grad = ctx.createRadialGradient(x - rad * 0.3, y - rad * 0.3, rad * 0.2, x, y, rad);
-        grad.addColorStop(0, c1);
-        grad.addColorStop(1, c2);
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, rad, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = pieceOwner(v) === BOT ? "#526bfc" : "#fc780c";
-        ctx.stroke();
-
-        if (Math.abs(v) === 2) {
-          ctx.beginPath();
-          ctx.arc(x, y, rad * 0.8, 0, Math.PI * 2);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "#f5c542";
-          ctx.stroke();
-        }
-
-        const dotR = rad * 0.3;
-        ctx.beginPath();
-        ctx.arc(x, y, dotR, 0, Math.PI * 2);
-        ctx.fillStyle = pieceOwner(v) === BOT ? "#3b82f6" : "#f77e0e";
-        ctx.fill();
-
-        ctx.restore();
-      }
-    }
+    return BoardViewModule.drawPieces(ctx, Game.board, boardViewOptions());
   }
-
-
   function drawStackedNumbers(ctx, labels) {
-    if (!labels || !labels.length) return;
-    const cv = S._activeCanvas || qs("#board");
-    const stepX = cv.width / BOARD_N;
-    const stepY = cv.height / BOARD_N;
-    const minSide = Math.min(stepX, stepY);
-    const offs = Math.max(7, minSide * 0.18);
-    const pats = [
-      [0, 0],
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-      [1, 1],
-      [-1, 1],
-      [1, -1],
-      [-1, -1],
-      [2, 0],
-      [-2, 0],
-      [0, 2],
-      [0, -2],
-    ];
-    const used = new Map();
-    ctx.save();
-    ctx.font = `bold ${Math.max(16, (minSide * 0.34) | 0)}px Calibri, Carlito, Segoe UI, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    for (let k = 0; k < labels.length; k++) {
-      const lab = labels[k];
-      const idx = lab && lab.idx != null ? Number(lab.idx) : null;
-      if (idx == null || !Number.isFinite(idx)) continue;
-      const txt = lab && lab.text != null ? String(lab.text) : "";
-      if (!txt) continue;
-
-      const n = used.has(idx) ? used.get(idx) : 0;
-      used.set(idx, n + 1);
-      const pat = pats[n] || [0, 0];
-      const dx = pat[0] * offs;
-      const dy = pat[1] * offs;
-
-      const [r0, c0] = idxToRC(idx);
-      const [r, c] = toViewRC(r0, c0);
-      const x = c * stepX + stepX / 2 + dx;
-      const y = r * stepY + stepY / 2 + dy;
-
-      ctx.lineWidth = Math.max(3, minSide * 0.06);
-      ctx.strokeStyle = lab && lab.stroke ? String(lab.stroke) : "rgba(0,0,0,0.78)";
-      ctx.strokeText(txt, x, y);
-      ctx.fillStyle = lab && lab.fill ? String(lab.fill) : "#fef08a";
-      ctx.fillText(txt, x, y);
-    }
-    ctx.restore();
+    return BoardViewModule.drawStackedNumbers(ctx, labels, boardViewOptions());
   }
-
   function drawArrow(ctx, fromIdx, toIdx, color, opts) {
-    let [x1, y1] = cellCenter(fromIdx);
-    let [x2, y2] = cellCenter(toIdx);
-
-    const base = S._activeStyle && S._activeStyle.arrow ? S._activeStyle.arrow : null;
-    const st = opts || base || {};
-    const lw = st.lineWidth != null ? st.lineWidth : 6;
-    const head = st.head != null ? st.head : Math.max(16, lw * 3);
-
-    ctx.save();
-    ctx.strokeStyle = color || "#166534";
-    ctx.lineWidth = lw;
-    ctx.lineCap = "round";
-
-    const c0 = String(ctx.strokeStyle || "")
-      .toLowerCase()
-      .trim();
-    const isYellow = c0.indexOf("facc15") >= 0 || c0.indexOf("fcd34d") >= 0;
-    const isRed =
-      c0.indexOf("ef4444") >= 0 || c0.indexOf("dc2626") >= 0 || c0.indexOf("b91c1c") >= 0;
-    const layer = isYellow ? 2 : isRed ? 0 : 1;
-    const offStep = Math.max(1.6, lw * 0.55);
-    let off = layer === 2 ? offStep : layer === 0 ? -offStep : 0;
-
-    try {
-      const stacks = S._arrowStacks;
-      if (stacks) {
-        const a = fromIdx < toIdx ? fromIdx : toIdx;
-        const b = fromIdx < toIdx ? toIdx : fromIdx;
-        const key = a + ":" + b + ":" + layer;
-        const n = (stacks.get(key) | 0) || 0;
-        stacks.set(key, (n | 0) + 1);
-        const nn = n | 0;
-        const lane = nn === 0 ? 0 : nn % 2 ? Math.ceil(nn / 2) : -Math.ceil(nn / 2);
-        const laneSpacing = st.laneSpacing != null ? st.laneSpacing : Math.max(2.4, lw * 0.9);
-        off += lane * laneSpacing;
-      }
-    } catch (_) {}
-
-
-    if (off) {
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const len = Math.hypot(dx, dy) || 1;
-      const px = -dy / len;
-      const py = dx / len;
-      x1 += px * off;
-      y1 += py * off;
-      x2 += px * off;
-      y2 += py * off;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-
-    const ang = Math.atan2(y2 - y1, x2 - x1);
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - head * Math.cos(ang - Math.PI / 6), y2 - head * Math.sin(ang - Math.PI / 6));
-    ctx.lineTo(x2 - head * Math.cos(ang + Math.PI / 6), y2 - head * Math.sin(ang + Math.PI / 6));
-    ctx.closePath();
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.fill();
-    ctx.restore();
+    return BoardViewModule.drawArrow(ctx, fromIdx, toIdx, color, boardViewOptions({ arrowStyle: opts || null }));
   }
-
   function drawPath(ctx, fromIdx, pathList, color) {
-    let cur = fromIdx;
-    for (const to of pathList) {
-      drawArrow(ctx, cur, to, color);
-      cur = to;
-    }
+    return BoardViewModule.drawPath(ctx, fromIdx, pathList, color, boardViewOptions());
   }
   function drawX(ctx, idx, color) {
-    const [x, y, stepX, stepY] = cellCenter(idx);
-    const rad = Math.max(1, Math.min(stepX, stepY) / 2 - 25);
-    const s = Math.max(6, rad * 0.9);
-    ctx.save();
-    ctx.strokeStyle = color || "#ef4444";
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.moveTo(x - s, y - s);
-    ctx.lineTo(x + s, y + s);
-    ctx.moveTo(x - s, y + s);
-    ctx.lineTo(x + s, y - s);
-    ctx.stroke();
-    ctx.restore();
+    return BoardViewModule.drawX(ctx, idx, color, boardViewOptions());
   }
-
   function drawCrownPulse(ctx, idx) {
-    const [x, y, stepX, stepY] = cellCenter(idx);
-    const r = (Math.min(stepX, stepY) / 2) * 0.9;
-    ctx.save();
-    ctx.strokeStyle = "#fcd34d";
-    ctx.lineWidth = 4;
-    ctx.globalAlpha = 0.8;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+    return BoardViewModule.drawCrownPulse(ctx, idx, boardViewOptions());
   }
 
   return {
@@ -1026,9 +723,9 @@ const Visual = (() => {
     getCapturedOrder() {
       return Array.isArray(S.capturedOrder) ? S.capturedOrder.slice() : [];
     },
-    setCapturedOrder(list) {
+    setCapturedOrder(list, noDraw) {
       S.capturedOrder = Array.isArray(list) ? list.slice() : [];
-      draw();
+      if (!noDraw) draw();
     },
     markTurnBoundary() {
       S.pendingTurnClear = true;
@@ -1047,10 +744,10 @@ const Visual = (() => {
       S.capturedOrder.push(idx);
       draw();
     },
-    clearCapturedOrder() {
+    clearCapturedOrder(noDraw) {
       S.capturedOrder = [];
       S.pendingTurnClear = false;
-      draw();
+      if (!noDraw) draw();
     },
     setShowCoords(v) {
       S.showCoords = !!v;

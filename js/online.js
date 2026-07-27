@@ -171,6 +171,11 @@
 
     _displayNameForGameUid: function (uid, fallback) {
           try {
+            if (uid && this.myUid && String(uid) === String(this.myUid) && !this.isSpectator) {
+              return window.I18N.translateArgs("players.you") || "You";
+            }
+          } catch (e) {}
+          try {
             const want = String(uid || "").trim();
             const players = this._lastGameData && this._lastGameData.players ? this._lastGameData.players : null;
             if (want && players) {
@@ -178,11 +183,6 @@
               const blackUid = players.black && players.black.uid ? String(players.black.uid) : "";
               if (want === blackUid) return this._resolveSlotDisplayName("top", fallback);
               if (want === whiteUid) return this._resolveSlotDisplayName("bot", fallback);
-            }
-          } catch (e) {}
-          try {
-            if (uid && this.myUid && String(uid) === String(this.myUid)) {
-              return window.I18N.translateArgs("players.you") || "You";
             }
           } catch (e) {}
           return String(fallback || "").trim();
@@ -1956,11 +1956,21 @@
           const countsAsResult = resultMeta.countsAsResult !== false;
           const rejectionReason = String(resultMeta.rejectionReason || "").trim();
           const missingOfficial = info.missingOfficial === true || reason === "room_unavailable";
+          const isSpectator = !!this.isSpectator;
+          const mySide = !isSpectator && (Number(this.mySide) === TOP || Number(this.mySide) === BOT)
+            ? Number(this.mySide)
+            : null;
+          const isSelfSide = (side) => mySide != null && Number(side) === mySide;
+          const isSelfUid = (uid) => !isSpectator && !!uid && !!this.myUid && String(uid) === String(this.myUid);
 
           const rowForSide = (side) => side === BOT ? players.white : side === TOP ? players.black : null;
-          const nameForSide = (side) => {
+          const actualNameForSide = (side) => {
             const row = rowForSide(side);
-            const name = row && String(row.nickname || "").trim();
+            let name = "";
+            try {
+              if (row && typeof displayPlayerName === "function") name = displayPlayerName(row.uid, row.nickname);
+            } catch (e) {}
+            if (!name && row) name = String(row.nickname || "").trim();
             if (name) return name;
             try {
               if (typeof Game !== "undefined" && Game && Game.names) {
@@ -1970,38 +1980,93 @@
             } catch (e) {}
             return window.I18N.translateArgs("players.player");
           };
-          const actorName = (() => {
-            if (endedBy && String(endedBy.nickname || "").trim()) return String(endedBy.nickname).trim();
-            if (endedBySide != null) return nameForSide(endedBySide);
+          const actorActualName = (() => {
+            if (endedBy) {
+              try {
+                if (typeof displayPlayerName === "function") {
+                  const direct = displayPlayerName(endedBy.uid, endedBy.nickname);
+                  if (direct) return direct;
+                }
+              } catch (e) {}
+              if (String(endedBy.nickname || "").trim()) return String(endedBy.nickname).trim();
+            }
+            if (endedBySide != null) return actualNameForSide(endedBySide);
+            try {
+              if (typeof displayPlayerName === "function") {
+                const direct = displayPlayerName(info.byUid, info.byNick);
+                if (direct) return direct;
+              }
+            } catch (e) {}
             return String(info.byNick || "").trim();
           })();
+          const actorIsSelf = !isSpectator && (
+            (endedBySide != null && isSelfSide(endedBySide)) ||
+            (endedBy && isSelfUid(endedBy.uid)) ||
+            isSelfUid(info.byUid)
+          );
           const otherSide = endedBySide === TOP ? BOT : endedBySide === BOT ? TOP : null;
-          const otherName = otherSide != null ? nameForSide(otherSide) : window.I18N.translateArgs("online.opponent");
-          const winnerName = winner != null ? nameForSide(winner) : "";
+          const otherName = otherSide != null ? actualNameForSide(otherSide) : window.I18N.translateArgs("online.opponent");
+          const winnerName = winner != null ? actualNameForSide(winner) : "";
           const loserSide = winner === TOP ? BOT : winner === BOT ? TOP : null;
-          const loserName = loserSide != null ? nameForSide(loserSide) : window.I18N.translateArgs("players.player");
+          const loserName = loserSide != null ? actualNameForSide(loserSide) : window.I18N.translateArgs("players.player");
           const isDraw = resultStatus === "draw" || reason === "draw" || reason === "one_king_each";
           const isAbsence = reason === "opponent_absent" || reason === "opponent_absent_late" || actionKind === "opponent-absent";
           const isManual = isAbsence || reason === "ended_by_player" || reason === "late_exit" || ["leave", "resign"].includes(actionKind);
           const adminCounted = countsAsResult && (reason === "late_exit" || reason === "opponent_absent_late" || resultMeta.adjudicated === true);
-          const lines = [];
-          const add = (text) => { const clean = String(text || "").trim(); if (clean && !lines.includes(clean)) lines.push(clean); };
 
-          if (missingOfficial) add(window.I18N.translateArgs("online.endPresentation.roomUnavailable"));
-          else if (winner != null) add(formatTpl(window.I18N.translateArgs("online.endPresentation.winner"), { player: winnerName }));
-          else if (isDraw) add(window.I18N.translateArgs("modals.gameOver.draw"));
-          else if (isManual && actorName) add(isAbsence
-            ? formatTpl(window.I18N.translateArgs("online.endPresentation.endedByAbsence"), { player: actorName, opponent: otherName })
-            : formatTpl(window.I18N.translateArgs("online.endPresentation.endedBy"), { player: actorName }));
-          else add(window.I18N.translateArgs("online.endPresentation.noRecordedResult"));
+          const lines = [];
+          const add = (text) => {
+            const clean = String(text || "").trim();
+            if (clean && !lines.includes(clean)) lines.push(clean);
+          };
+
+          if (missingOfficial) {
+            add(window.I18N.translateArgs("online.endPresentation.roomUnavailable"));
+          } else if (winner != null) {
+            if (isSelfSide(winner)) add(window.I18N.translateArgs("online.endPresentation.selfWinner"));
+            else if (mySide != null) add(window.I18N.translateArgs("online.endPresentation.selfLoser"));
+            else add(formatTpl(window.I18N.translateArgs("online.endPresentation.winner"), { player: winnerName }));
+          } else if (isDraw) {
+            add(window.I18N.translateArgs("modals.gameOver.draw"));
+          } else if (isManual && actorActualName) {
+            if (actorIsSelf) {
+              add(isAbsence
+                ? formatTpl(window.I18N.translateArgs("online.endPresentation.selfEndedByAbsence"), { opponent: otherName })
+                : window.I18N.translateArgs("online.endPresentation.selfEndedBy"));
+            } else {
+              add(isAbsence
+                ? formatTpl(window.I18N.translateArgs("online.endPresentation.endedByAbsence"), { player: actorActualName, opponent: otherName })
+                : formatTpl(window.I18N.translateArgs("online.endPresentation.endedBy"), { player: actorActualName }));
+            }
+          } else {
+            add(window.I18N.translateArgs("online.endPresentation.noRecordedResult"));
+          }
 
           if (!missingOfficial) {
-            if (reason === "no_pieces") add(formatTpl(window.I18N.translateArgs("modals.gameOver.reason.noPieces"), { player: loserName }));
-            else if (reason === "no_legal_moves") add(formatTpl(window.I18N.translateArgs("online.endPresentation.reason.noLegalMoves"), { player: loserName }));
-            else if (reason === "one_king_each") add(window.I18N.translateArgs("online.endPresentation.reason.oneKingEach"));
-            if (winner != null && isManual) add(isAbsence
-              ? formatTpl(window.I18N.translateArgs("online.endPresentation.endedByAbsence"), { player: actorName || window.I18N.translateArgs("players.player"), opponent: otherName })
-              : formatTpl(window.I18N.translateArgs("online.endPresentation.endedBy"), { player: actorName || window.I18N.translateArgs("players.player") }));
+            if (reason === "no_pieces") {
+              add(isSelfSide(loserSide)
+                ? window.I18N.translateArgs("online.endPresentation.reason.selfNoPieces")
+                : formatTpl(window.I18N.translateArgs("modals.gameOver.reason.noPieces"), { player: loserName }));
+            } else if (reason === "no_legal_moves") {
+              add(isSelfSide(loserSide)
+                ? window.I18N.translateArgs("online.endPresentation.reason.selfNoLegalMoves")
+                : formatTpl(window.I18N.translateArgs("online.endPresentation.reason.noLegalMoves"), { player: loserName }));
+            } else if (reason === "one_king_each") {
+              add(window.I18N.translateArgs("online.endPresentation.reason.oneKingEach"));
+            }
+
+            if (winner != null && isManual) {
+              if (actorIsSelf) {
+                add(isAbsence
+                  ? formatTpl(window.I18N.translateArgs("online.endPresentation.selfEndedByAbsence"), { opponent: otherName })
+                  : window.I18N.translateArgs("online.endPresentation.selfEndedBy"));
+              } else {
+                add(isAbsence
+                  ? formatTpl(window.I18N.translateArgs("online.endPresentation.endedByAbsence"), { player: actorActualName || window.I18N.translateArgs("players.player"), opponent: otherName })
+                  : formatTpl(window.I18N.translateArgs("online.endPresentation.endedBy"), { player: actorActualName || window.I18N.translateArgs("players.player") }));
+              }
+            }
+
             if (countsAsResult === false) {
               const key = rejectionReason === "administrative_early_or_midgame"
                 ? "online.resultNotCounted.early"
@@ -2009,10 +2074,21 @@
                   ? "online.resultNotCounted.unclear"
                   : "online.resultNotCounted.generic";
               add(window.I18N.translateArgs(key));
-            } else if (adminCounted) add(window.I18N.translateArgs("online.endPresentation.reason.positionDecisive"));
+            } else if (adminCounted) {
+              add(window.I18N.translateArgs("online.endPresentation.reason.positionDecisive"));
+            }
           }
+
           const primary = lines[0] || window.I18N.translateArgs("online.endPresentation.noRecordedResult");
-          return { title: window.I18N.translateArgs("modals.gameOver.title"), primary, details: lines.slice(1), text: lines.join("\n\n"), reason, winner, countsAsResult };
+          return {
+            title: window.I18N.translateArgs("modals.gameOver.title"),
+            primary,
+            details: lines.slice(1),
+            text: lines.join("\n\n"),
+            reason,
+            winner,
+            countsAsResult,
+          };
         },
 
     _enterPostMatch: function (meta) {
@@ -2097,6 +2173,7 @@
     
           const gid = this.gameId || this._presenceRoomId;
           const uid = this.myUid;
+          if (this.isSpectator) this._spectatorLeaving = true;
     
           try {
             if (gid && uid && this.isSpectator) {
@@ -2193,6 +2270,7 @@
             }
     
             if (this.isSpectator) {
+              this._spectatorLeaving = true;
               try {
                 await this._removeSpectatorRegistration(gid, uid);
               } catch (e) {}
@@ -2292,6 +2370,7 @@
         },
 
     _resetOnlineRuntimeState: function () {
+          this._spectatorLeaving = false;
           this._lastTrainLoggedMoveIndex = 0;
           this._localEndedOnline = false;
           this._selfConnected = true;
@@ -2574,12 +2653,12 @@
                   const fr = lm.undoneFrom != null ? lm.undoneFrom : null;
                   const p = Array.isArray(lm.undonePath) ? lm.undonePath : null;
                   if (fr != null && p && p.length && typeof Visual.setUndoMovePath === "function") {
-                    Visual.setUndoMovePath(fr, p);
+                    Visual.setUndoMovePath(fr, p, true);
                   } else if (fr != null && p && p.length && typeof Visual.setUndoMove === "function") {
-                    Visual.setUndoMove(fr, p[p.length - 1]);
+                    Visual.setUndoMove(fr, p[p.length - 1], true);
                   } else {
                     try {
-                      Visual.setUndoMove && Visual.setUndoMove(null, null);
+                      Visual.setUndoMove && Visual.setUndoMove(null, null, true);
                     } catch (e) {}
                   }
                   try {
@@ -2673,7 +2752,7 @@
                     Visual &&
                     typeof Visual.setCapturedOrder === "function"
                   )
-                    Visual.setCapturedOrder(data.state.capturedOrder);
+                    Visual.setCapturedOrder(data.state.capturedOrder, true);
                 } catch (e) {}
               }
             } catch (e) {}
@@ -2755,7 +2834,7 @@
                       }
                     }
                   } catch (e) {}
-                  showOnlineNotice(window.I18N.translateArgs("undo.applied"));
+                  showOnlineNotice(window.I18N.translateArgs("undo.applied"), { allowSpectator: true });
                 }
               }
     
@@ -4930,93 +5009,22 @@
           } catch (e) {}
         },
 
-    _showSouflaModalFromLastMove: function (lm) {
+    _showSouflaModalFromLastMove: function (lastMove) {
           try {
-            const mySide = this.mySide;
-            const by = lm.by;
-            const decision = lm.decision;
-            const meta = lm.souflaMeta || {};
-            const offenderIdx = decision.offenderIdx != null ? decision.offenderIdx : meta.offenderIdx;
-    
-            const Lmax = meta.longestGlobal != null ? meta.longestGlobal : 0;
-            const startedFrom = meta.startedFrom != null ? meta.startedFrom : null;
-            const lastPieceIdx = meta.lastPieceIdx != null ? meta.lastPieceIdx : null;
-    
-            const title = window.I18N.translateArgs("modals.soufla.header");
-    
-            if (mySide === by) {
-              const body = document.createElement("div");
-              body.innerHTML = `
-                <div style="font-weight:700;margin-bottom:6px;">${window.I18N.translateArgs("soufla.applied.self")}</div>
-                <div class="muted">${
-                  decision.kind === "remove" ? window.I18N.translateArgs("soufla.applied.remove") : window.I18N.translateArgs("soufla.applied.force")
-                }</div>
-              `;
-              Modal.alert({
-                title,
-                body,
-                okLabel: window.I18N.translateArgs("actions.close"),
-              });
-              return;
+            if (!window.DhametSouflaView || typeof DhametSouflaView.showAppliedSummary !== "function") {
+              throw new Error("shared-soufla-summary-missing");
             }
-    
-            const body = document.createElement("div");
-            body.className = "soufla-summary";
-    
-            const fmtCell = (idx) =>
-              idx != null ? (typeof rcStr === "function" ? rcStr(idx) : "?") : "?";
-    
-            const offenderCell = fmtCell(offenderIdx);
-            const undoFrom =
-              lastPieceIdx != null && startedFrom != null && lastPieceIdx !== startedFrom
-                ? fmtCell(lastPieceIdx)
-                : null;
-            const undoTo =
-              lastPieceIdx != null && startedFrom != null && lastPieceIdx !== startedFrom
-                ? fmtCell(startedFrom)
-                : null;
-    
-            const parts = [];
-            parts.push(
-              `<div style="font-weight:900;margin-bottom:6px;">${window.I18N.translateArgs("soufla.summary.title")}</div>`,
-            );
-            parts.push(`<div>${window.I18N.translateArgs("soufla.summary.reason")}</div>`);
-            parts.push(
-              `<div style="margin-top:10px;font-weight:800;">${window.I18N.translateArgs("soufla.summary.penaltyTitle")}</div>`,
-            );
-    
-            if (decision.kind === "force") {
-              const p = Array.isArray(decision.path) ? decision.path.slice() : [];
-              const toIdx = p.length ? p[p.length - 1] : offenderIdx;
-              const len = p.length || 0;
-    
-              parts.push(
-                `<div>${window.I18N.translateArgs("soufla.summary.force", { from: offenderCell, to: fmtCell(toIdx), len })}</div>`,
-              );
-    
-              if (undoFrom && undoTo) {
-                parts.push(
-                  `<div class="muted" style="margin-top:8px;">${window.I18N.translateArgs("soufla.summary.undo", { from: undoFrom, to: undoTo })}</div>`,
-                );
-              }
-            } else {
-              parts.push(`<div>${window.I18N.translateArgs("soufla.summary.remove", { cell: offenderCell })}</div>`);
-    
-              if (undoFrom && undoTo) {
-                parts.push(
-                  `<div class="muted" style="margin-top:8px;">${window.I18N.translateArgs("soufla.summary.undo", { from: undoFrom, to: undoTo })}</div>`,
-                );
-              }
-            }
-    
-            body.innerHTML = parts.join("");
-    
-            Modal.alert({
-              title,
-              body,
-              okLabel: window.I18N.translateArgs("actions.close"),
+            return DhametSouflaView.showAppliedSummary(lastMove, {
+              mySide: this.mySide,
+              isSpectator: !!this.isSpectator,
+              t: (key, vars) => window.I18N.translateArgs(key, vars && typeof vars === "object" ? vars : {}),
+              rcStr: typeof rcStr === "function" ? rcStr : undefined,
+              Modal: typeof Modal !== "undefined" ? Modal : null,
             });
-          } catch (e) {}
+          } catch (e) {
+            try { Logger.warn("shared_soufla_summary_failed", { err: String(e && (e.message || e)) }); } catch (_) {}
+            return false;
+          }
         },
 
     _maybeRecordOpponentMoveForTraining: function (data) {
@@ -5838,6 +5846,34 @@
             this._closeUndoWaitModal();
             return;
           }
+
+          // A spectator follows every match event, but never receives player
+          // controls or wording that makes the spectator a party to the request.
+          if (this.isSpectator) {
+            const state = String(ur.status || "").toLowerCase();
+            const noticeKey = [state, ur.requesterUid || "", ur.requestedAt || "", ur.respondedAt || ur.acceptedAt || ""].join("|");
+            if (noticeKey && noticeKey !== this._lastSpectatorUndoNoticeKey) {
+              this._lastSpectatorUndoNoticeKey = noticeKey;
+              const player = String(ur.requesterNick || "").trim() || window.I18N.translateArgs("players.player");
+              const key = state === "accepted"
+                ? "undo.spectatorAccepted"
+                : state === "rejected"
+                  ? "undo.spectatorRejected"
+                  : (state === "pending" || state === "active")
+                    ? "undo.spectatorRequested"
+                    : "";
+              if (key) {
+                showOnlineNotice(formatTpl(window.I18N.translateArgs(key), { player }), {
+                  allowSpectator: true,
+                  title: window.I18N.translateArgs("modals.undo.title"),
+                });
+              }
+            }
+            if (state === "accepted") {
+              try { this._forceResync && this._forceResync(); } catch (e) {}
+            }
+            return;
+          }
     
           if ((ur.status === "pending" || ur.status === "active") && ur.requesterUid === this.myUid) {
             this._openUndoWaitModal(ur);
@@ -6228,7 +6264,7 @@
                   const stLabel =
                     st === "available"
                       ? window.I18N.translateArgs("online.status.available")
-                      : st === "available"
+                      : st === "vsComputer"
                         ? window.I18N.translateArgs("online.status.vsComputer")
                         : st === "inPvP"
                           ? window.I18N.translateArgs("online.status.inPvP")
@@ -6272,12 +6308,17 @@
     
               playersEl.innerHTML = rows
                 .map((r) => {
+                  const playerStatusClass = r.st === "available"
+                    ? "is-available"
+                    : (r.st === "vsComputer"
+                        ? "is-computer"
+                        : (r.st === "inPvP" ? "is-online" : "is-no-invites"));
+                  const statusMarkup = `<span class="z-player-status ${playerStatusClass}">${escapeHtml(r.stLabel)}</span>`;
                   if (r.isSelf) {
                     return `
-                      <div class="z-row" data-uid="${r.uid}">
+                      <div class="z-row z-player-row ${playerStatusClass} is-self" data-uid="${r.uid}">
                         <div class="z-row-main">
-                          <div class="z-row-title"><img class="z-avatar" src="${r.icon}" alt="" />${escapeHtml(r.nick)}</div>
-                          <div class="z-row-sub">${escapeHtml(r.stLabel)}</div>
+                          <div class="z-row-title"><img class="z-avatar" src="${r.icon}" alt="" /><span class="z-player-name">${escapeHtml(r.nick)}</span>${statusMarkup}</div>
                         </div>
                         <div class="z-row-actions">
                           <span class="z-self">${window.I18N.translateArgs("players.you")}</span>
@@ -6285,18 +6326,20 @@
                       </div>
                     `;
                   }
-    
+
                   const dis = r.canInvite ? "" : 'disabled aria-disabled="true"';
-                  const title = r.canInvite ? "" : `title=\"${window.I18N.translateArgs(r.acceptsInvites ? "lobby.inviteDisabled" : "online.invites.disabled")}\"`;
-                  const inviteLabel = r.acceptsInvites ? window.I18N.translateArgs("actions.invite") : window.I18N.translateArgs("online.invites.disabled");
+                  const inviteButtonClass = r.canInvite
+                    ? "btn small ok z-invite-btn is-invite-active"
+                    : "btn small z-invite-btn is-invite-disabled";
+                  const title = r.canInvite ? "" : `title="${window.I18N.translateArgs(r.st === "inPvP" ? "lobby.inviteDisabled" : "lobby.invitesDisabled")}"`;
+                  const inviteLabel = window.I18N.translateArgs("actions.invite");
                   return `
-                    <div class="z-row" data-uid="${r.uid}">
+                    <div class="z-row z-player-row ${playerStatusClass}" data-uid="${r.uid}">
                       <div class="z-row-main">
-                        <div class="z-row-title"><img class="z-avatar" src="${r.icon}" alt="" />${escapeHtml(r.nick)}</div>
-                        <div class="z-row-sub">${escapeHtml(r.stLabel)}</div>
+                        <div class="z-row-title"><img class="z-avatar" src="${r.icon}" alt="" /><span class="z-player-name">${escapeHtml(r.nick)}</span>${statusMarkup}</div>
                       </div>
                       <div class="z-row-actions">
-                        <button class="btn small ok" data-action="invite" ${dis} ${title}>
+                        <button class="${inviteButtonClass}" data-action="invite" ${dis} ${title}>
                           <span>${inviteLabel}</span>
                         </button>
                       </div>
@@ -6363,13 +6406,22 @@
                   activePlayerRooms[String(buid)] = String(gid);
     
                   const name = (g.roomName || g.name || "").trim() || window.I18N.translateArgs("lobby.roomDefault");
-                  const w = g.players && g.players.white ? g.players.white.nickname || "" : "";
-                  const b = g.players && g.players.black ? g.players.black.nickname || "" : "";
+                  const w = g.players && g.players.white ? displayPlayerName(g.players.white.uid, g.players.white.nickname) : "";
+                  const b = g.players && g.players.black ? displayPlayerName(g.players.black.uid, g.players.black.nickname) : "";
                   const spectatorCount = Math.max(0, Math.min(3, Number(g.spectatorCount || 0) || 0));
                   const spectatorCountUpdatedAt = Number(g.spectatorCountUpdatedAt || 0) || 0;
                   const spectatorCountFresh = isPresenceFresh(spectatorCountUpdatedAt, SPECTATOR_COUNT_STALE_MS);
                   const visibility = normalizeRoomVisibility(g.visibility);
-                  rooms.push({ gid, name, w, b, wuid, buid, visibility, createdAt: g.createdAt || g.acceptedAt || 0, spectatorCount, spectatorCountUpdatedAt, spectatorCountFresh });
+                  const reconnectGraceUntil = Number(g.reconnectGraceUntil || 0) || 0;
+                  const reconnecting = g.reconnecting === true && reconnectGraceUntil > nowTs();
+                  rooms.push({
+                    gid, name, w, b, wuid, buid, visibility,
+                    ownerOnly: g.ownerOnly === true || g.listed === false,
+                    reconnecting,
+                    reconnectGraceUntil,
+                    createdAt: g.createdAt || g.acceptedAt || 0,
+                    spectatorCount, spectatorCountUpdatedAt, spectatorCountFresh
+                  });
                 }
               }
               this._lobbyActivePlayerRooms = activePlayerRooms;
@@ -6401,13 +6453,23 @@
                   const spectateBtn = !isMePlayer
                     ? `<button class="btn small secondary" data-action="spectate" data-gid="${r.gid}" ${spectatorDisabled} ${spectatorTitle}>
                          <img class="btn-ico" src="${ASSET_PREFIX}assets/icons/watch.svg" alt="" aria-hidden="true" />
-                         <span>${spectatorLabel}</span>
+                         <span>${spectatorLabel}${!isPrivateRoom ? ` (${Number(r.spectatorCount || 0)})` : ""}</span>
                        </button>`
                     : "";
+                  const roomStateClass = r.reconnecting
+                    ? "is-reconnecting"
+                    : (r.ownerOnly ? "is-private" : "is-live");
+                  const roomPlayers = [r.w, r.b]
+                    .filter(Boolean)
+                    .map((name) => escapeHtml(name))
+                    .join(" · ");
+                  const roomInline = roomPlayers
+                    ? `<span class="z-row-inline-sub">• ${roomPlayers}</span>`
+                    : "";
                   return `
-                    <div class="z-row z-room-row" data-gid="${r.gid}">
+                    <div class="z-row z-room-row ${roomStateClass}${r.ownerOnly ? " z-room-owner-only" : ""}${r.reconnecting ? " z-room-reconnecting" : ""}" data-gid="${r.gid}">
                       <div class="z-row-main">
-                        <div class="z-row-title z-room-title"><span>${window.I18N.translateArgs("lobby.roomLabel")} : </span><span>${escapeHtml(r.name)}</span></div>
+                        <div class="z-row-title z-room-title"><span class="z-row-status-dot ${roomStateClass}" aria-hidden="true"></span><span>${window.I18N.translateArgs("lobby.roomLabel")} : </span><span>${escapeHtml(r.name)}</span>${roomInline}</div>
                       </div>
                       <div class="z-row-actions">
                         ${joinBtn || spectateBtn}
@@ -6471,9 +6533,12 @@
         },
 
     _showUnavailableGameAndLeave: async function () {
+          const silentSpectatorLeave = !!this._spectatorLeaving;
           try { this._clearPersistedActiveGame(); } catch (e) {}
           try { await this._setLobbyStatus("available"); } catch (e) {}
-          try { showOnlineNotice(window.I18N.translateArgs("online.errors.noGame")); } catch (e) {}
+          if (!silentSpectatorLeave) {
+            try { showOnlineNotice(window.I18N.translateArgs("online.errors.noGame")); } catch (e) {}
+          }
           try {
             if (typeof location !== "undefined" && isGamePage()) {
               const back = (location.pathname || "").includes("/pages/") ? "./loby.html" : "pages/loby.html";

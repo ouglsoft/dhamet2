@@ -1,7 +1,7 @@
 {
   "game": {
     "selector": ".app",
-    "jsonSha256": "027e17087f89dc3d44f83d5ea56a1312dc1192a0d127143a3bb0cb14efd375b9"
+    "jsonSha256": "64703b7786c502fe4739277e90da72767920a428f0691b4c879ba1621820875a"
   },
   "loby": {
     "selector": "main",

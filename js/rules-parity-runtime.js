@@ -717,7 +717,7 @@
 
     try {
       Visual.applySouflaFXBatch({
-        redSegments: Array.isArray(fx.redPaths) ? fx.redPaths : [],
+        redPaths: Array.isArray(fx.redPaths) ? fx.redPaths : [],
         removeIdx: fx.removeIdx,
         forcePath: fx.forcePath,
         undoArrow: fx.undoArrow,

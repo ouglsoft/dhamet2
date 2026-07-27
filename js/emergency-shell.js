@@ -7,6 +7,8 @@
 
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
   const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
+  const FIREBASE_MIGRATION_KEY = "dhamet2.firebase.migration.v1";
+  const FIREBASE_MIGRATION_VERSION = "2026-07-27-fresh-anonymous-v1";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
@@ -169,6 +171,80 @@
       sessionStorage.setItem(AUTH_TAB_KEY, JSON.stringify({ uid: String((user && user.uid) || ""), ts: Date.now() }));
     } catch (_) {}
   }
+
+  function needsFirebaseMigration() {
+    try { return localStorage.getItem(FIREBASE_MIGRATION_KEY) !== FIREBASE_MIGRATION_VERSION; }
+    catch (_) { return true; }
+  }
+
+  function removeMatchingStorageKeys(storage, predicate) {
+    try {
+      const keys = [];
+      for (let i = 0; i < storage.length; i += 1) keys.push(storage.key(i));
+      keys.filter(Boolean).forEach((key) => {
+        try { if (predicate(String(key))) storage.removeItem(key); } catch (_) {}
+      });
+    } catch (_) {}
+  }
+
+  function deleteIndexedDatabase(name, timeoutMs) {
+    return new Promise((resolve) => {
+      try {
+        if (!window.indexedDB || !name) return resolve(false);
+        let settled = false;
+        const finish = (value) => {
+          if (settled) return;
+          settled = true;
+          resolve(!!value);
+        };
+        const req = indexedDB.deleteDatabase(name);
+        req.onsuccess = () => finish(true);
+        req.onerror = () => finish(false);
+        req.onblocked = () => finish(false);
+        setTimeout(() => finish(false), Math.max(250, Number(timeoutMs || 1200)));
+      } catch (_) { resolve(false); }
+    });
+  }
+
+  async function prepareOneTimeFirebaseMigration() {
+    if (!needsFirebaseMigration()) return false;
+
+    // Clear only authentication, presence and active-match state belonging to
+    // this dedicated backup origin. Language, nickname, icon and UI settings
+    // remain intact for the user.
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(AUTH_TAB_KEY);
+      removeMatchingStorageKeys(sessionStorage, (key) =>
+        key.startsWith("dhamet2.") ||
+        key.startsWith("firebase:") ||
+        key === "zamat.activeGameId" ||
+        key === "zamat.activeGameTs" ||
+        key.startsWith("zamat.online.")
+      );
+    } catch (_) {}
+    try {
+      removeMatchingStorageKeys(localStorage, (key) =>
+        key.startsWith("firebase:authUser:") ||
+        key.startsWith("firebase:host:") ||
+        key === "firebase:previous_websocket_failure" ||
+        key === "dhamet2.anonymous.session.v1" ||
+        key.startsWith("dhamet2.auth.tab.") ||
+        key.startsWith("dhamet2.presence.") ||
+        key.startsWith("dhamet2.activeGame.")
+      );
+    } catch (_) {}
+
+    // Old Firebase Auth releases may retain the anonymous identity in this
+    // IndexedDB database even after ordinary web-storage cleanup.
+    await deleteIndexedDatabase("firebaseLocalStorageDb", 1400);
+    return true;
+  }
+
+  function markFirebaseMigrationComplete() {
+    try { localStorage.setItem(FIREBASE_MIGRATION_KEY, FIREBASE_MIGRATION_VERSION); } catch (_) {}
+  }
+
   function initFirebase() {
     if (!firebaseConfigReady(window.firebaseConfig)) {
       throw new Error("firebase-config-required");
@@ -217,6 +293,8 @@
   async function ensureAnonymous() {
     if (ensureAnonymousPromise) return ensureAnonymousPromise;
     ensureAnonymousPromise = (async () => {
+      const migrationRequired = needsFirebaseMigration();
+      if (migrationRequired) await prepareOneTimeFirebaseMigration();
       if (!initFirebase()) throw new Error("firebase-unavailable");
       const auth = firebase.auth();
       // The emergency identity is tab-scoped. This prevents an old anonymous UID/token
@@ -229,7 +307,7 @@
       let user = await waitForInitialAuthState(auth, 4000);
       const marker = readTabAuthMarker();
       const markerMatches = !!(marker && marker.uid && user && String(marker.uid) === String(user.uid));
-      if (user && (!user.isAnonymous || !markerMatches)) user = await signInFreshAnonymous(auth);
+      if (migrationRequired || (user && (!user.isAnonymous || !markerMatches))) user = await signInFreshAnonymous(auth);
       if (!user) user = await signInFreshAnonymous(auth);
       if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
 
@@ -244,6 +322,7 @@
       try { firebase.database().goOnline(); } catch (_) {}
       markTabAuth(user);
       writeSession(user);
+      if (migrationRequired) markFirebaseMigrationComplete();
       return user;
     })().finally(() => { ensureAnonymousPromise = null; });
     return ensureAnonymousPromise;

@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260727-routecontrol1",
-  "source": "firebase-route-control-mirror",
+  "version": "20260727-routecontrol1-gameplay1",
+  "source": "firebase-route-control-mirror-with-gameplay-parity",
   "uiReference": "ouglsoft-main",
-  "release": "20260727-routecontrol1"
+  "release": "20260727-routecontrol1-gameplay1"
 }
