@@ -49,6 +49,12 @@
     ROOM_ABANDONED_CLEANUP_MS,
     ROOM_ACTIVITY_TOUCH_MS,
     ROOM_ENDED_PURGE_DELAY_MS,
+    ROOM_REJECTED_PURGE_DELAY_MS,
+    ROOM_PENDING_PURGE_DELAY_MS,
+    SPECTATOR_HEARTBEAT_MS,
+    UNDO_REQUEST_TTL_MS,
+    CHAT_READ_TTL_MS,
+    RTC_ENTRY_TTL_MS,
     ROOM_VISIBILITY_PRIVATE,
     ROOM_VISIBILITY_PUBLIC,
     SPECTATOR_COUNT_STALE_MS,
@@ -2446,8 +2452,14 @@
           this._cleanupArmedFor = gid;
           if (gData && typeof gData === "object") this._lastGameData = gData;
     
-          this._armRoomPurgeOnDisconnect(gid, reason);
-          const purgeDelay = String(reason || "") === "disconnect_wait" ? ROOM_ABANDONED_CLEANUP_MS : ROOM_ENDED_PURGE_DELAY_MS;
+          const reasonText = String(reason || "");
+          const purgeDelay = reasonText === "disconnect_wait"
+            ? ROOM_ABANDONED_CLEANUP_MS
+            : reasonText === "rejected" || reasonText === "invite_rejected"
+              ? ROOM_REJECTED_PURGE_DELAY_MS
+              : reasonText === "pending" || reasonText === "invite_expired"
+                ? ROOM_PENDING_PURGE_DELAY_MS
+                : ROOM_ENDED_PURGE_DELAY_MS;
           this._schedulePurgeRoom(gid, reason || "postmatch", purgeDelay);
         },
 
@@ -3004,6 +3016,10 @@
         },
 
     _removeSpectatorRegistration: async function (gameId, uid) {
+          try {
+            if (this._spectatorHeartbeatTimer) clearInterval(this._spectatorHeartbeatTimer);
+          } catch (e) {}
+          this._spectatorHeartbeatTimer = null;
           const gid = String(gameId || "").trim();
           const userId = String(uid || this.myUid || "").trim();
           if (!gid || !userId || !db || !db.ref) return false;
@@ -3069,7 +3085,13 @@
 
     _countSpectatorsFromValue: function (value) {
           if (!value || typeof value !== "object") return 0;
-          return Object.keys(value).filter((k) => value[k]).length;
+          const now = nowTs();
+          return Object.keys(value).filter((k) => {
+            const item = value[k];
+            if (!item || typeof item !== "object") return false;
+            const ts = Number(item.updatedAt || item.joinedAt || 0) || 0;
+            return !!(ts && now - ts <= SPECTATOR_COUNT_STALE_MS);
+          }).length;
         },
 
     _registerSpectatorInRoom: async function (gameId) {
@@ -3084,6 +3106,12 @@
           try {
             const txn = await roomRef.transaction((cur) => {
               cur = cur && typeof cur === "object" ? cur : {};
+              const cutoff = nowTs() - SPECTATOR_COUNT_STALE_MS;
+              Object.keys(cur).forEach((key) => {
+                const item = cur[key];
+                const ts = Number(item && (item.updatedAt || item.joinedAt) || 0) || 0;
+                if (!ts || ts < cutoff) delete cur[key];
+              });
               const existing = cur[uid] && typeof cur[uid] === "object" ? cur[uid] : null;
               if (!existing && this._countSpectatorsFromValue(cur) >= 3) return;
     
@@ -3091,6 +3119,7 @@
                 uid,
                 nickname: nick,
                 joinedAt: Number((existing && existing.joinedAt) || fallbackJoinedAt) || nowTs(),
+                updatedAt: nowTs(),
               };
               return cur;
             });
@@ -3105,9 +3134,15 @@
             this._spectatorRef = roomRef.child(uid);
     
             try {
-              this._spectatorRef.onDisconnect().remove();
+              if (this._spectatorHeartbeatTimer) clearInterval(this._spectatorHeartbeatTimer);
+              this._spectatorHeartbeatTimer = setInterval(() => {
+                try {
+                  if (!this._spectatorRef || !this.isSpectator) return;
+                  this._spectatorRef.update({ updatedAt: nowTs() }).catch(() => {});
+                } catch (e) {}
+              }, SPECTATOR_HEARTBEAT_MS);
             } catch (disconnectErr) {
-              Logger.warn("spectator_ondisconnect_failed", { gameId: gid, err: String(disconnectErr && (disconnectErr.message || disconnectErr)) });
+              Logger.warn("spectator_heartbeat_failed", { gameId: gid, err: String(disconnectErr && (disconnectErr.message || disconnectErr)) });
             }
     
             try {
@@ -3760,11 +3795,10 @@
                 if (!this._chatMessagesRef || !this.myUid) throw new Error("chat_ref_unavailable");
                 await this._chatMessagesRef.push(msg);
     
-                const pruneAt = Date.now();
-                if (!this._chat.lastPruneAt || pruneAt - this._chat.lastPruneAt > 30000) {
-                  this._chat.lastPruneAt = pruneAt;
-                  this._pruneChatMessages(200);
-                }
+                // Firebase has no per-request quota in this deployment path;
+                // keep the chat bounded immediately after each successful send.
+                this._chat.lastPruneAt = Date.now();
+                this._pruneChatMessages(200);
               } catch (e) {
                 showOnlineNotice(window.I18N.translateArgs("pvp.chat.failed"), { allowSpectator: true });
               }
@@ -3820,12 +3854,26 @@
               lsSet(chatLastReadKey(this.gameId, this.myUid), String(ts));
             } catch (e) {}
             if (!this._chatMyReadRef) return;
-            try {
-              await this._chatMyReadRef.set({
-                lastReadTs: ts,
-                updatedAt: nowTs(),
-              });
-            } catch (e) {}
+            const writeNow = async () => {
+              try {
+                const latestTs = Number(this._chat && this._chat._pendingReadTs || ts) || ts;
+                this._chat._pendingReadTs = 0;
+                this._chat._lastReadWriteAt = nowTs();
+                await this._chatMyReadRef.set({ lastReadTs: latestTs, updatedAt: nowTs() });
+              } catch (e) {}
+            };
+            const since = nowTs() - Number(this._chat._lastReadWriteAt || 0);
+            this._chat._pendingReadTs = Math.max(Number(this._chat._pendingReadTs || 0), ts);
+            if (since >= 15 * 1000) {
+              if (this._chat._readWriteTimer) clearTimeout(this._chat._readWriteTimer);
+              this._chat._readWriteTimer = null;
+              await writeNow();
+            } else if (!this._chat._readWriteTimer) {
+              this._chat._readWriteTimer = setTimeout(() => {
+                this._chat._readWriteTimer = null;
+                writeNow();
+              }, Math.max(50, 15 * 1000 - since));
+            }
           } catch (e) {}
         },
 
@@ -4167,6 +4215,7 @@
           this._voice.remoteAudioEls = this._voice.remoteAudioEls || new Map();
           this._voice.callIds = this._voice.callIds || new Map();
           this._voice.reconnectTimers = this._voice.reconnectTimers || new Map();
+          this._voice.reconnectAttempts = this._voice.reconnectAttempts || new Map();
           if (this._voice.enabled) return true;
     
           let authReady = false;
@@ -4255,6 +4304,15 @@
               this._voiceParticipantsReady = true;
               try {
                 this._voiceParticipantsRef.child(this.myUid).onDisconnect().remove();
+              } catch (e) {}
+              try {
+                if (this._voice.participantHeartbeatTimer) clearInterval(this._voice.participantHeartbeatTimer);
+                this._voice.participantHeartbeatTimer = setInterval(() => {
+                  try {
+                    if (!this._voice || !this._voice.enabled || !this._voiceParticipantsRef || !this.myUid) return;
+                    this._voiceParticipantsRef.child(this.myUid).update({ lastSeen: nowTs() }).catch(() => {});
+                  } catch (e) {}
+                }, Math.min(25 * 1000, Math.max(10 * 1000, Math.floor(RTC_ENTRY_TTL_MS / 4))));
               } catch (e) {}
             } else {
               try {
@@ -4369,6 +4427,10 @@
           try {
             if (!this._voice) return;
             this._voice.enabled = false;
+            try {
+              if (this._voice.participantHeartbeatTimer) clearInterval(this._voice.participantHeartbeatTimer);
+            } catch (e) {}
+            this._voice.participantHeartbeatTimer = null;
     
             try {
               if (this._voiceParticipantsRef && this._voiceParticipantsHandler) {
@@ -4514,7 +4576,7 @@
           return [Date.now(), String(this.myUid || ""), String(otherUid || ""), Math.random().toString(36).slice(2)].join(":");
         },
 
-    _voiceClearReconnect: function (otherUid) {
+    _voiceClearReconnect: function (otherUid, resetAttempts) {
           try {
             if (!this._voice || !this._voice.reconnectTimers) return;
             const timer = this._voice.reconnectTimers.get(otherUid);
@@ -4522,6 +4584,7 @@
           } catch (e) {}
           try {
             if (this._voice && this._voice.reconnectTimers) this._voice.reconnectTimers.delete(otherUid);
+            if (resetAttempts !== false && this._voice && this._voice.reconnectAttempts) this._voice.reconnectAttempts.delete(otherUid);
           } catch (e) {}
         },
 
@@ -4529,11 +4592,17 @@
           try {
             if (!otherUid || !this._voice || !this._voice.enabled || this.isSpectator) return;
             this._voice.reconnectTimers = this._voice.reconnectTimers || new Map();
+            this._voice.reconnectAttempts = this._voice.reconnectAttempts || new Map();
             if (this._voice.reconnectTimers.has(otherUid)) return;
-            const delay = reason === "failed" ? 350 : 1500;
+            const failed = reason === "failed";
+            const delays = failed ? [1500, 5000, 12000] : [4000, 8000, 15000];
+            const attempt = Number(this._voice.reconnectAttempts.get(otherUid) || 0);
+            if (attempt >= delays.length) return;
+            const delay = delays[attempt];
+            this._voice.reconnectAttempts.set(otherUid, attempt + 1);
             const timer = setTimeout(async () => {
               try {
-                this._voiceClearReconnect(otherUid);
+                this._voiceClearReconnect(otherUid, false);
                 await this._voiceRestartPeer(otherUid, reason);
               } catch (e) {}
             }, delay);
@@ -5844,6 +5913,24 @@
           const ur = data && data.undoRequest ? data.undoRequest : null;
           if (!ur) {
             this._closeUndoWaitModal();
+            return;
+          }
+
+          const undoState = String(ur.status || "").toLowerCase();
+          const undoRequestedAt = Number(ur.requestedAt || 0) || 0;
+          if ((undoState === "pending" || undoState === "active") && undoRequestedAt && nowTs() - undoRequestedAt >= UNDO_REQUEST_TTL_MS) {
+            this._closeUndoWaitModal();
+            if (!this.isSpectator && this.gameRef) {
+              try {
+                this.gameRef.child("undoRequest").transaction((current) => {
+                  if (!current) return null;
+                  const state = String(current.status || "").toLowerCase();
+                  const requestedAt = Number(current.requestedAt || 0) || 0;
+                  if ((state === "pending" || state === "active") && requestedAt && nowTs() - requestedAt >= UNDO_REQUEST_TTL_MS) return null;
+                  return;
+                });
+              } catch (e) {}
+            }
             return;
           }
 

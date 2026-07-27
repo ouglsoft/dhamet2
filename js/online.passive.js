@@ -1074,22 +1074,31 @@
 
   runMigrationsOnline();
 
-  const PRESENCE_STABLE_TTL_MS = 90 * 1000;
+  // Fast heartbeats are kept for smooth Firebase presence, while expiry and
+  // retention windows mirror the primary online application.
+  const PRESENCE_STABLE_TTL_MS = 180 * 1000;
   const PRESENCE_LIST_TTL_MS = PRESENCE_STABLE_TTL_MS;
   const PRESENCE_ONLINE_TTL_MS = PRESENCE_STABLE_TTL_MS;
 
   const PRESENCE_HEARTBEAT_MS = 25 * 1000;
   const GAME_PRESENCE_HEARTBEAT_MS = 12 * 1000;
   const GAME_PRESENCE_ONLINE_TTL_MS = 45 * 1000;
-  const SPECTATOR_COUNT_STALE_MS = 90 * 1000;
-  const ROOM_ABANDONED_CLEANUP_MS = 60 * 1000;
-  const ROOM_ENDED_PURGE_DELAY_MS = 1500;
+  const SPECTATOR_COUNT_STALE_MS = 180 * 1000;
+  const SPECTATOR_HEARTBEAT_MS = 25 * 1000;
+  const ROOM_LOBBY_STALE_MS = 2 * 60 * 1000;
+  const ROOM_ABANDONED_CLEANUP_MS = 30 * 60 * 1000;
+  const ROOM_ENDED_PURGE_DELAY_MS = 60 * 60 * 1000;
+  const ROOM_REJECTED_PURGE_DELAY_MS = 15 * 60 * 1000;
+  const ROOM_PENDING_PURGE_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
   const ROOM_ACTIVITY_TOUCH_MS = 60 * 1000;
+  const UNDO_REQUEST_TTL_MS = 5 * 60 * 1000;
+  const CHAT_READ_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const RTC_ENTRY_TTL_MS = 2 * 60 * 1000;
   const INVITE_PREF_CACHE_KEY = "zamat.acceptsInvites.v1";
   const ROOM_VISIBILITY_PUBLIC = "public";
   const ROOM_VISIBILITY_PRIVATE = "private";
 
-  const INVITE_TTL_MS = 30 * 1000;
+  const INVITE_TTL_MS = 60 * 1000;
   const INVITE_CLEANUP_INTERVAL_MS = 5 * 1000;
   const OPPONENT_ABSENCE_MS = 2 * 60 * 1000;
   const OPPONENT_ABSENCE_CHECK_MS = 5 * 1000;
@@ -1904,7 +1913,7 @@
             const ts = parseInt(ssGet(PERSIST_GAME_TS_KEY) || "0", 10) || 0;
             // Restored browser/mobile tabs can preserve sessionStorage for days. A stale
             // private game id must never block the lobby startup.
-            if (!ts || Date.now() - ts > 6 * 60 * 60 * 1000) {
+            if (!ts || Date.now() - ts > 12 * 60 * 60 * 1000) {
               this._clearPersistedActiveGame();
               return "";
             }
@@ -2556,10 +2565,10 @@
                         ? String(g.players.black.uid)
                         : "";
                     const inviteKey = `${this.myUid}_${gameId}`;
-                    const updates = this._buildRoomDeleteUpdates(gameId);
+                    const updates = {};
                     if (oppUid) updates[`invites/${oppUid}/${inviteKey}`] = null;
                     try {
-                      await db.ref().update(updates);
+                      if (Object.keys(updates).length) await db.ref().update(updates);
                     } catch (e) {}
                     try {
                       this._untrackOutgoingInviteByGame(gameId);
@@ -2929,8 +2938,11 @@
                   const gid = String(it.gameId);
                   const s = await db2.ref("games").child(gid).child("status").once("value");
                   const st = s && s.val ? s.val() : null;
+                  // Expiring/cancelling an invitation removes only the invitation.
+                  // The pending game record is retained for the two-day recovery and
+                  // secondary-cleanup window.
                   if (st === "pending") {
-                    Object.assign(updates, this._buildRoomDeleteUpdates(gid));
+                    // No room-data deletion here.
                   }
                 } catch (e) {}
                 continue;
@@ -3233,7 +3245,7 @@
             createdAt: Number(g.createdAt || 0) || nowTs(),
             acceptedAt: Number(g.acceptedAt || 0) || nowTs(),
             updatedAt: nowTs(),
-            cleanupAt: nowTs() + ROOM_ABANDONED_CLEANUP_MS,
+            cleanupAt: nowTs() + ROOM_LOBBY_STALE_MS,
             spectatorCount,
             spectatorCountUpdatedAt,
             players: {
@@ -3279,7 +3291,7 @@
           if (!force && this._lastRoomActivityTouchAt && ts - this._lastRoomActivityTouchAt < ROOM_ACTIVITY_TOUCH_MS) return true;
           this._lastRoomActivityTouchAt = ts;
           try {
-            const p = db.ref("roomList").child(gid).update({ updatedAt: ts, cleanupAt: ts + ROOM_ABANDONED_CLEANUP_MS });
+            const p = db.ref("roomList").child(gid).update({ updatedAt: ts, cleanupAt: ts + ROOM_LOBBY_STALE_MS });
             if (p && typeof p.catch === "function") {
               p.catch((e) => Logger.warn("room_list_touch_failed", { gameId: gid, err: String(e && (e.message || e)) }));
             }
@@ -3294,7 +3306,7 @@
           const cleanupAt = Number((room && room.cleanupAt) || 0) || 0;
           if (cleanupAt) return nowTs() >= cleanupAt;
           const ts = Number((room && room.updatedAt) || (room && room.acceptedAt) || (room && room.createdAt) || 0) || 0;
-          return !!(ts && nowTs() - ts >= ROOM_ABANDONED_CLEANUP_MS);
+          return !!(ts && nowTs() - ts >= ROOM_LOBBY_STALE_MS);
         },
 
     _sweepStaleLobbyRoom: async function (gameId, room) {
@@ -3306,20 +3318,21 @@
             const g = gameSnap && gameSnap.val ? gameSnap.val() : null;
             if (!g || g.status !== "active") {
               await db.ref("roomList").child(gid).remove();
-              if (g && g.status && g.status !== "active") await this._purgeRoomData(gid, g.status);
               return true;
             }
             const presence = g.presence && typeof g.presence === "object" ? g.presence : {};
             const players = g.players || {};
             const wuid = players.white && players.white.uid ? String(players.white.uid) : "";
             const buid = players.black && players.black.uid ? String(players.black.uid) : "";
-            const wFresh = wuid && presence[wuid] && isPresenceFresh(presence[wuid].updatedAt || presence[wuid].joinedAt, ROOM_ABANDONED_CLEANUP_MS);
-            const bFresh = buid && presence[buid] && isPresenceFresh(presence[buid].updatedAt || presence[buid].joinedAt, ROOM_ABANDONED_CLEANUP_MS);
+            const wFresh = wuid && presence[wuid] && isPresenceFresh(presence[wuid].updatedAt || presence[wuid].joinedAt, GAME_PRESENCE_ONLINE_TTL_MS);
+            const bFresh = buid && presence[buid] && isPresenceFresh(presence[buid].updatedAt || presence[buid].joinedAt, GAME_PRESENCE_ONLINE_TTL_MS);
             if (wFresh || bFresh) {
               await this._publishRoomListEntry(gid, g);
               return false;
             }
-            await db.ref().update(this._buildRoomDeleteUpdates(gid));
+            // Hide a disconnected room from the lobby after the short stale
+            // window, but preserve the game itself for the 30-minute return window.
+            await db.ref("roomList").child(gid).remove();
             return true;
           } catch (e) {
             try {
@@ -3649,9 +3662,16 @@
     GAME_PRESENCE_HEARTBEAT_MS: GAME_PRESENCE_HEARTBEAT_MS,
     GAME_PRESENCE_ONLINE_TTL_MS: GAME_PRESENCE_ONLINE_TTL_MS,
     SPECTATOR_COUNT_STALE_MS: SPECTATOR_COUNT_STALE_MS,
+    SPECTATOR_HEARTBEAT_MS: SPECTATOR_HEARTBEAT_MS,
+    ROOM_LOBBY_STALE_MS: ROOM_LOBBY_STALE_MS,
     ROOM_ABANDONED_CLEANUP_MS: ROOM_ABANDONED_CLEANUP_MS,
     ROOM_ENDED_PURGE_DELAY_MS: ROOM_ENDED_PURGE_DELAY_MS,
+    ROOM_REJECTED_PURGE_DELAY_MS: ROOM_REJECTED_PURGE_DELAY_MS,
+    ROOM_PENDING_PURGE_DELAY_MS: ROOM_PENDING_PURGE_DELAY_MS,
     ROOM_ACTIVITY_TOUCH_MS: ROOM_ACTIVITY_TOUCH_MS,
+    UNDO_REQUEST_TTL_MS: UNDO_REQUEST_TTL_MS,
+    CHAT_READ_TTL_MS: CHAT_READ_TTL_MS,
+    RTC_ENTRY_TTL_MS: RTC_ENTRY_TTL_MS,
     INVITE_PREF_CACHE_KEY: INVITE_PREF_CACHE_KEY,
     ROOM_VISIBILITY_PUBLIC: ROOM_VISIBILITY_PUBLIC,
     ROOM_VISIBILITY_PRIVATE: ROOM_VISIBILITY_PRIVATE,
