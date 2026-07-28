@@ -1,19 +1,16 @@
 {
   "css": {
-    "css/style.css": "ef31d98d78bbc558580b57b9d677953f02d0db1c7bb7bf360335dee3db9fd74a",
+    "css/style.css": "9ee353b20fc6cf988e936fe9f21c1de9713a5fce9a7cb3464efd4fa5d0dba7c0",
     "css/pages.css": "89a6453cd3cb5572a15a63ebdd91fedde96ccf451d9ec3f25b307e11671290eb",
-    "css/mobile.css": "39028a0799a0b82ed6ff2c0a315957f8fd1dc3a9ce95fc86932040abd2f82428",
+    "css/mobile.css": "b36e37e7d3315476dc31545404869ad925837baf1a714c5f7b98005989792258",
     "css/theme.css": "04455f817ee17c5788e78d97e731c4f46f0ed7e30c208a5011c7168cde46589e"
   },
   "icons": {
     "assets/icons/chat.svg": "fe1302e4e170cf1e6c3ffbdea5328377e7d67363ce3cc75ef7862bae69d362fc",
-    "assets/icons/chevron-left.svg": "ce7555a56f01a5d850589ec9ccb803fdcd5d79a7a11d59b1d65fd6f2bc517c50",
     "assets/icons/end-kill.svg": "297c3b358dd46a739faae78862e6a9e61d384d67beff83555b88a747760eeb1e",
-    "assets/icons/end-match.svg": "377b8d00ff981cd4dbc1c0200261200126eaa9f9fe742e2ec4a215ff12848759",
     "assets/icons/globe.svg": "6cbf47fb9bb4e97d582a397b16fde90fa8557514f6cc7402162130bfe0d94ca4",
     "assets/icons/icon.webp": "9bd8e771cb6618284c8d5afc0048f6338d1fc17788229ace8bcbd495414c8927",
     "assets/icons/leaderboard.svg": "2ca2a81cfb06c175650be428f8930390b5808992ff0901867624cdd58267bc33",
-    "assets/icons/leave.svg": "8adf31987059228a3df278456b4ab2a64cbb1b3f47ff45fb7eeb8d0421eb023e",
     "assets/icons/logout.svg": "abba7080f5476a2ffeb54e19ef0175997fff4049ce8b3e41cee5d3b06fc635a1",
     "assets/icons/mic-off.svg": "cbf81c39aa287e67a1c1f3535a914369cec7cdd82602427cb6bffc4737357697",
     "assets/icons/mic-on.svg": "f9acdd544dd6e68ef2aaf2ed53ce49c5f3a0a46bc492a1065187f25880f5b50a",
