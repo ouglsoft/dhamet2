@@ -4,8 +4,8 @@
     "en",
     "fr"
   ],
-  "mainLeafCount": 416,
-  "backupLeafCount": 418,
+  "mainLeafCount": 418,
+  "backupLeafCount": 420,
   "allowedExtraKeys": [
     "errors.render3d.failed",
     "online.errors.joinFailed"
@@ -18,7 +18,7 @@
     "online.errors.inviteWriteDenied"
   ],
   "primaryModuleHashes": {
-    "js/modal.js": "95761005785fb1a6c65210d29a3e86eb53544c739f657431b24dd40098677d74",
+    "js/modal.js": "d69f88ecc60a3422d6e616c7cd3ab70b17c4a7b9c9de3aaeddd8850e998e75aa",
     "js/ui/dropdown-view.js": "f3b4ce6d922a9cbfcf633132c4f391fec1329d58cd9189ede62cf0deaa0d8de4",
     "js/ui/soufla-view.js": "6ab050e64b8b774604166a6c285f77a39f34fa67cc2d994edfc98d67a7dcc122"
   },

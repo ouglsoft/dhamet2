@@ -214,7 +214,8 @@
       const opts = options && typeof options === "object" ? options : {};
       const title = String(opts.title || t("modals.gameOver.title") || "").trim();
       const text = String(opts.text || opts.message || "").trim();
-      if (!text) return false;
+      const html = String(opts.html || "").trim();
+      if (!text && !html) return false;
 
       let leaving = false;
       const leave = () => {
@@ -233,9 +234,17 @@
         }
       };
 
+      const body = html ? (() => {
+        const div = document.createElement("div");
+        div.style.whiteSpace = "pre-wrap";
+        div.innerHTML = html;
+        return div;
+      })() : null;
+
       return Modal.open({
         title,
-        text,
+        body: body || undefined,
+        text: body ? undefined : text,
         allowSpectator: true,
         hideClose: true,
         allowEsc: false,

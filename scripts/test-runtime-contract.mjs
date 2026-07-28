@@ -12,7 +12,8 @@ if (!shell.includes("Auth.Persistence.SESSION")) throw new Error("anonymous auth
 if (!shell.includes("AUTH_TAB_KEY")) throw new Error("tab auth marker is missing");
 if (!shell.includes("resetAnonymous")) throw new Error("anonymous-session recovery is missing");
 if (!passive.includes("Never mark the new session busy")) throw new Error("stale active-game recovery is missing");
-if (!passive.includes("Starting Firebase writes from beforeunload/pagehide")) throw new Error("unload freeze prevention is missing");
+if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
+if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("pagehide must detach all subscriptions locally");
 if (/addEventListener\("beforeunload", cleanup/.test(passive)) throw new Error("Firebase cleanup must not run from beforeunload");
 
 if (!game.includes('data-build-version="__DHAMET_BUILD__"')) throw new Error("stable build token is missing");
@@ -25,7 +26,7 @@ if (/three(?:\.min)?\.js/i.test(game)) throw new Error("obsolete Three.js depend
 if (!ui.includes('if (!pool || !pvcBox || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;')) {
   throw new Error("desktop controls mount is not synchronized with the primary app");
 }
-if (!ui.includes('killTimerTile.addEventListener("click"')) throw new Error("primary mobile timer tile activation is missing");
+if (!ui.includes('killTimerTile.addEventListener("click"') || !ui.includes("endKillPressed()")) throw new Error("shared timer tile activation is missing");
 if (!ui.includes("releaseResolvedOnlineUiHold")) throw new Error("active game hold recovery missing");
 if (!mobileCss.includes('.timer-row #btnEndKill')) throw new Error("primary mobile timer styling is missing");
 if (/Dhamet2 controlsfix|timer-row#btnEndKill/.test(mobileCss)) throw new Error("old backup-only control overrides remain");
@@ -44,5 +45,12 @@ if (!passive.includes("No shared recoverySignal is written")) throw new Error("r
 const online = fs.readFileSync(new URL("../js/online.js", import.meta.url), "utf8");
 if (!online.includes("byUid !== String(this.myUid")) throw new Error("peer recovery signals are not isolated");
 if (!online.includes("restoreCaptureContinuationVisualState")) throw new Error("online capture continuation restore is missing");
+
+if (!/if \(localOnly\)[\s\S]*_presenceTicker[\s\S]*clearInterval/.test(online)) {
+  throw new Error("local page teardown must not restart the presence UI ticker");
+}
+if (!/_lobbyLoadTimer[\s\S]*clearTimeout/.test(passive)) {
+  throw new Error("page teardown must clear the lobby loading watchdog");
+}
 
 console.log("runtime contract tests passed");

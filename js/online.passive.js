@@ -871,11 +871,36 @@
     } catch (_) {}
     const titleText = cfg.title || window.I18N.translateArgs(cfg.titleKey || "modals.notice");
     const safeMsg = String(msg ?? "");
+    const noticeBody = (() => {
+      const div = document.createElement("div");
+      div.style.whiteSpace = "pre-wrap";
+      let html = escapeHtml(safeMsg);
+      const names = [];
+      try {
+        const game = window.Online && window.Online._lastGameData;
+        const players = game && game.players ? game.players : {};
+        [players.white, players.black].forEach((row) => {
+          if (!row) return;
+          const name = displayPlayerName(row.uid, row.nickname);
+          if (name && !names.includes(name)) names.push(name);
+        });
+      } catch (_) {}
+      try {
+        const own = window.Online && displayPlayerName(window.Online.myUid, window.Online.myNick);
+        if (own && !names.includes(own)) names.push(own);
+      } catch (_) {}
+      names.sort((a, b) => b.length - a.length).forEach((name) => {
+        const encoded = escapeHtml(name);
+        if (encoded) html = html.split(encoded).join(`<span class="z-player-name">${encoded}</span>`);
+      });
+      div.innerHTML = html;
+      return div;
+    })();
     try {
       if (window.Modal && typeof Modal.alert === "function") {
         Modal.alert({
           title: titleText,
-          text: safeMsg,
+          body: noticeBody,
           okLabel: cfg.okLabel || window.I18N.translateArgs("actions.close"),
           okClassName: cfg.okClassName,
           allowSpectator: cfg.allowSpectator,
@@ -995,6 +1020,26 @@
     const base = window.I18N.translateArgs("players.player");
     return `${base} ${nickSuffixFromUid(uid)}`;
   }
+
+  function isGeneratedGuestNickname(uid, nickname) {
+    try {
+      const id = String(uid || "").trim();
+      const nick = String(nickname || "").trim();
+      if (!id || !nick) return false;
+      return nick === `Guest ${id.slice(-4)}`;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Single display-name source for lobby, game messages, and Firebase callbacks.
+  function displayPlayerName(uid, nickname) {
+    const id = String(uid || "").trim();
+    const chosen = String(nickname || "").trim();
+    if (chosen && !isGeneratedGuestNickname(id, chosen)) return chosen;
+    return defaultNick(id || chosen || "player");
+  }
+
 
   const NICK_KEY = "zamat.nick";
   const NICK_EXPLICIT_KEY = "zamat.nickExplicit";
@@ -1455,6 +1500,7 @@
           onSubmit: submit,
           cancelLabel: cfg.cancelLabel || window.I18N.translateArgs("actions.cancel"),
           cancelClassName: cfg.cancelClassName || "ghost",
+          hideCancel: cfg.hideCancel === true,
           onCancel: () => {
             const value = typeof cfg.getCancelValue === "function" ? cfg.getCancelValue(input) : "";
             finish(value, false);
@@ -1502,7 +1548,7 @@
       allowSpectator: true,
       title,
       label,
-      value: saved,
+      value: resolveFallbackNick(),
       placeholder: label,
       inputId: "nickInput",
       inputClassName: "input",
@@ -1515,6 +1561,7 @@
       getCancelValue: () => resolveFallbackNick(),
       getCloseValue: () => resolveFallbackNick(),
       fallbackValue: () => ({ value: resolveFallbackNick(), submitted: false }),
+      hideCancel: true,
       cancelClassName: "secondary",
     }).then((result) => {
       const nick = String(result && typeof result === "object" ? result.value : result || "").trim() || resolveFallbackNick();
@@ -2256,22 +2303,60 @@
           this._presenceHeartbeatTimer = null;
         },
 
+    _teardownPageRuntime: function () {
+          // Synchronous local teardown only. Firebase onDisconnect registrations
+          // remain responsible for server-side presence cleanup.
+          try { this._lobbyInitGeneration = Number(this._lobbyInitGeneration || 0) + 1; } catch (_) {}
+          try { if (this._teardownOnlineSubscriptions) this._teardownOnlineSubscriptions({ localOnly: true }); } catch (_) {}
+          try { this._stopPresenceHeartbeat(); } catch (_) {}
+          try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (_) {}
+          try { if (this._stopOpponentAbsenceWatcher) this._stopOpponentAbsenceWatcher(); } catch (_) {}
+          try { if (this._stopMoveCommitWatchdog) this._stopMoveCommitWatchdog(); } catch (_) {}
+          try { if (this._stopInviteCleanup) this._stopInviteCleanup(); } catch (_) {}
+          try { if (this._stopOutgoingInviteWatches) this._stopOutgoingInviteWatches(); } catch (_) {}
+          try {
+            if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
+              this._presenceConnInfoRef.off("value", this._presenceConnInfoHandler);
+            }
+          } catch (_) {}
+          this._presenceConnInfoRef = null;
+          this._presenceConnInfoHandler = null;
+          try { if (this._inviteQuery) this._inviteQuery.off(); } catch (_) {}
+          this._inviteQuery = null;
+          try {
+            if (this._pendingGameWatchRef && this._pendingGameWatchCb) {
+              this._pendingGameWatchRef.off("value", this._pendingGameWatchCb);
+            }
+          } catch (_) {}
+          this._pendingGameWatchRef = null;
+          this._pendingGameWatchCb = null;
+          try {
+            if (this._purgeTimers) Object.keys(this._purgeTimers).forEach((key) => clearTimeout(this._purgeTimers[key]));
+          } catch (_) {}
+          this._purgeTimers = {};
+          try { if (this._moveRetryTimer) clearTimeout(this._moveRetryTimer); } catch (_) {}
+          this._moveRetryTimer = null;
+          try { if (this._spectatorHeartbeatTimer) clearInterval(this._spectatorHeartbeatTimer); } catch (_) {}
+          this._spectatorHeartbeatTimer = null;
+          try { if (this._presenceTicker) clearInterval(this._presenceTicker); } catch (_) {}
+          this._presenceTicker = null;
+          try { if (this._lobbyLoadTimer) clearTimeout(this._lobbyLoadTimer); } catch (_) {}
+          this._lobbyLoadTimer = null;
+          try {
+            if (this._chat && this._chat._readWriteTimer) clearTimeout(this._chat._readWriteTimer);
+          } catch (_) {}
+          try { if (this._chat) this._chat._readWriteTimer = null; } catch (_) {}
+        },
+
     _bindLifecycleCleanup: function () {
           try {
             if (this._lifecycleBound) return;
             this._lifecycleBound = true;
     
             const cleanup = () => {
-              // Do local teardown only. onDisconnect() already removes presence on the
-              // server. Starting Firebase writes from beforeunload/pagehide can stall
-              // Chromium's shared network process and freeze every tab in the window.
-              try { this._stopPresenceHeartbeat(); } catch (e) {}
-              try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (e) {}
-              try {
-                if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
-                  this._presenceConnInfoRef.off("value", this._presenceConnInfoHandler);
-                }
-              } catch (e) {}
+              // Never start network writes, waits, or authentication work while the
+              // browser is closing this page. Only detach local work synchronously.
+              try { this._teardownPageRuntime(); } catch (_) {}
             };
             const resume = () => {
               try {
@@ -3615,6 +3700,7 @@
     lsSet: lsSet,
     chatLastReadKey: chatLastReadKey,
     defaultNick: defaultNick,
+    displayPlayerName: displayPlayerName,
     readMigrationVersion: readMigrationVersion,
     writeMigrationVersion: writeMigrationVersion,
     runMigrationsOnline: runMigrationsOnline,

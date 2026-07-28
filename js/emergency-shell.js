@@ -8,7 +8,7 @@
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
   const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
   const FIREBASE_MIGRATION_KEY = "dhamet2.firebase.migration.v1";
-  const FIREBASE_MIGRATION_VERSION = "2026-07-27-fresh-anonymous-v1";
+  const FIREBASE_MIGRATION_VERSION = "2026-07-28-fresh-anonymous-v2";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";

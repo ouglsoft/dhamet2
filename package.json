@@ -8,7 +8,7 @@
     "prepare:pages": "node deploy/prepare-pages.mjs",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.7.27-audit-clean1",
+  "version": "2026.7.28-invite-lobby-recovery1",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""

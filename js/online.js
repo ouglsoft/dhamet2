@@ -71,6 +71,7 @@
     currentSessionIsRegistered,
     decodeSharedLogText,
     defaultNick,
+    displayPlayerName,
     encodeSharedLogText,
     ensureAuthReady,
     ensureFirebase,
@@ -645,24 +646,73 @@
 
     _endByAbsence: async function () {
           if (!this.gameRef) return false;
-    
+
           try {
             const result = await this.gameRef.transaction((g) => {
               if (!g || g.status !== "active") return g;
-    
+
               const ts = nowTs();
+              const who = displayPlayerName(this.myUid, this.myNick);
+              const MatchEnd = window.DhametMatchEnd;
+              const policy = MatchEnd && typeof MatchEnd.policyForEnd === "function"
+                ? MatchEnd.policyForEnd("opponent-absent", this.mySide, {
+                    reason: "opponent_absent",
+                    // The exceptional counted result is limited to genuinely late,
+                    // low-material positions with a clear deterministic advantage.
+                    policyOverrides: { maxAdvancedPieces: 10 },
+                  }, g)
+                : { ok: true, reason: "opponent_absent", resultReason: "opponent_absent", winner: null, countsAsResult: false, neutralEnd: true, rejectionReason: "policy_unavailable" };
+
+              const terminalResult = MatchEnd && typeof MatchEnd.createTerminalResult === "function"
+                ? MatchEnd.createTerminalResult({
+                    winner: policy.winner,
+                    reason: policy.resultReason || policy.reason || "opponent_absent",
+                    mode: "pvp",
+                    moveIndex: Number(g.moveIndex || 0) || 0,
+                    ply: Number(g.ply || 0) || 0,
+                    endedAt: ts,
+                    source: "firebase-opponent-absence-v1",
+                    countsAsResult: policy.countsAsResult === true,
+                    meta: {
+                      kind: "opponent-absent",
+                      countsAsResult: policy.countsAsResult === true,
+                      neutralEnd: policy.neutralEnd !== false,
+                      adjudicated: policy.adjudicated === true,
+                      terminalConfidence: policy.terminalConfidence || null,
+                      terminalTag: policy.terminalTag || null,
+                      rejectionReason: policy.rejectionReason || null,
+                      assessment: policy.assessment || null,
+                    },
+                  })
+                : {
+                    status: "ongoing",
+                    terminal: false,
+                    winner: 0,
+                    reason: "opponent_absent",
+                    meta: { kind: "opponent-absent", countsAsResult: false, neutralEnd: true },
+                  };
+
               g.status = "ended";
               g.endedAt = ts;
-              g.endedReason = "opponent_absent";
-              g.winner = this.mySide;
-    
+              g.endedReason = policy.reason || "opponent_absent";
+              g.endedBy = { uid: this.myUid, side: this.mySide, nickname: who };
+              g.winner = policy.winner == null ? null : policy.winner;
+              g.result = terminalResult;
+              g.lastMove = Object.assign({}, g.lastMove || {}, {
+                action: "opponent-absent",
+                byUid: this.myUid,
+                byNick: who,
+                by: this.mySide,
+                ts,
+              });
+
               g.log = Array.isArray(g.log) ? g.log : [];
               normalizeLogArrayForWrite(g.log);
-    
-              const who = this.myNick || window.I18N.translateArgs("players.player");
               g.log.push({
                 ts,
                 type: "ended_absent",
+                byUid: this.myUid,
+                byNick: who,
                 text: encodeSharedLogText({
                   kind: "i18n",
                   key: "online.matchEndedByPlayer",
@@ -672,16 +722,14 @@
               if (g.log.length > 200) g.log = g.log.slice(-200);
               return g;
             });
-    
+
             const finalData = result && result.snapshot && typeof result.snapshot.val === "function"
               ? result.snapshot.val()
               : null;
             const ended = !!(result && result.committed !== false && finalData && finalData.status === "ended");
             if (ended) {
               this._lastGameData = finalData;
-              try {
-                await this._removeRoomListEntry(this.gameId);
-              } catch (e) {}
+              try { await this._removeRoomListEntry(this.gameId); } catch (_) {}
             }
             return ended;
           } catch (e) {
@@ -693,19 +741,23 @@
     _endByAbsenceAndEnterPostMatch: async function () {
           const ended = await this._endByAbsence();
           if (!ended) {
-            try {
-              await this.syncNow();
-            } catch (e) {}
+            try { await this.syncNow(); } catch (_) {}
             return false;
           }
-    
+
+          const finalData = this._lastGameData || {};
+          const finalReason = finalData.endedReason || "opponent_absent";
+          try { await this._notifyMatchEndWatchers(this.gameId, finalReason, this.myNick); } catch (_) {}
           try {
-            await this._notifyMatchEndWatchers(this.gameId, "opponent_absent", this.myNick);
-          } catch (e) {}
-          try {
-            if (this.gameId) this._schedulePurgeRoom(this.gameId, "opponent_absent", ROOM_ENDED_PURGE_DELAY_MS);
-          } catch (e) {}
-          this._enterPostMatch({ reason: "opponent_absent", winner: this.mySide });
+            if (this.gameId) this._schedulePurgeRoom(this.gameId, finalReason, ROOM_ENDED_PURGE_DELAY_MS);
+          } catch (_) {}
+          this._enterPostMatch({
+            game: finalData,
+            result: finalData.result || null,
+            reason: finalReason,
+            winner: finalData.winner == null ? null : finalData.winner,
+            endedBy: finalData.endedBy || null,
+          });
           return true;
         },
 
@@ -1444,8 +1496,37 @@
           try {
             await db.ref().update(updates);
           } catch (err) {
-            handleDbError(err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send" });
-            return;
+            // A transport interruption can happen after Firebase has committed the
+            // atomic update. Never resend the invite here. Verify the exact invite
+            // path once; show failure only when Firebase confirms it is absent or
+            // explicitly rejects the write.
+            if (isPermissionDenied(err)) {
+              handleDbError(err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send" });
+              return;
+            }
+            let deliverySnapshot = null;
+            try {
+              deliverySnapshot = await S.settleWithin(
+                db.ref("invites").child(opponentUid).child(inviteKey).once("value"),
+                3000,
+                null,
+              );
+            } catch (_) {
+              deliverySnapshot = null;
+            }
+            if (deliverySnapshot && typeof deliverySnapshot.exists === "function" && !deliverySnapshot.exists()) {
+              handleDbError(err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send.confirmed-failed" });
+              return;
+            }
+            try {
+              Logger.warn("invite_delivery_unconfirmed", {
+                gameId,
+                opponentUid,
+                code: String((err && err.code) || ""),
+              });
+            } catch (_) {}
+            // If the verification also timed out, keep one local watch for the
+            // already-created id. It will reconcile or expire without another send.
           }
     
           try {
@@ -2074,11 +2155,25 @@
           }
 
           const primary = lines[0] || window.I18N.translateArgs("online.endPresentation.noRecordedResult");
+          const namesToEmphasize = [
+            actorActualName, otherName, winnerName, loserName,
+            actualNameForSide(TOP), actualNameForSide(BOT),
+          ].map((name) => String(name || "").trim()).filter((name, index, all) => name && all.indexOf(name) === index)
+            .sort((a, b) => b.length - a.length);
+          const decorateLine = (line) => {
+            let html = escapeHtml(String(line || ""));
+            namesToEmphasize.forEach((name) => {
+              const encoded = escapeHtml(name);
+              if (encoded) html = html.split(encoded).join(`<span class="z-player-name">${encoded}</span>`);
+            });
+            return html;
+          };
           return {
             title: window.I18N.translateArgs("modals.gameOver.title"),
             primary,
             details: lines.slice(1),
             text: lines.join("\n\n"),
+            html: lines.map(decorateLine).join("<br><br>"),
             reason,
             winner,
             countsAsResult,
@@ -2344,8 +2439,9 @@
           } catch (e) {}
         },
 
-    _teardownOnlineSubscriptions: function () {
-          try { this._teardownRoomComms(); } catch (e) {}
+    _teardownOnlineSubscriptions: function (options) {
+          const localOnly = !!(options && options.localOnly);
+          try { this._teardownRoomComms({ localOnly }); } catch (e) {}
           try { this._stopOpponentAbsenceWatcher(); } catch (e) {}
           try { this.gameRef && this.gameRef.off(); } catch (e) {}
           try { this.playersRef && this.playersRef.off(); } catch (e) {}
@@ -2360,7 +2456,7 @@
           this._lobbyRoomsCb = null;
           try { this._stopInviteCleanup(); } catch (e) {}
           try { this._stopOutgoingInviteWatches(); } catch (e) {}
-          try { this._teardownGamePresence(); } catch (e) {}
+          try { this._teardownGamePresence({ localOnly }); } catch (e) {}
         },
 
     _resetOnlineRuntimeState: function () {
@@ -2803,7 +2899,11 @@
                       }
                     }
                   } catch (e) {}
-                  if (this.isSpectator) {
+                  if (!this.isSpectator && lm.requesterUid && String(lm.requesterUid) === String(this.myUid || "")) {
+                    showOnlineNotice(window.I18N.translateArgs("undo.requesterAccepted"), {
+                      title: window.I18N.translateArgs("modals.undo.title"),
+                    });
+                  } else if (this.isSpectator) {
                     const gameData = this._lastGameData || data || {};
                     const players = gameData.players || {};
                     const nameForUid = (uid) => {
@@ -3251,7 +3351,8 @@
           }
         },
 
-    _teardownGamePresence: function () {
+    _teardownGamePresence: function (options) {
+          const localOnly = !!(options && options.localOnly);
           try {
             this._stopGamePresenceHeartbeat();
           } catch (e) {}
@@ -3263,9 +3364,11 @@
           this._gameConnInfoRef = null;
           this._gameConnInfoHandler = null;
     
-          try {
-            if (this.presenceRef) this.presenceRef.remove();
-          } catch (e) {}
+          if (!localOnly) {
+            try {
+              if (this.presenceRef) this.presenceRef.remove();
+            } catch (e) {}
+          }
           this.presenceRef = null;
           this._gamePresenceJoinedAt = 0;
           try {
@@ -3275,11 +3378,18 @@
           this._oppOfflineSince = null;
           this._selfOfflineSince = null;
           this._oppLeftModalShown = false;
-          try {
-            this._oppOnline = false;
-            this._selfConnected = true;
-            this._updatePresenceUi();
-          } catch (e) {}
+          if (localOnly) {
+            // Do not create a new one-second presence ticker while the page is
+            // being hidden or closed. The visible UI remains untouched for BFCache.
+            try { if (this._presenceTicker) clearInterval(this._presenceTicker); } catch (_) {}
+            this._presenceTicker = null;
+          } else {
+            try {
+              this._oppOnline = false;
+              this._selfConnected = true;
+              this._updatePresenceUi();
+            } catch (e) {}
+          }
           this._spectatorRef = null;
           this._spectatorJoinedAt = 0;
         },
@@ -4092,7 +4202,8 @@
           } catch (e) {}
         },
 
-    _teardownRoomComms: function () {
+    _teardownRoomComms: function (options) {
+          const localOnly = !!(options && options.localOnly);
           try {
             if (this._chatMessagesQuery && this._chatMsgHandler) {
               this._chatMessagesQuery.off("child_added", this._chatMsgHandler);
@@ -4116,7 +4227,7 @@
           this._chatReadsHandler = null;
     
           try {
-            this._voiceLeave();
+            this._voiceLeave({ localOnly });
           } catch (e) {}
     
           try {
@@ -4394,7 +4505,8 @@
           return true;
         },
 
-    _voiceLeave: function () {
+    _voiceLeave: function (options) {
+          const localOnly = !!(options && options.localOnly);
           try {
             if (!this._voice) return;
             this._voice.enabled = false;
@@ -4474,9 +4586,11 @@
             } catch (e) {}
             this._voice.callIds = new Map();
     
-            try {
-              this._voiceParticipantsRef && this._voiceParticipantsRef.child(this.myUid).remove();
-            } catch (e) {}
+            if (!localOnly) {
+              try {
+                this._voiceParticipantsRef && this._voiceParticipantsRef.child(this.myUid).remove();
+              } catch (e) {}
+            }
           } catch (e) {}
         },
 
@@ -5975,7 +6089,7 @@
             const key = this._undoWaitKeyOf(ur) || [ur.requesterUid || "", ur.respondedAt || ur.requestedAt || "", "rejected"].join("|");
             if (!this._lastUndoRejectedKey || this._lastUndoRejectedKey !== key) {
               this._lastUndoRejectedKey = key;
-              showOnlineNotice(window.I18N.translateArgs("undo.rejected"), { title: window.I18N.translateArgs("undo.rejectedTitle") });
+              showOnlineNotice(window.I18N.translateArgs("undo.requesterRejected"), { title: window.I18N.translateArgs("undo.rejectedTitle") });
             }
             try {
               this.gameRef.child("undoRequest").remove();
@@ -6151,9 +6265,10 @@
           let lobbyLoadTimer = null;
           let recoveryInFlight = false;
           const clearLoadTimer = () => {
-            if (!lobbyLoadTimer) return;
-            clearTimeout(lobbyLoadTimer);
+            if (lobbyLoadTimer) clearTimeout(lobbyLoadTimer);
+            if (this._lobbyLoadTimer && this._lobbyLoadTimer !== lobbyLoadTimer) clearTimeout(this._lobbyLoadTimer);
             lobbyLoadTimer = null;
+            this._lobbyLoadTimer = null;
           };
           const markDataReceived = () => {
             if (!isCurrent()) return;
@@ -6250,6 +6365,7 @@
             // Start the watchdog before auth/presence recovery. Previously it started
             // after reads that could hang, leaving the loading text forever.
             lobbyLoadTimer = setTimeout(lobbyLoadFailed, 12000);
+            this._lobbyLoadTimer = lobbyLoadTimer;
           } catch (e) {}
 
           try {
@@ -6299,6 +6415,7 @@
     
             const cb = (snap) => {
               if (!isCurrent()) return;
+              try {
               playersLoaded = true;
               markDataReceived();
               this._lobbyPlayersLastSnap = snap || null;
@@ -6421,9 +6538,13 @@
                     try { showOnlineNotice(window.I18N.translateArgs("online.inviteSendFail")); } catch (_) {}
                   }
                 });
-              });
+              });              } catch (err) {
+                playersLoaded = false;
+                try { Logger.capture(err, { ctx: "lobby.players.callback" }); } catch (_) {}
+                showLobbyFailure();
+              }
             };
-    
+
             this._lobbyPlayersCb = cb;
             ref.on("value", cb, async (err) => {
               if (!isCurrent()) return;
@@ -6447,6 +6568,7 @@
     
             const cbG = (snap) => {
               if (!isCurrent()) return;
+              try {
               roomsLoaded = true;
               markDataReceived();
               const all = snap && snap.val ? snap.val() : null;
@@ -6552,9 +6674,13 @@
                   const gid = ev.currentTarget.getAttribute("data-gid");
                   if (gid) this._goToGameAsSpectator(gid);
                 });
-              });
+              });              } catch (err) {
+                roomsLoaded = false;
+                try { Logger.capture(err, { ctx: "lobby.rooms.callback" }); } catch (_) {}
+                showLobbyFailure();
+              }
             };
-    
+
             this._lobbyRoomsCb = cbG;
             refG.on("value", cbG, async (err) => {
               if (!isCurrent()) return;

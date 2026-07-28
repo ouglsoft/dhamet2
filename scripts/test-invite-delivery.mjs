@@ -24,6 +24,11 @@ assert.match(online, /Logger\.capture\(e,\s*\{\s*ctx:\s*"invite\.create\.click"/
 assert.match(online, /updates\[`invites\/\$\{opponentUid\}\/\$\{inviteKey\}`\]\s*=\s*inviteObj/,
   "the invitation must be written atomically under the recipient UID");
 
+assert.match(online, /deliverySnapshot[\s\S]*invite\.send\.confirmed-failed/,
+  "an ambiguous Firebase response must be verified before showing send failure");
+assert.match(online, /Never resend the invite here/,
+  "invite recovery must reconcile the original atomic write without a second send");
+
 
 assert.doesNotMatch(online, /requires DhametState\.normalizeDeferredPromotions/,
   "creating an invitation from the lobby must not require the gameplay-only DhametState runtime");

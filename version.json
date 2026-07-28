@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260727-audit-clean1",
-  "source": "firebase-route-control-gameplay-parity-timers-cleanup-audit-clean",
+  "version": "20260728-invite-lobby-recovery1",
+  "source": "firebase-route-control-gameplay-parity-timers-cleanup-invite-lobby-recovery",
   "uiReference": "ouglsoft-main",
-  "release": "20260727-audit-clean1"
+  "release": "20260728-invite-lobby-recovery1"
 }
