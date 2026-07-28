@@ -2494,7 +2494,7 @@ window.AI = AI;
           if (s && typeof s === "object") return s;
         } catch (e) {}
         try {
-          const raw = sessionStorage.getItem("zamat.session.user.v1") || localStorage.getItem("zamat.session.user.persist.v1");
+          const raw = sessionStorage.getItem("zamat.session.user.v1");
           if (raw) {
             const obj = JSON.parse(raw);
             if (obj && typeof obj === "object") return obj;

@@ -13,7 +13,9 @@ if (!shell.includes("AUTH_TAB_KEY")) throw new Error("tab auth marker is missing
 if (!shell.includes("resetAnonymous")) throw new Error("anonymous-session recovery is missing");
 if (!passive.includes("Never mark the new session busy")) throw new Error("stale active-game recovery is missing");
 if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
-if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("pagehide must detach all subscriptions locally");
+if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("normal pagehide must detach all subscriptions locally");
+if (!/if \(event && event\.persisted\) return;/.test(passive)) throw new Error("BFCache pagehide must preserve Firebase listeners");
+if (!/pageshow[\s\S]*event && event\.persisted[\s\S]*firebase\.database\(\)\.goOnline/.test(passive)) throw new Error("BFCache resume must reconnect Firebase safely");
 if (/addEventListener\("beforeunload", cleanup/.test(passive)) throw new Error("Firebase cleanup must not run from beforeunload");
 
 if (!game.includes('data-build-version="__DHAMET_BUILD__"')) throw new Error("stable build token is missing");

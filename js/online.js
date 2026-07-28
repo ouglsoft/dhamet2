@@ -106,6 +106,7 @@
     plainToSoufla,
     playerAcceptsInvites,
     readMigrationVersion,
+    readOnceWithOutcome,
     refPathString,
     requireAuthUid,
     runMigrationsOnline,
@@ -659,7 +660,7 @@
                     reason: "opponent_absent",
                     // The exceptional counted result is limited to genuinely late,
                     // low-material positions with a clear deterministic advantage.
-                    policyOverrides: { maxAdvancedPieces: 10 },
+                    policyProfile: "strict-low-material",
                   }, g)
                 : { ok: true, reason: "opponent_absent", resultReason: "opponent_absent", winner: null, countsAsResult: false, neutralEnd: true, rejectionReason: "policy_unavailable" };
 
@@ -698,14 +699,6 @@
               g.endedBy = { uid: this.myUid, side: this.mySide, nickname: who };
               g.winner = policy.winner == null ? null : policy.winner;
               g.result = terminalResult;
-              g.lastMove = Object.assign({}, g.lastMove || {}, {
-                action: "opponent-absent",
-                byUid: this.myUid,
-                byNick: who,
-                by: this.mySide,
-                ts,
-              });
-
               g.log = Array.isArray(g.log) ? g.log : [];
               normalizeLogArrayForWrite(g.log);
               g.log.push({
@@ -1504,24 +1497,19 @@
               handleDbError(err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send" });
               return;
             }
-            let deliverySnapshot = null;
-            try {
-              deliverySnapshot = await S.settleWithin(
-                db.ref("invites").child(opponentUid).child(inviteKey).once("value"),
-                3000,
-                null,
-              );
-            } catch (_) {
-              deliverySnapshot = null;
-            }
-            if (deliverySnapshot && typeof deliverySnapshot.exists === "function" && !deliverySnapshot.exists()) {
-              handleDbError(err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send.confirmed-failed" });
+            const verification = await readOnceWithOutcome(
+              db.ref("invites").child(opponentUid).child(inviteKey),
+              3000,
+            );
+            if (verification.state === "missing" || (verification.state === "error" && isPermissionDenied(verification.error))) {
+              handleDbError(verification.error || err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send.confirmed-failed" });
               return;
             }
             try {
               Logger.warn("invite_delivery_unconfirmed", {
                 gameId,
                 opponentUid,
+                state: verification.state,
                 code: String((err && err.code) || ""),
               });
             } catch (_) {}
@@ -1740,8 +1728,6 @@
             const root = document.documentElement;
             initialUiHold = !!(root && root.classList && root.classList.contains("ui-hold") && !root.classList.contains("ui-ready"));
             if (initialUiHold) this._applyUiHold(true);
-          } catch (e) {}
-          try {
           } catch (e) {}
           try {
             this._setButtonsVisualDisabled(!!on);
@@ -6538,7 +6524,8 @@
                     try { showOnlineNotice(window.I18N.translateArgs("online.inviteSendFail")); } catch (_) {}
                   }
                 });
-              });              } catch (err) {
+              });
+              } catch (err) {
                 playersLoaded = false;
                 try { Logger.capture(err, { ctx: "lobby.players.callback" }); } catch (_) {}
                 showLobbyFailure();
@@ -6674,7 +6661,8 @@
                   const gid = ev.currentTarget.getAttribute("data-gid");
                   if (gid) this._goToGameAsSpectator(gid);
                 });
-              });              } catch (err) {
+              });
+              } catch (err) {
                 roomsLoaded = false;
                 try { Logger.capture(err, { ctx: "lobby.rooms.callback" }); } catch (_) {}
                 showLobbyFailure();

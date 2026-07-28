@@ -24,8 +24,12 @@ assert.match(online, /Logger\.capture\(e,\s*\{\s*ctx:\s*"invite\.create\.click"/
 assert.match(online, /updates\[`invites\/\$\{opponentUid\}\/\$\{inviteKey\}`\]\s*=\s*inviteObj/,
   "the invitation must be written atomically under the recipient UID");
 
-assert.match(online, /deliverySnapshot[\s\S]*invite\.send\.confirmed-failed/,
+assert.match(passive, /function readOnceWithOutcome\(ref, timeoutMs\)/,
+  "ambiguous Firebase writes must have an outcome-preserving verification helper");
+assert.match(online, /readOnceWithOutcome\([\s\S]*verification\.state === "missing"[\s\S]*invite\.send\.confirmed-failed/,
   "an ambiguous Firebase response must be verified before showing send failure");
+assert.doesNotMatch(online, /deliverySnapshot/,
+  "verification must not collapse Firebase read errors into a missing snapshot");
 assert.match(online, /Never resend the invite here/,
   "invite recovery must reconcile the original atomic write without a second send");
 

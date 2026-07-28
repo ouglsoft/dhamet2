@@ -8,7 +8,7 @@
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
   const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
   const FIREBASE_MIGRATION_KEY = "dhamet2.firebase.migration.v1";
-  const FIREBASE_MIGRATION_VERSION = "2026-07-28-fresh-anonymous-v2";
+  const FIREBASE_MIGRATION_VERSION = "2026-07-28-session-audit-clean-v3";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
@@ -187,57 +187,25 @@
     } catch (_) {}
   }
 
-  function deleteIndexedDatabase(name, timeoutMs) {
-    return new Promise((resolve) => {
-      try {
-        if (!window.indexedDB || !name) return resolve(false);
-        let settled = false;
-        const finish = (value) => {
-          if (settled) return;
-          settled = true;
-          resolve(!!value);
-        };
-        const req = indexedDB.deleteDatabase(name);
-        req.onsuccess = () => finish(true);
-        req.onerror = () => finish(false);
-        req.onblocked = () => finish(false);
-        setTimeout(() => finish(false), Math.max(250, Number(timeoutMs || 1200)));
-      } catch (_) { resolve(false); }
-    });
-  }
-
   async function prepareOneTimeFirebaseMigration() {
     if (!needsFirebaseMigration()) return false;
 
-    // Clear only authentication, presence and active-match state belonging to
-    // this dedicated backup origin. Language, nickname, icon and UI settings
-    // remain intact for the user.
+    // Remove only obsolete connection markers. A valid anonymous identity and
+    // active-match pointer are preserved; validity is checked through Firebase
+    // Auth below before any fresh identity is created.
     try {
-      sessionStorage.removeItem(SESSION_KEY);
-      sessionStorage.removeItem(AUTH_TAB_KEY);
       removeMatchingStorageKeys(sessionStorage, (key) =>
-        key.startsWith("dhamet2.") ||
-        key.startsWith("firebase:") ||
-        key === "zamat.activeGameId" ||
-        key === "zamat.activeGameTs" ||
-        key.startsWith("zamat.online.")
+        key === "firebase:previous_websocket_failure" ||
+        key.startsWith("dhamet2.presence.legacy.")
       );
     } catch (_) {}
     try {
       removeMatchingStorageKeys(localStorage, (key) =>
-        key.startsWith("firebase:authUser:") ||
-        key.startsWith("firebase:host:") ||
         key === "firebase:previous_websocket_failure" ||
-        key === "dhamet2.anonymous.session.v1" ||
-        key.startsWith("dhamet2.auth.tab.") ||
-        key.startsWith("dhamet2.presence.") ||
-        key.startsWith("dhamet2.activeGame.")
+        key === "zamat.session.user.persist.v1" ||
+        key.startsWith("dhamet2.presence.legacy.")
       );
     } catch (_) {}
-
-    // Old Firebase Auth releases may retain the anonymous identity in this
-    // IndexedDB database even after ordinary web-storage cleanup.
-    await deleteIndexedDatabase("firebaseLocalStorageDb", 1400);
     return true;
   }
 
@@ -307,17 +275,17 @@
       let user = await waitForInitialAuthState(auth, 4000);
       const marker = readTabAuthMarker();
       const markerMatches = !!(marker && marker.uid && user && String(marker.uid) === String(user.uid));
-      if (migrationRequired || (user && (!user.isAnonymous || !markerMatches))) user = await signInFreshAnonymous(auth);
-      if (!user) user = await signInFreshAnonymous(auth);
-      if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
-
-      // Bound token refresh so a damaged persisted browser state cannot leave the lobby
-      // on its loading message indefinitely.
-      try {
-        await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout");
-      } catch (_) {
-        user = await signInFreshAnonymous(auth);
+      let tokenHealthy = false;
+      if (user && user.isAnonymous && markerMatches) {
+        try {
+          await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout");
+          tokenHealthy = true;
+        } catch (_) {
+          tokenHealthy = false;
+        }
       }
+      if (!tokenHealthy) user = await signInFreshAnonymous(auth);
+      if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
 
       try { firebase.database().goOnline(); } catch (_) {}
       markTabAuth(user);

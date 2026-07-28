@@ -1209,10 +1209,6 @@
     const fromSessionUser = getNickFromSessionUser();
     if (fromSessionUser) return fromSessionUser;
     try {
-      const n = (sessionStorage.getItem(NICK_KEY) || "").trim();
-      if (n) return n;
-    } catch (e) {}
-    try {
       return (sessionStorage.getItem(NICK_KEY) || "").trim();
     } catch (e) {
       return "";
@@ -1255,6 +1251,27 @@
           resolve(fallback);
         },
       );
+    });
+  }
+
+  function readOnceWithOutcome(ref, timeoutMs) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      };
+      const timer = setTimeout(() => finish({ state: "timeout", snapshot: null, error: null }), Math.max(500, Number(timeoutMs || 3000)));
+      try {
+        ref.once("value").then(
+          (snapshot) => finish({ state: snapshot && snapshot.exists && snapshot.exists() ? "present" : "missing", snapshot, error: null }),
+          (error) => finish({ state: "error", snapshot: null, error: error || null }),
+        );
+      } catch (error) {
+        finish({ state: "error", snapshot: null, error: error || null });
+      }
     });
   }
 
@@ -2309,11 +2326,6 @@
           try { this._lobbyInitGeneration = Number(this._lobbyInitGeneration || 0) + 1; } catch (_) {}
           try { if (this._teardownOnlineSubscriptions) this._teardownOnlineSubscriptions({ localOnly: true }); } catch (_) {}
           try { this._stopPresenceHeartbeat(); } catch (_) {}
-          try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (_) {}
-          try { if (this._stopOpponentAbsenceWatcher) this._stopOpponentAbsenceWatcher(); } catch (_) {}
-          try { if (this._stopMoveCommitWatchdog) this._stopMoveCommitWatchdog(); } catch (_) {}
-          try { if (this._stopInviteCleanup) this._stopInviteCleanup(); } catch (_) {}
-          try { if (this._stopOutgoingInviteWatches) this._stopOutgoingInviteWatches(); } catch (_) {}
           try {
             if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
               this._presenceConnInfoRef.off("value", this._presenceConnInfoHandler);
@@ -2353,12 +2365,16 @@
             if (this._lifecycleBound) return;
             this._lifecycleBound = true;
     
-            const cleanup = () => {
+            const cleanup = (event) => {
+              // A BFCache page is frozen and later resumed; tearing down its Firebase
+              // listeners would leave it permanently stale when pageshow fires.
+              if (event && event.persisted) return;
               // Never start network writes, waits, or authentication work while the
               // browser is closing this page. Only detach local work synchronously.
               try { this._teardownPageRuntime(); } catch (_) {}
             };
-            const resume = () => {
+            const resume = (event) => {
+              try { if (event && event.persisted && window.firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
               try {
                 if (this._presenceInited && this.statusRef && this.myUid) {
                   this._startPresenceHeartbeat();
@@ -2367,6 +2383,11 @@
               try {
                 if (this.isActive && this._startGamePresenceHeartbeat) this._startGamePresenceHeartbeat();
               } catch (e) {}
+              try {
+                if (event && event.persisted && this._lobbyInitOptions && (!this._lobbyPlayersRef || !this._lobbyRoomsRef) && this.initLobbyPage) {
+                  this.initLobbyPage(Object.assign({}, this._lobbyInitOptions, { __recoveryAttempt: 1 }));
+                }
+              } catch (_) {}
             };
     
             window.addEventListener("pagehide", cleanup, { capture: true });
@@ -3683,6 +3704,7 @@
     safePlayerWrite: safePlayerWrite,
     safePlayerWriteNoAwait: safePlayerWriteNoAwait,
     settleWithin: settleWithin,
+    readOnceWithOutcome: readOnceWithOutcome,
     isGamePage: isGamePage,
     escapeHtml: escapeHtml,
     encodeSharedLogText: encodeSharedLogText,
