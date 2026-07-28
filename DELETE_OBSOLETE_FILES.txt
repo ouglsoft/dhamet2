@@ -1,4 +1,8 @@
-بعد استبدال الملفات، احذف الملف التالي من المستودع إن كان موجودًا:
-css/backup-runtime.css
+احذف الملفات القديمة التالية من مستودع التطبيق الاحتياطي بعد نسخ ملفات الاستبدال:
 
-أصبح هذا الملف غير مستخدم بعد حذف محرك العرض ثلاثي الأبعاد القديم.
+assets/icons/dashboard.svg
+assets/icons/mic.svg
+assets/icons/user.svg
+assets/icons/google.svg
+assets/icons/guest.svg
+assets/images/site-bg.webp
