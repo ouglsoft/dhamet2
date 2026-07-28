@@ -1748,7 +1748,7 @@
             else btnEnd.onclick = null;
           }
     
-          ["btnEndKill", "btnUndo", "btnSoufla", "btnEndLocalMatch"].forEach((id) => {
+          ["btnEndKill", "btnUndo", "btnSoufla"].forEach((id) => {
             try {
               const el = document.getElementById(id);
               if (el && this.isSpectator) el.style.display = "none";
@@ -1772,27 +1772,11 @@
           } catch (e) {}
     
           const btnChat = document.getElementById("btnChat");
-          const btnResume = document.getElementById("btnResume");
-          const btnNew = document.getElementById("btnNew");
-          const btnSave = document.getElementById("btnSave");
-    
-          if (on) {
-            if (btnResume) btnResume.style.display = "none";
-            if (btnChat) btnChat.style.display = "inline-flex";
-    
-            if (btnNew) btnNew.style.display = "none";
-            if (btnSave) btnSave.style.display = "none";
-          } else {
-            if (btnChat) {
-              btnChat.style.display = "none";
-              try {
-                delete btnChat.dataset.badge;
-              } catch (e) {}
+          if (btnChat) {
+            btnChat.style.display = on ? "inline-flex" : "none";
+            if (!on) {
+              try { delete btnChat.dataset.badge; } catch (e) {}
             }
-            if (btnResume) btnResume.style.display = "";
-    
-            if (btnNew) btnNew.style.display = "";
-            if (btnSave) btnSave.style.display = "";
           }
     
           try {
@@ -3386,7 +3370,7 @@
           const btnSpk = document.getElementById("btnSpk");
           const btnMic = document.getElementById("btnMic");
           const btnChat = document.getElementById("btnChat");
-          const spectatorHiddenIds = ["btnEndKill", "btnUndo", "btnSoufla", "btnSync", "btnEndOnline", "btnEndLocalMatch", "btnNew", "btnSave", "btnResume", "btnSpk", "btnMic"];
+          const spectatorHiddenIds = ["btnEndKill", "btnUndo", "btnSoufla", "btnSync", "btnEndOnline", "btnSpk", "btnMic"];
           spectatorHiddenIds.forEach((id) => {
             try {
               const el = document.getElementById(id);

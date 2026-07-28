@@ -311,7 +311,7 @@
     "assets/icons/users/user1.png", "assets/icons/users/user2.png", "assets/icons/users/user3.png",
     "assets/icons/users/user4.png", "assets/icons/users/user5.png", "assets/icons/users/user6.png",
     "assets/icons/users/user7.png", "assets/icons/users/user8.png", "assets/icons/users/user9.png",
-    "assets/icons/users/user10.png", "assets/icons/users/user11.png", "assets/icons/users/user12.png",
+    "assets/icons/users/user11.png", "assets/icons/users/user12.png",
     "assets/icons/users/user13.png", "assets/icons/users/user14.png", "assets/icons/users/user15.png",
     "assets/icons/users/user16.png", "assets/icons/users/user17.png", "assets/icons/users/user18.png",
     "assets/icons/users/user19.png", "assets/icons/users/user20.png",
@@ -326,7 +326,8 @@
     isPhoneLike,
     getAllowedUserIcons: () => window.ZIconManifest.slice(),
     sanitizeUserIconPath: (value) => {
-      const clean = String(value || "").replace(/^(?:\.\.\/)+/, "").replace(/^\/+/, "");
+      let clean = String(value || "").replace(/^(?:\.\.\/)+/, "").replace(/^\/+/, "");
+      if (/^assets\/icons\/users\/user10\.png$/i.test(clean)) clean = "assets/icons/users/autouser2.png";
       return window.ZIconManifest.includes(clean) ? clean : DEFAULT_ICON;
     }
   });

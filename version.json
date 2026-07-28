@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260728-unified-exit-icon1",
-  "source": "firebase-route-control-gameplay-parity-timers-cleanup-session-audit-clean",
+  "version": "20260728-asset-audit1",
+  "source": "firebase-online-only-asset-audit-clean",
   "uiReference": "ouglsoft-main",
-  "release": "20260728-unified-exit-icon1"
+  "release": "20260728-asset-audit1"
 }

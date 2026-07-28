@@ -2506,7 +2506,7 @@ function bindUI() {
     );
 }
 
-function mountModeControls(mode, isSpectator) {
+function mountModeControls(_mode, isSpectator) {
   try {
     if (
       document.body &&
@@ -2519,16 +2519,14 @@ function mountModeControls(mode, isSpectator) {
   } catch (_) {}
 
   const pool = document.getElementById("controlsPool");
-  const pvcBox = document.getElementById("pvcControlsBox");
   const pvpBox = document.getElementById("pvpControlsBox");
   const row1 = document.getElementById("pvpRow1");
   const row2 = document.getElementById("pvpRow2");
   const row3 = document.getElementById("pvpRow3");
   const specBar = document.getElementById("specBar");
-  if (!pool || !pvcBox || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;
+  if (!pool || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;
 
   const els = {
-    endLocal: document.getElementById("btnEndLocalMatch"),
     endOnline: document.getElementById("btnEndOnline"),
     sync: document.getElementById("btnSync"),
     undo: document.getElementById("btnUndo"),
@@ -2536,9 +2534,6 @@ function mountModeControls(mode, isSpectator) {
     chat: document.getElementById("btnChat"),
     spk: document.getElementById("btnSpk"),
     mic: document.getElementById("btnMic"),
-    newBtn: document.getElementById("btnNew"),
-    save: document.getElementById("btnSave"),
-    resume: document.getElementById("btnResume"),
   };
 
   const clear = (node) => {
@@ -2549,7 +2544,6 @@ function mountModeControls(mode, isSpectator) {
     if (el && el.parentElement !== pool) pool.appendChild(el);
   });
 
-  clear(pvcBox);
   clear(row1);
   clear(row2);
   clear(row3);
@@ -2561,20 +2555,15 @@ function mountModeControls(mode, isSpectator) {
     return;
   }
 
-  if (mode === "pvp") {
-    [els.endOnline, els.sync, els.undo].forEach((el) => el && row1.appendChild(el));
-    [els.chat, els.settings].forEach((el) => el && row2.appendChild(el));
-    [els.spk, els.mic].forEach((el) => el && row3.appendChild(el));
-  } else {
-    [els.endLocal, els.undo, els.settings, els.newBtn, els.save, els.resume].forEach(
-      (el) => el && pvcBox.appendChild(el),
-    );
-  }
+  [els.endOnline, els.sync, els.undo].forEach((el) => el && row1.appendChild(el));
+  [els.chat, els.settings].forEach((el) => el && row2.appendChild(el));
+  [els.spk, els.mic].forEach((el) => el && row3.appendChild(el));
 }
+
 window.ZamatControls = window.ZamatControls || {};
 window.ZamatControls.mount = function (isOnline, isSpectator) {
   try {
-    mountModeControls(isOnline ? "pvp" : "pvc", !!isSpectator);
+    mountModeControls("pvp", !!isSpectator);
   } catch (e) {}
 };
 

@@ -824,7 +824,7 @@ if (!icon) {
           return;
         }
       }
-      var target = (window.Online && window.Online.isActive) ? qs('#btnEndOnline') : qs('#btnEndLocalMatch');
+      var target = qs('#btnEndOnline');
       if (target) {
         target.click();
         return;
@@ -965,7 +965,7 @@ if (!icon) {
     if (!qs('.z-mobile-game-meta', head)) {
       head.innerHTML = [
         '<div class="z-mobile-game-player" data-player="top">',
-        '<div class="z-mobile-game-avatar-wrap is-black-piece"><img class="z-mobile-game-avatar" data-avatar="top" src="' + baseHref() + '/assets/icons/users/computeruser.png" alt="" aria-hidden="true"></div>',
+        '<div class="z-mobile-game-avatar-wrap is-black-piece"><img class="z-mobile-game-avatar" data-avatar="top" src="' + baseHref() + '/assets/icons/users/autouser1.png" alt="" aria-hidden="true"></div>',
         '<div class="z-mobile-game-meta">',
         '<div class="z-mobile-game-name" data-name="top"></div>',
         '<div class="z-mobile-game-presence" data-presence="top"></div>',
@@ -1119,10 +1119,10 @@ if (!icon) {
       if (presence) presence.hidden = !nextPresence;
       if (avatar) {
         var src = String(slot.avatar || '').trim();
-        if (!src && model.mode === 'pvc' && side === 'top') src = baseHref() + '/assets/icons/users/computeruser.png';
+        if (!src && side === 'top') src = baseHref() + '/assets/icons/users/autouser1.png';
         if (src && avatar.getAttribute('src') !== src) avatar.setAttribute('src', src);
         avatar.onerror = function () {
-          var fb = this.getAttribute('data-avatar') === 'top' ? 'computeruser.png' : 'autouser2.png';
+          var fb = this.getAttribute('data-avatar') === 'top' ? 'autouser1.png' : 'autouser2.png';
           this.src = baseHref() + '/assets/icons/users/' + fb;
         };
       }
@@ -1146,7 +1146,7 @@ if (!icon) {
   function gameButtons() {
     if (gameMode() === 'spectator') return [qs('#btnChat')].filter(Boolean);
     if (gameMode() === 'pvp') return [qs('.timer-row'), qs('.soufla-row'), qs('#btnUndo'), qs('#syncControlWrap'), qs('#btnSettings'), qs('#btnChat'), qs('#btnMic'), qs('#btnSpk')].filter(Boolean);
-    return [qs('.timer-row'), qs('.soufla-row'), qs('#btnUndo'), qs('#btnSave'), qs('#btnResume'), qs('#btnNew'), qs('#btnSettings'), qs('#btnRefreshLocal')].filter(Boolean);
+    return [qs('.timer-row'), qs('.soufla-row'), qs('#btnUndo'), qs('#btnSettings')].filter(Boolean);
   }
 
   function syncKillTile() {
@@ -1168,7 +1168,7 @@ if (!icon) {
       if (syncWrap && syncButton && syncButton.parentNode !== syncWrap) moveGameNode(syncButton, syncWrap);
     }
     var items = gameButtons().filter(function (item) {
-      return item && item.id !== 'btnEndOnline' && item.id !== 'btnEndLocalMatch' && item.id !== 'btnLeaveRoom';
+      return item && item.id !== 'btnEndOnline' && item.id !== 'btnLeaveRoom';
     });
     Array.prototype.slice.call(grid.children).forEach(function (node) {
       if (items.indexOf(node) === -1) restoreGameNode(node);

@@ -32,7 +32,7 @@ assert.doesNotMatch(lobby, /نظام اللعب الاحتياطي|جلسات م
 const game = read("pages/game.html");
 for (const id of [
   "board", "statusText", "onlinePresence", "btnEndKill", "btnSoufla",
-  "pvcControlsBox", "pvpControlsBox", "controlsPool", "btnUndo", "btnSettings",
+  "pvpControlsBox", "controlsPool", "btnUndo", "btnSettings",
   "btnEndOnline", "btnSync", "btnChat", "btnSpk", "btnMic", "btnLeaveRoom", "log"
 ]) assert.match(game, new RegExp(`id=["']${id}["']`), `Missing primary-interface game element: ${id}`);
 assert.match(game, /<div class="timer-row">[\s\S]*?<button[^>]*class="btn ok keep-text"[^>]*id="btnEndKill"/);

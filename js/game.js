@@ -2507,6 +2507,7 @@ window.AI = AI;
         let s = String(raw || "").trim();
         s = s.replace(/^(?:\.\.\/)+/g, "").replace(/^\/+/, "");
         if (!s) s = String(fallback || "assets/icons/users/user1.png");
+        if (/^assets\/icons\/users\/user10\.png$/i.test(s)) s = "assets/icons/users/autouser2.png";
         if (/^assets\/icons\/usre1\.svg$/i.test(s)) s = "assets/icons/users/user1.png";
 
         let m = s.match(/^assets\/icons\/user(\d{1,2})\.(svg|png)$/i);

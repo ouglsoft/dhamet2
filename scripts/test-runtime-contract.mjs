@@ -21,12 +21,15 @@ if (/addEventListener\("beforeunload", cleanup/.test(passive)) throw new Error("
 if (!game.includes('data-build-version="__DHAMET_BUILD__"')) throw new Error("stable build token is missing");
 if (!game.includes('<div class="timer-row">')) throw new Error("primary timer row structure is missing");
 if (!game.includes('class="btn ok keep-text"') || !game.includes('id="btnEndKill"')) throw new Error("primary end-capture button structure is missing");
-if (!game.includes('id="pvcControlsBox"') || !game.includes('id="controlsPool"')) throw new Error("primary controls pool structure is missing");
+if (!game.includes('id="pvpControlsBox"') || !game.includes('id="controlsPool"')) throw new Error("online controls pool structure is missing");
 if (game.includes('id="board3d"')) throw new Error("obsolete parallel 3D renderer mount must not exist");
 if (/three(?:\.min)?\.js/i.test(game)) throw new Error("obsolete Three.js dependency must not be loaded");
 
-if (!ui.includes('if (!pool || !pvcBox || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;')) {
-  throw new Error("desktop controls mount is not synchronized with the primary app");
+if (!ui.includes('if (!pool || !pvpBox || !row1 || !row2 || !row3 || !specBar) return;')) {
+  throw new Error("online-only desktop controls mount is incomplete");
+}
+if (/pvcControlsBox|btnNew|btnSave|btnResume|btnEndLocalMatch/.test(game)) {
+  throw new Error("unreachable local/PvC controls remain in the backup game page");
 }
 if (!ui.includes('killTimerTile.addEventListener("click"') || !ui.includes("endKillPressed()")) throw new Error("shared timer tile activation is missing");
 if (!ui.includes("releaseResolvedOnlineUiHold")) throw new Error("active game hold recovery missing");

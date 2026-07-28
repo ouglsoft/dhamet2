@@ -1350,6 +1350,7 @@
     p = p.replace(/^(?:\.\.\/)+/g, "").replace(/^\/+/, "");
     if (!p) return "";
 
+    if (/^assets\/icons\/users\/user10\.png$/i.test(p)) p = "assets/icons/users/autouser2.png";
     if (/^assets\/icons\/usre1\.svg$/i.test(p)) p = "assets/icons/users/user1.png";
 
     let m = p.match(/^assets\/icons\/user(\d+)\.(svg|png)$/i);
