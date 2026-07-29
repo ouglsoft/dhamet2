@@ -164,6 +164,19 @@
     };
   }
 
+  function officialSouflaFromHistoricalState(stateRecord) {
+    const snapshot = stateRecord && stateRecord.snapshot && typeof stateRecord.snapshot === "object"
+      ? stateRecord.snapshot
+      : null;
+    const pending = snapshot && snapshot.soufla && typeof snapshot.soufla === "object"
+      ? stripUndefined(snapshot.soufla)
+      : null;
+    const player = snapshot ? Number(snapshot.player) : null;
+    const penalizer = pending ? Number(pending.penalizer) : null;
+    if (!pending || (penalizer !== -1 && penalizer !== 1) || penalizer !== player) return null;
+    return { availableFor: penalizer, pending };
+  }
+
   Object.assign(Online, {
     _resolveSlotDisplayName: function (side, fallback) {
           try {
@@ -5305,10 +5318,14 @@
     
           const souflaPlain = this._cachedSouflaPlain;
           this._cachedSouflaPlain = null;
-          // DhametControl is exported as window.DhametControl. Keep the
-          // reference local to this runtime method so the transaction callback
-          // never depends on a non-existent global `Control` binding.
-          const Control = window.DhametControl || null;
+          const officialSoufla = souflaPlain && souflaPlain.penalizer != null
+            ? { availableFor: Number(souflaPlain.penalizer), pending: souflaPlain }
+            : null;
+          // The historical board state owns only the Soufla right valid for that
+          // exact position. Do not rewrite older states or alter the move flow.
+          if (statePayload && statePayload.snapshot) {
+            statePayload.snapshot.soufla = officialSoufla ? officialSoufla.pending : null;
+          }
     
           this.gameRef.transaction(
             (g) => {
@@ -5318,28 +5335,18 @@
               if (typeof g.turn === "number" && g.turn !== move.by) return;
     
               const mi = (g.moveIndex || 0) + 1;
-              const currentPly = Math.max(0, Number(g.ply || 0) || 0);
-              const ply = currentPly + 1;
-              const officialSoufla = souflaPlain && souflaPlain.penalizer != null
-                ? { availableFor: souflaPlain.penalizer, pending: souflaPlain }
-                : null;
-              const historicalCurrentState = Control && typeof Control.stateWithSoufla === "function"
-                ? Control.stateWithSoufla(g.state, g.soufla) || g.state
-                : g.state;
-              const storedStatePayload = Control && typeof Control.stateWithSoufla === "function"
-                ? Control.stateWithSoufla(statePayload, officialSoufla) || statePayload
-                : statePayload;
+    
+              const ply = (g.ply || 0) + 1;
     
               g.moveIndex = mi;
               g.ply = ply;
               g.turn = nextTurn;
     
               g.lastMove = Object.assign({ moveIndex: mi, ply }, move);
-              g.state = storedStatePayload;
+              g.state = statePayload;
     
               g.states = g.states || {};
-              g.states[currentPly] = historicalCurrentState;
-              g.states[ply] = storedStatePayload;
+              g.states[ply] = statePayload;
     
               try {
                 const KEEP_STATES = 40;
@@ -5522,12 +5529,9 @@
             }),
             { capturedOrder: capOrder },
           );
+          if (statePayload && statePayload.snapshot) statePayload.snapshot.soufla = null;
     
           this._cachedSouflaPlain = null;
-          // Resolve the shared control helper from its real browser export.
-          // This method has its own transaction callback and must not rely on
-          // a lexical `Control` variable from another method or test harness.
-          const Control = window.DhametControl || null;
     
           const runTx = () =>
             this.gameRef.transaction(
@@ -5536,23 +5540,16 @@
                 if (g.turn !== move.by) return g;
     
                 const mi = (g.moveIndex || 0) + 1;
-                const currentPly = Math.max(0, Number(g.ply || 0) || 0);
-                const ply = currentPly + 1;
-                const historicalCurrentState = Control && typeof Control.stateWithSoufla === "function"
-                  ? Control.stateWithSoufla(g.state, g.soufla) || g.state
-                  : g.state;
-                const storedStatePayload = Control && typeof Control.stateWithSoufla === "function"
-                  ? Control.stateWithSoufla(statePayload, null) || statePayload
-                  : statePayload;
+    
+                const ply = (g.ply || 0) + 1;
     
                 g.moveIndex = mi;
                 g.ply = ply;
                 g.turn = nextTurn;
                 g.lastMove = Object.assign({ moveIndex: mi, ply }, move);
-                g.state = storedStatePayload;
+                g.state = statePayload;
                 g.states = g.states || {};
-                g.states[currentPly] = historicalCurrentState;
-                g.states[ply] = storedStatePayload;
+                g.states[ply] = statePayload;
     
                 try {
                   const KEEP_STATES = 40;
@@ -5975,17 +5972,9 @@
 
               g.moveIndex = moveIndex;
               g.ply = previousPly;
-              const restoredSoufla = Control && typeof Control.souflaFromState === "function"
-                ? Control.souflaFromState(previous.state)
-                : null;
-              const restoredState = Control && typeof Control.stateWithSoufla === "function"
-                ? Control.stateWithSoufla(previous.state, restoredSoufla) || previous.state
-                : previous.state;
-              g.state = restoredState;
-              g.states = g.states || {};
-              g.states[previousPly] = restoredState;
-              g.turn = Number(restoredState.snapshot.player);
-              g.soufla = restoredSoufla;
+              g.state = previous.state;
+              g.turn = Number(previous.state.snapshot.player);
+              g.soufla = officialSouflaFromHistoricalState(previous.state);
               g.undoRequest = null;
               // Assigning null removes a possible winner child without adding
               // fields that are outside the published Firebase game schema.

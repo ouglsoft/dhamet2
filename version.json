@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260730-v24-online-control-scope",
-  "source": "firebase-online-only-native-rtdb-transport-v24-online-control-scope",
+  "version": "20260730-v27-from-v24-minimal-soufla-undo",
+  "source": "firebase-online-only-native-rtdb-transport-v27-from-v24-minimal-soufla-undo",
   "uiReference": "approved-online-only-v21",
-  "release": "20260730-v24-online-control-scope"
+  "release": "20260730-v27-from-v24-minimal-soufla-undo"
 }
