@@ -168,6 +168,35 @@ assert.equal(context.Game.souflaPending, null, 'undo must clear stale pending pe
 assert.equal(context.Game.awaitingPenalty, false, 'undo must not leave a stale penalty modal active');
 assert.deepEqual(trace.slice(0, 4), ['reset', 'restore', 'turn', 'ui']);
 
+// If the exact historical state carried a still-unused Soufla right, an
+// accepted undo must restore that official right after the board snapshot.
+const restoredHistoricalRight = {
+  penalizer: -1,
+  offender: 1,
+  reason: 'restored_with_undo',
+  offenders: [{ idx: 12 }],
+};
+trace.length = 0;
+client._applyRemoteState({
+  moveIndex: 10,
+  turn: -1,
+  state: {
+    snapshot: {
+      ...baseSnapshot,
+      awaitingPenalty: false,
+      souflaPending: null,
+      availableSouflaForLocalPlayer: null,
+      soufla: restoredHistoricalRight,
+    },
+  },
+  lastMove: { kind: 'undo', moveIndex: 10, undoneFrom: 3, undonePath: [4] },
+  soufla: { availableFor: -1, pending: restoredHistoricalRight },
+});
+assert.equal(context.Game.availableSouflaForLocalPlayer?.reason, 'restored_with_undo');
+assert.equal(context.Game.availableSouflaForLocalPlayer?.penalizer, -1);
+assert.equal(context.Game.awaitingPenalty, false, 'restored right remains optional until the Soufla button is pressed');
+assert.deepEqual(trace.slice(0, 5), ['reset', 'restore', 'install', 'turn', 'ui']);
+
 // After undo, a newly detected missed capture must survive the restored snapshot.
 const missedCapture = {
   penalizer: -1,

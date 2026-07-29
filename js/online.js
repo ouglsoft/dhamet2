@@ -5314,18 +5314,28 @@
               if (typeof g.turn === "number" && g.turn !== move.by) return;
     
               const mi = (g.moveIndex || 0) + 1;
-    
-              const ply = (g.ply || 0) + 1;
+              const currentPly = Math.max(0, Number(g.ply || 0) || 0);
+              const ply = currentPly + 1;
+              const officialSoufla = souflaPlain && souflaPlain.penalizer != null
+                ? { availableFor: souflaPlain.penalizer, pending: souflaPlain }
+                : null;
+              const historicalCurrentState = Control && typeof Control.stateWithSoufla === "function"
+                ? Control.stateWithSoufla(g.state, g.soufla) || g.state
+                : g.state;
+              const storedStatePayload = Control && typeof Control.stateWithSoufla === "function"
+                ? Control.stateWithSoufla(statePayload, officialSoufla) || statePayload
+                : statePayload;
     
               g.moveIndex = mi;
               g.ply = ply;
               g.turn = nextTurn;
     
               g.lastMove = Object.assign({ moveIndex: mi, ply }, move);
-              g.state = statePayload;
+              g.state = storedStatePayload;
     
               g.states = g.states || {};
-              g.states[ply] = statePayload;
+              g.states[currentPly] = historicalCurrentState;
+              g.states[ply] = storedStatePayload;
     
               try {
                 const KEEP_STATES = 40;
@@ -5341,14 +5351,7 @@
                 }
               } catch (e) {}
     
-              if (souflaPlain && souflaPlain.penalizer != null) {
-                g.soufla = {
-                  availableFor: souflaPlain.penalizer,
-                  pending: souflaPlain,
-                };
-              } else {
-                g.soufla = null;
-              }
+              g.soufla = officialSoufla;
     
               g.log = g.log || [];
     
@@ -5525,16 +5528,23 @@
                 if (g.turn !== move.by) return g;
     
                 const mi = (g.moveIndex || 0) + 1;
-    
-                const ply = (g.ply || 0) + 1;
+                const currentPly = Math.max(0, Number(g.ply || 0) || 0);
+                const ply = currentPly + 1;
+                const historicalCurrentState = Control && typeof Control.stateWithSoufla === "function"
+                  ? Control.stateWithSoufla(g.state, g.soufla) || g.state
+                  : g.state;
+                const storedStatePayload = Control && typeof Control.stateWithSoufla === "function"
+                  ? Control.stateWithSoufla(statePayload, null) || statePayload
+                  : statePayload;
     
                 g.moveIndex = mi;
                 g.ply = ply;
                 g.turn = nextTurn;
                 g.lastMove = Object.assign({ moveIndex: mi, ply }, move);
-                g.state = statePayload;
+                g.state = storedStatePayload;
                 g.states = g.states || {};
-                g.states[ply] = statePayload;
+                g.states[currentPly] = historicalCurrentState;
+                g.states[ply] = storedStatePayload;
     
                 try {
                   const KEEP_STATES = 40;
@@ -5957,9 +5967,17 @@
 
               g.moveIndex = moveIndex;
               g.ply = previousPly;
-              g.state = previous.state;
-              g.turn = Number(previous.state.snapshot.player);
-              g.soufla = null;
+              const restoredSoufla = Control && typeof Control.souflaFromState === "function"
+                ? Control.souflaFromState(previous.state)
+                : null;
+              const restoredState = Control && typeof Control.stateWithSoufla === "function"
+                ? Control.stateWithSoufla(previous.state, restoredSoufla) || previous.state
+                : previous.state;
+              g.state = restoredState;
+              g.states = g.states || {};
+              g.states[previousPly] = restoredState;
+              g.turn = Number(restoredState.snapshot.player);
+              g.soufla = restoredSoufla;
               g.undoRequest = null;
               // Assigning null removes a possible winner child without adding
               // fields that are outside the published Firebase game schema.
