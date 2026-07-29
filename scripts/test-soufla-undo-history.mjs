@@ -89,8 +89,12 @@ function snapshot(player, moveNo = 0) {
 }
 
 const sendMoveMethod = extractObjectMethod(source, 'sendMoveToFirebase');
+const sendSouflaMethod = extractObjectMethod(source, 'sendSouflaDecisionToFirebase');
 const undoMethod = extractObjectMethod(source, '_performUndoTransaction');
+assert.match(sendMoveMethod, /const Control = window\.DhametControl \|\| null;/);
 assert.match(sendMoveMethod, /Control\.stateWithSoufla\(g\.state, g\.soufla\)/);
+assert.match(sendSouflaMethod, /const Control = window\.DhametControl \|\| null;/);
+assert.match(sendSouflaMethod, /Control\.stateWithSoufla\(g\.state, g\.soufla\)/);
 assert.match(sendMoveMethod, /g\.states\[currentPly\] = historicalCurrentState/);
 assert.match(undoMethod, /Control\.souflaFromState\(previous\.state\)/);
 assert.match(undoMethod, /g\.soufla = restoredSoufla/);
@@ -103,7 +107,6 @@ const context = {
   JSON,
   Math,
   String,
-  Control,
   Game: { deferredPromotions: [], deferredPromotion: null },
   Visual: { getCapturedOrder() { return []; } },
   guardOnlineWrite() { return true; },
@@ -112,6 +115,9 @@ const context = {
   stateRecordWithPromotionQueue(snap) { return State.createStatePayload({ snapshot: snap, capturedOrder: [] }); },
   normalizeLogArrayForWrite() {},
   encodeSharedLogText(value) { return JSON.stringify(value); },
+  buildSouflaFxFromDecisionAndPending() { return null; },
+  normalizeSouflaFx(value) { return value || null; },
+  rcStr(idx) { return String(idx); },
   nowTs() { return 1000; },
   handleDbError(error) { if (error) throw error; },
   showOnlineNotice() {},
@@ -120,7 +126,8 @@ const context = {
 context.window = { DhametControl: Control, I18N: { translateArgs(key) { return key; } } };
 context.globalThis = context;
 vm.createContext(context);
-const methods = vm.runInContext(`({${sendMoveMethod},${undoMethod}})`, context, { filename: 'online-soufla-history-methods.js' });
+assert.equal(Object.prototype.hasOwnProperty.call(context, 'Control'), false, 'browser-like context must not inject a global Control binding');
+const methods = vm.runInContext(`({${sendMoveMethod},${sendSouflaMethod},${undoMethod}})`, context, { filename: 'online-soufla-history-methods.js' });
 
 const state0 = State.createStatePayload({ snapshot: snapshot(TOP, 0), capturedOrder: [] });
 const oldRight = rightFor(TOP, 'right_before_backup_move');
@@ -162,6 +169,36 @@ const client = {
   _isCurrentAuthPlayerInGame() { return true; },
 };
 
+// V23 also used the missing lexical Control binding in the separate Soufla
+// decision transaction. Execute that real method in the same browser-like
+// context so both write paths are protected against the regression.
+storedGame = {
+  status: 'active', turn: TOP, ply: 0, moveIndex: 0,
+  state: state0, states: { 0: state0 }, soufla: oldRight, undoRequest: null,
+  players: {
+    white: { uid: 'bottom-player', nickname: 'Bottom' },
+    black: { uid: 'top-player', nickname: 'Top' },
+  },
+  log: [],
+};
+client.sendSouflaDecisionToFirebase(
+  { kind: 'remove', offenderIdx: 30 },
+  { penalizer: TOP, offenderSide: BOT, offenders: [30], options: [], longestGlobal: 1 },
+  BOT,
+);
+assert.equal(storedGame.ply, 1, 'Soufla decision transaction must commit without a global Control binding');
+assert.equal(storedGame.soufla, null);
+
+// Reset to the ordinary move scenario used by the undo-history assertions.
+storedGame = {
+  status: 'active', turn: TOP, ply: 0, moveIndex: 0,
+  state: state0, states: { 0: state0 }, soufla: oldRight, undoRequest: null,
+  players: {
+    white: { uid: 'bottom-player', nickname: 'Bottom' },
+    black: { uid: 'top-player', nickname: 'Top' },
+  },
+  log: [],
+};
 client.sendMoveToFirebase(30, 40, BOT, 0);
 assert.equal(storedGame.ply, 1);
 assert.equal(storedGame.soufla, null, 'playing must expire the current right');

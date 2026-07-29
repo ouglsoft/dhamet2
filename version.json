@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260729-v23-soufla-undo-history",
-  "source": "firebase-online-only-native-rtdb-transport-v23-soufla-undo-history",
+  "version": "20260730-v24-online-control-scope",
+  "source": "firebase-online-only-native-rtdb-transport-v24-online-control-scope",
   "uiReference": "approved-online-only-v21",
-  "release": "20260729-v23-soufla-undo-history"
+  "release": "20260730-v24-online-control-scope"
 }

@@ -5305,6 +5305,10 @@
     
           const souflaPlain = this._cachedSouflaPlain;
           this._cachedSouflaPlain = null;
+          // DhametControl is exported as window.DhametControl. Keep the
+          // reference local to this runtime method so the transaction callback
+          // never depends on a non-existent global `Control` binding.
+          const Control = window.DhametControl || null;
     
           this.gameRef.transaction(
             (g) => {
@@ -5520,6 +5524,10 @@
           );
     
           this._cachedSouflaPlain = null;
+          // Resolve the shared control helper from its real browser export.
+          // This method has its own transaction callback and must not rely on
+          // a lexical `Control` variable from another method or test harness.
+          const Control = window.DhametControl || null;
     
           const runTx = () =>
             this.gameRef.transaction(
