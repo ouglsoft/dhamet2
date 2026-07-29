@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260729-hidden-runtime-audit1",
-  "source": "firebase-online-only-native-rtdb-transport-hidden-runtime-audit",
-  "uiReference": "ouglsoft-main",
-  "release": "20260729-hidden-runtime-audit1"
+  "version": "20260729-v20-online-only-cleanup",
+  "source": "firebase-online-only-native-rtdb-transport-v20-cleanup",
+  "uiReference": "approved-online-only-v20",
+  "release": "20260729-v20-online-only-cleanup"
 }

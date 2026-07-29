@@ -209,10 +209,6 @@
     window.Logger = Logger;
   } catch (e) {}
 
-  async function tryFinalizeTrainingOnExit() {
-    return false;
-  }
-
   function normalizeSouflaFx(fx) {
     try {
       if (!fx || typeof fx !== "object") return null;
@@ -3692,7 +3688,6 @@
 
   window.__ZAMAT_ONLINE_SHARED__ = {
     formatTpl: formatTpl,
-    tryFinalizeTrainingOnExit: tryFinalizeTrainingOnExit,
     normalizeSouflaFx: normalizeSouflaFx,
     buildSouflaFxFromDecisionAndPending: buildSouflaFxFromDecisionAndPending,
     isPermissionDenied: isPermissionDenied,

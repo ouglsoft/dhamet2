@@ -47,7 +47,8 @@ assert.equal(tr.ar.soufla.summary.remove, 'اختار {actor} عقوبة الس�
 assert.equal(tr.ar.soufla.summary.force, 'اختار {actor} عقوبة السوفلة ضدك، وأجبرك على تنفيذ المسار المحدد على الرقعة باللون الأخضر.');
 assert.doesNotMatch(i18n, /(?:اللاعب|Player |Le joueur |du joueur )\s*\{(?:actor|victim|player|requester|responder|opponent)\}/);
 assert.match(tr.ar.undo.requesterAccepted, /\{responder\}.*السهم الأصفر المعكوس/);
-assert.match(tr.ar.undo.requesterRejected, /\{responder\}.*السهم الأصفر المعكوس/);
+assert.match(tr.ar.undo.requesterRejected, /\{responder\}/);
+assert.doesNotMatch(tr.ar.undo.requesterRejected, /السهم الأصفر المعكوس/);
 
 
 assert.match(soufla, /mySide === by\) return false/);
@@ -150,7 +151,7 @@ assert.match(online, /if \(!localOnly\)[\s\S]{0,180}_voiceParticipantsRef/);
 assert.match(online, /undo\.requesterAccepted/);
 assert.match(online, /undo\.requesterRejected/);
 assert.match(tr.ar.undo.spectatorAccepted, /السهم الأصفر المعكوس/);
-assert.match(tr.ar.undo.spectatorRejected, /السهم الأصفر المعكوس/);
+assert.doesNotMatch(tr.ar.undo.spectatorRejected, /السهم الأصفر المعكوس/);
 assert.match(ui, /killTimerTile\.addEventListener\("click"[\s\S]*endKillPressed\(\)/);
 assert.match(theme, /timer-row\.is-live[\s\S]*gradient-game-control-danger/);
 assert.ok(fs.statSync('assets/icons/icon.webp').size <= 50 * 1024, 'game icon must stay under 50 KB');

@@ -8,7 +8,7 @@
     "prepare:pages": "node deploy/prepare-pages.mjs",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.7.29-hidden-runtime-audit1",
+  "version": "2026.7.29-v20-online-only-cleanup",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""

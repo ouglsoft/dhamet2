@@ -52,8 +52,8 @@ const i18nSource = read("js/i18n.js");
 const translations = parseTranslations(i18nSource);
 for (const lang of manifest.languages) {
   const flat = flatten(translations[lang]);
-  if (Object.keys(flat).length !== manifest.backupLeafCount) {
-    throw new Error(`${lang} translation leaf count differs: ${Object.keys(flat).length}`);
+  if (Object.keys(flat).length !== manifest.onlineOnlyLeafCount) {
+    throw new Error(`${lang} online-only translation leaf count differs: ${Object.keys(flat).length}`);
   }
   for (const key of manifest.allowedExtraKeys) {
     if (!Object.prototype.hasOwnProperty.call(flat, key)) throw new Error(`${lang} required backup-only message missing: ${key}`);
@@ -115,9 +115,23 @@ if (!online.includes('type !== "invite_sent"') || !online.includes('type !== "in
   throw new Error("Invite lifecycle records are not hidden from the visible game log");
 }
 if (!ui.includes('return SouflaViewModule.showSouflaModal')) throw new Error("Primary soufla modal module is not used");
-if (!ui.includes('const isOnline = !!(window.Online && window.Online.isActive);')) throw new Error("Primary online settings modal behavior is missing");
+for (const token of ["setTheme", "setBoardStyle", "setCoords", "saveSessionSettings"]) {
+  if (!ui.includes(token)) throw new Error(`Visual-only settings behavior missing: ${token}`);
+}
+for (const token of ["aiLevel", "thinkTime", "evalNoise", "moveMistake", "showSouflaAgainstHuman", "SessionGame"]) {
+  if (ui.includes(token)) throw new Error(`Non-online settings/runtime symbol remains: ${token}`);
+}
+for (const lang of manifest.languages) {
+  const rejected = translations[lang].undo;
+  if (/الأصفر|yellow|jaune/i.test(rejected.requesterRejected) || /الأصفر|yellow|jaune/i.test(rejected.spectatorRejected)) {
+    throw new Error(`${lang} undo rejection incorrectly mentions the reversed arrow`);
+  }
+  if (!/الأصفر|yellow|jaune/i.test(rejected.requesterAccepted) || !/الأصفر|yellow|jaune/i.test(rejected.spectatorAccepted)) {
+    throw new Error(`${lang} undo acceptance must still mention the reversed arrow`);
+  }
+}
 for (const token of ["z-postmatch-confirm-only", "allowEsc: false", "blocking: true", "forceReplace: true"]) {
   if (!runtime.includes(token)) throw new Error(`Primary online end modal contract missing: ${token}`);
 }
 
-console.log("messages and modal parity tests passed");
+console.log("online-only messages and modal contract tests passed");

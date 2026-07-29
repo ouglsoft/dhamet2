@@ -223,25 +223,6 @@ function clampInt(v, min, max, fallback) {
   return Math.max(min, Math.min(max, i));
 }
 
-const AI_LEVEL_ORDER = Object.freeze(["beginner", "easy", "medium", "hard", "strong", "expert"]);
-const AI_LEVEL_CONFIGS = Object.freeze({
-  beginner: Object.freeze({ minimaxDepth: 3, thinkTimeMs: 400, timeBoostCriticalMs: 200, moveChoiceTopN: 6, moveMistakeRatePct: 35, evalNoise: 90 }),
-  easy: Object.freeze({ minimaxDepth: 4, thinkTimeMs: 900, timeBoostCriticalMs: 500, moveChoiceTopN: 4, moveMistakeRatePct: 22, evalNoise: 45 }),
-  medium: Object.freeze({ minimaxDepth: 6, thinkTimeMs: 4000, timeBoostCriticalMs: 2000, moveChoiceTopN: 1, moveMistakeRatePct: 0, evalNoise: 0 }),
-  hard: Object.freeze({ minimaxDepth: 8, thinkTimeMs: 5500, timeBoostCriticalMs: 3500, moveChoiceTopN: 1, moveMistakeRatePct: 0, evalNoise: 0 }),
-  strong: Object.freeze({ minimaxDepth: 10, thinkTimeMs: 8000, timeBoostCriticalMs: 5000, moveChoiceTopN: 1, moveMistakeRatePct: 0, evalNoise: 0 }),
-  expert: Object.freeze({ minimaxDepth: 12, thinkTimeMs: 15000, timeBoostCriticalMs: 10000, moveChoiceTopN: 1, moveMistakeRatePct: 0, evalNoise: 0 }),
-});
-
-function normalizeAILevel(level) {
-  const v = String(level || "").trim();
-  return Object.prototype.hasOwnProperty.call(AI_LEVEL_CONFIGS, v) ? v : "medium";
-}
-function getAILevelConfig(level) {
-  return AI_LEVEL_CONFIGS[normalizeAILevel(level)];
-}
-
-
 function buildSegments(segList, dir) {
   const lines = [];
   for (const [a, b] of segList) {
@@ -348,7 +329,7 @@ const Game = {
   _souflaApplying: false,
   _simDepth: 0,
   souflaPending: null,
-  availableSouflaForHuman: null,
+  availableSouflaForLocalPlayer: null,
 
   history: [],
   lastMovedFrom: null,
@@ -359,32 +340,14 @@ const Game = {
 
   settings: {
     starter: "white",
-    aiCaptureMode: "mandatory",
-    aiRandomIgnoreCaptureRatePct: 12,
     theme: "light",
     showCoords: false,
     boardStyle: "2d",
-
-    advanced: {
-      aiLevel: "medium",
-      thinkTimeMs: 4000,
-      timeBoostCriticalMs: 2000,
-      minimaxDepth: 6,
-      moveChoiceTopN: 1,
-      moveMistakeRatePct: 0,
-      evalNoise: 0,
-    },
   },
-
-  pendingAILevel: null,
 
   names: {
     top: "",
     bot: "",
-  },
-  humanLogger: {
-    moves: [],
-    result: null,
   },
   killTimer: {
     running: false,
@@ -424,37 +387,11 @@ const Game = {
 try {
   if (typeof window !== "undefined") {
     window.Game = Game;
-    window.AI_LEVEL_ORDER = AI_LEVEL_ORDER;
-    window.AI_LEVEL_CONFIGS = AI_LEVEL_CONFIGS;
   } else if (typeof self !== "undefined") {
     self.Game = Game;
-    self.AI_LEVEL_ORDER = AI_LEVEL_ORDER;
-    self.AI_LEVEL_CONFIGS = AI_LEVEL_CONFIGS;
   }
 } catch (_) {}
 
-Game.normalizeAdvancedSettings = function () {
-  const src = (this.settings && this.settings.advanced) || {};
-  const level = normalizeAILevel(src.aiLevel || "medium");
-  const cfg = getAILevelConfig(level);
-  const out = {
-    aiLevel: level,
-    thinkTimeMs: cfg.thinkTimeMs,
-    timeBoostCriticalMs: cfg.timeBoostCriticalMs,
-    minimaxDepth: cfg.minimaxDepth,
-    moveChoiceTopN: cfg.moveChoiceTopN,
-    moveMistakeRatePct: cfg.moveMistakeRatePct,
-    evalNoise: cfg.evalNoise,
-  };
-  out.minimaxDepth = clampInt(out.minimaxDepth, 1, 32, cfg.minimaxDepth);
-  out.thinkTimeMs = clampInt(out.thinkTimeMs, 0, 20000, cfg.thinkTimeMs);
-  out.timeBoostCriticalMs = clampInt(out.timeBoostCriticalMs, 0, 20000, cfg.timeBoostCriticalMs);
-  out.moveChoiceTopN = clampInt(out.moveChoiceTopN, 1, 12, cfg.moveChoiceTopN);
-  out.moveMistakeRatePct = clampInt(out.moveMistakeRatePct, 0, 100, cfg.moveMistakeRatePct);
-  out.evalNoise = clampInt(out.evalNoise, 0, 500, cfg.evalNoise);
-  if (!this.settings) this.settings = {};
-  this.settings.advanced = out;
-};
 
 function createInitialBoard() {
   return window.DhametRules.createInitialBoard();
@@ -635,21 +572,7 @@ function finishForcedOpeningAppliedTurn(mover, info) {
 
   switchPlayer();
   Turn.start();
-  scheduleForcedOpeningAutoIfNeeded();
   Visual.draw();
-
-  if (Game.forcedPly >= 10 && Game.player === aiSide()) {
-    Turn.finishTurnAndSoufla();
-  }
-
-  if (
-    !Game.awaitingPenalty &&
-    !Game.gameOver &&
-    Game.player === aiSide() &&
-    !isForcedOpeningActive()
-  ) {
-    AI.scheduleMove();
-  }
 }
 
 function setupInitialBoard() {
@@ -701,10 +624,6 @@ function setupInitialBoard() {
   Game.deferredPromotion = null;
   Game.history = [];
   Game.killTimer.hardStop();
-  try {
-    TrainRecorder.startNewGame();
-  } catch {}
-
   try {
     UI.log({ kind: "i18n", key: "log.forced.openingStarted", ts: Date.now() });
   } catch {}
@@ -862,9 +781,6 @@ function applyMove(fromIdx, toIdx, isCapture, jumpedIdx) {
     }
   } catch {}
 
-  try {
-    SessionGame.saveSoon();
-  } catch {}
 }
 
 function maybeQueueDeferredPromotion(idx) {
@@ -972,22 +888,7 @@ const Turn = {
         Game.winner = -Game.player;
         Game.terminationReason = "no_legal_moves";
         try {
-          SessionGame.clear();
-        } catch {}
-        try {
           UI.showGameOverModal?.(Game.winner);
-        } catch {}
-        try {
-          Promise.resolve(
-            TrainRecorder.finalizeAndUpload({
-              winner: Game.winner,
-              endReason: "no_legal_moves",
-            }),
-          ).finally(() => {
-            try {
-              TrainRecorder.startNewGame();
-            } catch {}
-          });
         } catch {}
         return;
       }
@@ -998,7 +899,7 @@ const Turn = {
   beginCapture(fromIdx) {
     if (!this.ctx) this.start();
     if (this.ctx.startedFrom == null) this.ctx.startedFrom = fromIdx;
-    if (!Game.killTimer.running && Game.player === humanSide()) {
+    if (!Game.killTimer.running && Game.player === localPlayerSide()) {
       Game.killTimer.start();
     }
   },
@@ -1043,65 +944,22 @@ const Turn = {
     Game.inChain = false;
     Game.chainPos = null;
 
-    try {
-      TrainRecorder.turnEnd({ pending });
-    } catch {}
-
     if (pending) {
-      if (window.Online?.isActive) {
-        try {
-          window.Online.cacheSouflaPending(pending);
-        } catch {}
-
-        if (pending.penalizer === humanSide()) {
-          Game.availableSouflaForHuman = pending;
-        } else {
-          Game.availableSouflaForHuman = null;
-        }
-      } else {
-        if (pending.penalizer === humanSide()) {
-          Game.availableSouflaForHuman = pending;
-        } else {
-          try {
-            Game.awaitingPenalty = true;
-            Game.souflaPending = pending;
-            Game.availableSouflaForHuman = null;
-          } catch {}
-
-          try {
-            if (window.UI && typeof UI.updateStatus === "function") UI.updateStatus();
-          } catch {}
-
-          AI.pickSouflaDecision(pending)
-            .then((decision) => {
-              applySouflaDecision(decision, pending);
-              try {
-                UI.showSouflaAgainstHuman(decision, pending);
-              } catch {}
-            })
-            .catch((e) => {
-              const fallback =
-                pending.options.find((o) => o.kind === "remove") || pending.options[0];
-              applySouflaDecision(fallback, pending);
-              try {
-                UI.showSouflaAgainstHuman(fallback, pending);
-              } catch {}
-            });
-          return;
-        }
-      }
+      try {
+        window.Online?.cacheSouflaPending?.(pending);
+      } catch {}
+      Game.availableSouflaForLocalPlayer = pending.penalizer === localPlayerSide() ? pending : null;
     }
 
     switchPlayer();
     Turn.start();
-    scheduleForcedOpeningAutoIfNeeded();
     UI.updateAll();
 
     if (window.Online && window.Online.isActive) {
       window.Online.sendMoveToFirebase(Game.lastMovedFrom, Game.lastMovedTo, Game.player);
     }
 
-    if (endedBy === humanSide()) {
+    if (endedBy === localPlayerSide()) {
       Visual.clearForcedOpeningArrow();
     }
   },
@@ -1172,23 +1030,6 @@ function snapshotState() {
 function pushHistoryBeforeMove(fromIdx, toIdx) {
   if ((Game._simDepth || 0) > 0) return;
 
-  try {
-    const onlineActive = !!(window.Online && window.Online.isActive);
-    if (
-      !onlineActive &&
-      typeof TrainRecorder !== "undefined" &&
-      TrainRecorder &&
-      typeof TrainRecorder.beginMoveBoundary === "function"
-    ) {
-      TrainRecorder.beginMoveBoundary({
-        type: "move",
-        actor: Game.player,
-        fromIdx,
-        toIdx,
-      });
-    }
-  } catch (_) {}
-
   const snap = snapshotState();
   snap.lastMovedFrom = fromIdx;
   snap.lastMovedTo = toIdx;
@@ -1258,218 +1099,6 @@ function restoreSnapshot(snap, opts) {
 function restoreSnapshotSilent(snap) {
   restoreSnapshot(snap, { redraw: false, visual: false });
 }
-
-const SessionGame = (() => {
-  const KEY_ONLINE = "dhamet2.session.game.online.v1";
-  const MAX_KB = 256;
-
-  function _getKey() {
-    return KEY_ONLINE;
-  }
-  let _t = null;
-
-  function _safeNowMs() {
-    try {
-      return Date.now();
-    } catch {
-      return 0;
-    }
-  }
-
-  function _getKillMs() {
-    try {
-      return (
-        ((Game.killTimer?.elapsedMs || 0) +
-          (Game.killTimer?.running ? performance.now() - (Game.killTimer.startTs || 0) : 0)) |
-        0
-      );
-    } catch {
-      return 0;
-    }
-  }
-
-  function _capture() {
-    const snap = snapshotState();
-    const data = {
-      v: 1,
-      ts: _safeNowMs(),
-      snapshot: snap,
-
-      gameOver: !!Game.gameOver,
-      winner: Game.winner == null ? null : Game.winner | 0,
-      terminationReason: Game.terminationReason == null ? null : String(Game.terminationReason),
-
-      forcedSeqKey:
-        Game.forcedSeq === FO_TOP ? "FO_TOP" : Game.forcedSeq === FO_BOT ? "FO_BOT" : null,
-      settings: Game.settings,
-      turnCtx: (() => {
-        try {
-          const ctx = typeof Turn !== "undefined" && Turn && Turn.ctx ? Turn.ctx : null;
-          if (!ctx) return null;
-          return {
-            startedFrom: ctx.startedFrom == null ? null : ctx.startedFrom | 0,
-            capturesDone: typeof ctx.capturesDone === "number" ? ctx.capturesDone | 0 : 0,
-            Lmax: typeof ctx.Lmax === "number" ? ctx.Lmax | 0 : 0,
-            candidates: Array.isArray(ctx.candidates) ? ctx.candidates.slice() : null,
-          };
-        } catch {
-          return null;
-        }
-      })(),
-      history: Array.isArray(Game.history) ? Game.history : [],
-      logEvents: window.LogMgr && Array.isArray(window.LogMgr._events) ? window.LogMgr._events : [],
-      logHtml: typeof qs === "function" && qs("#log") ? qs("#log").innerHTML : "",
-      killTimerMs: Math.max(0, _getKillMs()),
-    };
-    return data;
-  }
-
-  function clear() {
-    try {
-      sessionStorage.removeItem(_getKey());
-    } catch {}
-  }
-
-  function saveNow() {
-    if ((Game._simDepth || 0) > 0) return;
-
-    if (Game.gameOver) {
-      clear();
-      return;
-    }
-
-    try {
-      const data = _capture();
-      const raw = JSON.stringify(data);
-      if (raw && raw.length / 1024 > MAX_KB) return;
-      sessionStorage.setItem(_getKey(), raw);
-    } catch {}
-  }
-
-  function saveSoon() {
-    try {
-      if (_t) return;
-      _t = setTimeout(() => {
-        _t = null;
-        saveNow();
-      }, 0);
-    } catch {
-      saveNow();
-    }
-  }
-
-  function restore() {
-    let raw = null;
-    try {
-      raw = sessionStorage.getItem(_getKey());
-    } catch {}
-    if (!raw) return false;
-
-    let data = null;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      clear();
-      return false;
-    }
-    if (!data || typeof data !== "object") {
-      clear();
-      return false;
-    }
-
-    if (data.gameOver) {
-      clear();
-      return false;
-    }
-
-    const snap = data.snapshot;
-    if (!snap || !snap.board || !Array.isArray(snap.board)) {
-      clear();
-      return false;
-    }
-
-    try {
-      if (data.settings && typeof data.settings === "object") {
-        Game.settings = data.settings;
-        try {
-          Game.normalizeAdvancedSettings();
-        } catch {}
-      }
-
-      if (data.forcedSeqKey === "FO_TOP") Game.forcedSeq = FO_TOP;
-      else if (data.forcedSeqKey === "FO_BOT") Game.forcedSeq = FO_BOT;
-      else {
-        try {
-          const fp = typeof snap.forcedPly === "number" ? snap.forcedPly | 0 : 0;
-          const cur = snap.player;
-          const base = fp % 2 === 0 ? cur : -cur;
-          Game.forcedSeq = base === TOP ? FO_TOP : FO_BOT;
-        } catch {
-          Game.forcedSeq = FO_BOT;
-        }
-      }
-
-      restoreSnapshot(snap, { redraw: false, visual: true });
-
-      Game.gameOver = false;
-      Game.winner = null;
-      Game.terminationReason = null;
-
-      Game.history = Array.isArray(data.history) ? data.history : [];
-
-      try {
-        if (
-          window.LogMgr &&
-          typeof window.LogMgr.setEvents === "function" &&
-          Array.isArray(data.logEvents)
-        ) {
-          window.LogMgr.setEvents(data.logEvents);
-        } else if (typeof data.logHtml === "string" && typeof qs === "function" && qs("#log")) {
-          qs("#log").innerHTML = data.logHtml;
-        }
-      } catch {}
-      try {
-        const km = typeof data.killTimerMs === "number" ? data.killTimerMs : 0;
-        Game.killTimer.hardStop();
-        Game.killTimer.elapsedMs = Math.max(0, km | 0);
-        try {
-          UI.updateKillClock(Game.killTimer.elapsedMs | 0);
-        } catch {}
-        if (Game.inChain) {
-          try {
-            Game.killTimer.start();
-          } catch {}
-        }
-        try {
-          if (typeof syncEndKillAvailability === "function") syncEndKillAvailability(Game.inChain);
-          else {
-            const btn = typeof qs === "function" ? qs("#btnEndKill") : null;
-            if (btn) {
-              btn.disabled = false;
-              btn.setAttribute("data-chain-active", Game.inChain ? "true" : "false");
-              btn.setAttribute("aria-disabled", Game.inChain ? "false" : "true");
-            }
-          }
-        } catch {}
-      } catch {}
-
-      try {
-        UI.updateAll();
-      } catch {}
-
-      return true;
-    } catch {
-      clear();
-      return false;
-    }
-  }
-
-  return { KEY: KEY_ONLINE, KEY_ONLINE, getKey: _getKey, saveNow, saveSoon, restore, clear };
-})();
-
-try {
-  window.SessionGame = SessionGame;
-} catch {}
 
 function longestPathsWithJumpsFrom(fromIdx, maxLen) {
   simEnter();
@@ -1611,18 +1240,10 @@ function applySouflaDecision(decision, pending) {
 
       armSouflaFXPersistence(-pending.penalizer);
 
-      try {
-        TrainRecorder.souflaApplied(decision, pending);
-      } catch {}
-
       if (Game.player !== pending.penalizer) {
         switchPlayer();
       }
     } else if (decision.kind === "force") {
-      try {
-        TrainRecorder.souflaBeginForce(decision, pending);
-      } catch {}
-
       restoreSnapshotSilent(pending.turnStartSnapshot);
 
       try {
@@ -1701,10 +1322,6 @@ function applySouflaDecision(decision, pending) {
 
       armSouflaFXPersistence(-pending.penalizer);
 
-      try {
-        TrainRecorder.souflaEndForce(decision, pending);
-      } catch {}
-
       switchPlayer();
     }
   } finally {
@@ -1732,14 +1349,13 @@ function applySouflaDecision(decision, pending) {
       try {
         Game.awaitingPenalty = false;
         Game.souflaPending = null;
-        Game.availableSouflaForHuman = null;
+        Game.availableSouflaForLocalPlayer = null;
       } catch {}
 
       try {
         Turn.start();
       } catch {}
       try {
-        scheduleForcedOpeningAutoIfNeeded();
       } catch {}
       try {
         UI.updateAll();
@@ -1750,16 +1366,6 @@ function applySouflaDecision(decision, pending) {
         Visual.setSuspended(false);
       } catch {}
 
-      if (
-        !Game.awaitingPenalty &&
-        !Game.gameOver &&
-        Game.player === aiSide() &&
-        !(Game.forcedEnabled && Game.forcedPly < 10)
-      ) {
-        try {
-          AI.scheduleMove();
-        } catch {}
-      }
     });
   });
   if (window.Online && window.Online.isActive && !window.Online._isApplyingRemote) {
@@ -1795,68 +1401,18 @@ function checkEndConditions() {
   Game.gameOver = true;
   Game.winner = outcome.status === window.DhametRules.RESULT_DRAW ? null : outcome.winner;
   Game.terminationReason = outcome.reason || (Game.winner == null ? "draw" : "natural_win");
-  try { SessionGame.clear(); } catch (_) {}
   try { UI.showGameOverModal?.(Game.winner); } catch (_) {}
 }
 
-function scheduleForcedOpeningAutoIfNeeded() {
-  if (!isForcedOpeningActive()) return;
-  if (Game.gameOver) return;
+/* Online-only side helpers. */
 
-  const info = getForcedOpeningInfo();
-  if (!info || Game.player !== info.mover || info.mover !== aiSide()) return;
-
-  Game.awaitingPenalty = false;
-  Game.souflaPending = null;
-
-  setTimeout(() => {
-    if (!isForcedOpeningActive()) return;
-    const current = getForcedOpeningInfo();
-    if (!current || current.ply !== info.ply || Game.player !== current.mover) return;
-
-    consumeTurnClearForMove();
-
-    if (!applyForcedOpeningInfo(current)) return;
-
-    finishForcedOpeningAppliedTurn(current.mover, current);
-  }, 500);
-}
-function detectCriticalState(side) {
-  const { Lmax } = computeLongestForPlayer(side);
-  if (Lmax > 0) return true;
-
-  for (let idx = 0; idx < N_CELLS; idx++) {
-    const v = valueAt(idx);
-    if (!v || pieceOwner(v) !== side || pieceKind(v) !== MAN) continue;
-    const [r] = idxToRC(idx);
-    if ((side === TOP && r >= 7) || (side === BOT && r <= 1)) return true;
-  }
-
-
-  const opp = -side;
-  for (let from = 0; from < N_CELLS; from++) {
-    const v = valueAt(from);
-    if (!v || pieceOwner(v) !== opp) continue;
-    const caps = generateCapturesFrom(from, v);
-    for (const [toIdx, jIdx] of caps) {
-      const jv = valueAt(jIdx);
-      if (jv && pieceOwner(jv) === side && pieceKind(jv) === KING) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/* AI engine removed: this deployment supports online play only. */
-
-function humanSide() {
+function localPlayerSide() {
   if (window.Online && window.Online.isActive) return window.Online.mySide;
   return BOT;
 }
 function resolveTurnActorLabel(side) {
   try {
-    if (side === humanSide()) {
+    if (side === localPlayerSide()) {
       if (window.I18N && typeof window.I18N.text === "function") return String(window.I18N.text("players.you") || "You").trim();
       return "You";
     }
@@ -1877,29 +1433,6 @@ function resolveTurnActorLabel(side) {
   } catch (_) {}
   return "";
 }
-function aiSide() {
-  if (window.Online && window.Online.isActive) return 0;
-  return -humanSide();
-}
-
-
-const TrainRecorder = Object.freeze({
-  startNewGame() {}, beginDecision() {}, endDecision() {},
-  finalizeAndUpload() { return Promise.resolve({ uploaded: false, skipped: true }); },
-  captureStateForTraining() { return null; }, recordExternalDecision() {},
-  beginMoveBoundary() {}, rollbackLastMoveBoundary() {}, recordSouflaPenaltyChoice() {},
-  turnEnd() {}, souflaBeginForce() {}, souflaApplied() {}, souflaEndForce() {}
-});
-
-const AI = Object.freeze({
-  scheduleMove() {},
-  pickSouflaDecision(pending) {
-    const options = pending && Array.isArray(pending.options) ? pending.options : [];
-    return Promise.resolve(options.find((item) => item && item.kind === "remove") || options[0] || null);
-  },
-  reset() {}
-});
-window.AI = AI;
 
 /* Moved from pages/game.html to keep page markup declarative. */
 
@@ -2115,7 +1648,6 @@ window.AI = AI;
             const session = typeof readStoredSession === "function" ? readStoredSession() : null;
             if (typeof sessionNickname === "function") push(sessionNickname(session));
           } catch (_) {}
-          try { if (typeof computerPlayerLabel === "function") push(computerPlayerLabel()); } catch (_) {}
           try {
             const ids = ["pTopName", "pBotName", "pTopNameM", "pBotNameM"];
             for (const id of ids) {
@@ -2401,20 +1933,12 @@ window.AI = AI;
       try {
         const sp = new URLSearchParams(location.search || "");
         const spectator = !!(sp.get("spectate") || sp.get("spectator") || sp.get("spec"));
-        const pvp = sp.get("pvp");
-        const online = spectator || !!(sp.get("room") || sp.get("rid") || sp.get("gid") || sp.get("game") || sp.get("id") || (pvp && pvp !== "0" && pvp !== "false"));
         const root = document.documentElement;
-        root.classList.remove("z-spectator", "mode-pvp", "mode-pvc", "role-pending", "ui-ready");
+        root.classList.remove("z-spectator", "ui-ready");
+        root.classList.add("mode-pvp", "role-pending");
         root.classList.toggle("z-spectator", spectator);
-        root.classList.add(online ? "mode-pvp" : "mode-pvc");
-        if (online) {
-          root.classList.add("role-pending");
-        } else {
-          root.classList.remove("ui-hold");
-          root.classList.add("ui-ready");
-        }
         document.body.classList.toggle("z-spectator", spectator);
-        document.body.classList.toggle("mode-pvp", !!online);
+        document.body.classList.add("mode-pvp");
       } catch (_) {}
 
       function applyTheme(theme) {
@@ -2455,21 +1979,12 @@ window.AI = AI;
           const data = JSON.parse(raw);
           if (!data || typeof data !== "object") return;
 
-          const allowed = ["starter","aiCaptureMode","aiRandomIgnoreCaptureRatePct","theme","showCoords","boardStyle"];
+          const allowed = ["starter", "theme", "showCoords", "boardStyle"];
           const merged = {};
           for (const k of allowed) {
             merged[k] = (data && Object.prototype.hasOwnProperty.call(data, k)) ? data[k] : Game.settings[k];
           }
-          merged.advanced = Object.assign(
-            {},
-            Game.settings.advanced || {},
-            (data && data.advanced && typeof data.advanced === "object") ? data.advanced : {}
-          );
           Game.settings = merged;
-
-          try {
-            Game.normalizeAdvancedSettings();
-          } catch {}
         } catch {}
       }
 
@@ -2557,10 +2072,6 @@ window.AI = AI;
         return gameDefaultGuestIcon(side);
       }
 
-      function computerPlayerLabel() {
-        return window.I18N.text("players.computer", null, currentGameLang) || "Computer";
-      }
-
       function decorateSelfName() {
         return window.I18N.text("players.you", null, currentGameLang) || "You";
       }
@@ -2605,13 +2116,10 @@ window.AI = AI;
           return { name: fallbackName, statusName: fallbackName, avatar: gameDefaultGuestIcon(side), side: side, self: false };
         }
 
-        if (side === "top") {
-          const aiName = computerPlayerLabel();
-          return { name: aiName, statusName: aiName, avatar: normalizeGameIcon("assets/icons/users/autouser1.png"), side: side, self: false };
-        }
-
-        const nick = sessionNickname(session);
-        return { name: nick ? decorateSelfName(nick) : (window.I18N.text("players.you", null, currentGameLang) || "You"), statusName: nick || (window.I18N.text("players.you", null, currentGameLang) || "You"), avatar: sessionOwnIcon(session, side), side: side, self: true };
+        const fallbackName = side === "top"
+          ? (Game.names.top || window.I18N.text("players.player", null, currentGameLang) || "Player")
+          : (Game.names.bot || window.I18N.text("players.player", null, currentGameLang) || "Player");
+        return { name: fallbackName, statusName: fallbackName, avatar: gameDefaultGuestIcon(side), side: side, self: false };
       }
 
       function applySlotDom(side, state) {
@@ -2696,7 +2204,6 @@ window.AI = AI;
           }
         } catch {}
 
-        try { window.UI?.updateAiLevelDisplay?.(); } catch (e) {}
         try { refreshGamePlayerBoxes(); } catch (e) {}
         UI.updateStatus();
         try { window.Online?.refreshPresenceUi?.(); } catch (e) {}
@@ -2735,11 +2242,11 @@ window.AI = AI;
       function shouldShowKillTimerAlert(clickedIdx) {
         if (!Game.killTimer.running) return false;
 
-        const isHumanTurn =
+        const isLocalPlayerTurn =
           window.Online && window.Online.isActive
             ? Game.player === window.Online.mySide
-            : Game.player === humanSide();
-        if (!isHumanTurn) return false;
+            : Game.player === localPlayerSide();
+        if (!isLocalPlayerTurn) return false;
 
         if (Game.inChain && clickedIdx === Game.chainPos) return false;
 

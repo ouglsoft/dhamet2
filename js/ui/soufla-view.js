@@ -47,7 +47,7 @@
 
     Game.awaitingPenalty = true;
     Game.souflaPending = pending;
-    Game.availableSouflaForHuman = pending;
+    Game.availableSouflaForLocalPlayer = pending;
 
     const offenders = Array.isArray(pending.offenders) ? pending.offenders.slice() : [];
     const offenderSet = new Set(offenders);
@@ -385,64 +385,6 @@
   
   }
 
-  function showSouflaAgainstHuman(decision, pending, deps) {
-    const d = buildDeps(deps);
-    const t = d.t;
-    const Modal = d.Modal;
-    const hasRevertedMove = pending.startedFrom != null && pending.lastPieceIdx != null;
-    const computerName = t("players.computer");
-    const resultKind = decision.kind === "remove" ? "remove" : "force";
-    const resultSentence = decoratePlayerNames(
-      t(`soufla.summary.${resultKind}`, { actor: computerName, victim: t("players.you") }),
-      [computerName],
-    );
-
-    let title = t("soufla.summary.title");
-    let body = "";
-
-    if (decision.kind === "remove") {
-      const reasonLine = t("soufla.cpu.reason");
-      body = `
-  <div>${resultSentence}</div>
-  <div>${reasonLine}</div>
-  <div>${t("soufla.cpu.penaltyRemove")}</div>
-      `;
-    } else {
-      const reasonLine = t("soufla.cpu.reason");
-
-      const forceInline = t("soufla.cpu.penaltyForceInline");
-
-      const forcePicked = t("soufla.cpu.penaltyForcePicked");
-
-      const revertNotice = t("soufla.cpu.revertNotice");
-
-      const forcedIntro = t("soufla.cpu.forcedPathIntro");
-
-      const forcedLine = t("soufla.cpu.forcedPathLine");
-
-      body = `
-  <div>${resultSentence}</div>
-  <div>${reasonLine}</div>
-  ${
-    hasRevertedMove
-      ? `<div>${forcePicked}</div>
-             <div class="notice">${revertNotice}</div>
-             <div>${forcedIntro}</div>
-             <div class="mono">${forcedLine}</div>`
-      : `<div>${forceInline}</div>`
-  }
-`;
-    }
-
-    Modal.alert({
-      title,
-      body,
-      okLabel: t("actions.close"),
-      okClassName: "primary",
-    });
-  
-  }
-
   function escapeMessageHtml(value) {
     return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -500,7 +442,6 @@
 
   root.DhametSouflaView = {
     showSouflaModal,
-    showSouflaAgainstHuman,
     showAppliedSummary,
   };
 })();

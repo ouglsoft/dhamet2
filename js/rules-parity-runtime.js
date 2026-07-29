@@ -160,7 +160,6 @@
     completeForcedOpeningPly();
     switchPlayer();
     Turn.start();
-    scheduleForcedOpeningAutoIfNeeded();
     Visual.draw();
   };
 
@@ -178,7 +177,7 @@
     Game.forcedOpeningExchangeChoice = null;
     Game.awaitingPenalty = false;
     Game.souflaPending = null;
-    Game.availableSouflaForHuman = null;
+    Game.availableSouflaForLocalPlayer = null;
     Turn.ctx = null;
   };
 
@@ -212,10 +211,10 @@
   }
 
   function expireUnclaimedSouflaOnMoveStart() {
-    const pending = Game.availableSouflaForHuman;
+    const pending = Game.availableSouflaForLocalPlayer;
     if (!pending || Game._souflaApplying) return false;
     if (Number(pending.penalizer) !== Number(Game.player)) return false;
-    Game.availableSouflaForHuman = null;
+    Game.availableSouflaForLocalPlayer = null;
     if (Game.souflaPending === pending) Game.souflaPending = null;
     Game.awaitingPenalty = false;
     return true;
@@ -278,7 +277,6 @@
       }
     } catch (_) {}
 
-    try { SessionGame.saveSoon(); } catch (_) {}
   };
 
   function serializeSouflaPending(pending) {
@@ -311,7 +309,7 @@
     Game.awaitingPenalty = false;
     Game._souflaApplying = false;
     Game.souflaPending = null;
-    Game.availableSouflaForHuman = null;
+    Game.availableSouflaForLocalPlayer = null;
     if (!opts.keepCapture) {
       Game.inChain = false;
       Game.chainPos = null;
@@ -369,7 +367,7 @@
       forcedOpeningExchangeChoice: Game.forcedOpeningExchangeChoice,
       awaitingPenalty: !!Game.awaitingPenalty,
       souflaPending: serializeSouflaPending(Game.souflaPending),
-      availableSouflaForHuman: serializeSouflaPending(Game.availableSouflaForHuman),
+      availableSouflaForLocalPlayer: serializeSouflaPending(Game.availableSouflaForLocalPlayer),
     };
 
     if (opts.includeTurnCtx !== false && Turn.ctx) {
@@ -432,7 +430,7 @@
     Game.awaitingPenalty = !!snap.awaitingPenalty;
     Game._souflaApplying = false;
     Game.souflaPending = restoreSouflaPending(snap.souflaPending);
-    Game.availableSouflaForHuman = restoreSouflaPending(snap.availableSouflaForHuman);
+    Game.availableSouflaForLocalPlayer = restoreSouflaPending(snap.availableSouflaForLocalPlayer);
 
     if (snap.turnCtx) {
       const tc = snap.turnCtx;
@@ -515,7 +513,7 @@
     Game.killTimer.hardStop();
     UI.updateStatus();
 
-    if (isForcedOpeningActive() && Game.player === humanSide()) {
+    if (isForcedOpeningActive() && Game.player === localPlayerSide()) {
       try { Visual.clearForcedOpeningArrow && Visual.clearForcedOpeningArrow(true); } catch (_) {}
     }
   };
@@ -527,7 +525,7 @@
     }
     if (!this.ctx) throw new Error('game/turn-context-unavailable');
     if (this.ctx.startedFrom == null) this.ctx.startedFrom = Number(fromIdx);
-    if (!Game.killTimer.running && Game.player === humanSide()) Game.killTimer.start();
+    if (!Game.killTimer.running && Game.player === localPlayerSide()) Game.killTimer.start();
   };
 
   Turn.recordCapture = function recordCaptureParity() {
@@ -578,7 +576,6 @@
         ts: Date.now(),
       });
     } catch (_) {}
-    try { SessionGame.clear(); } catch (_) {}
     try { UI.showGameOverModal && UI.showGameOverModal(Game.winner); } catch (_) {}
   };
 
@@ -695,15 +692,14 @@
 
     Game.awaitingPenalty = false;
     Game.souflaPending = null;
-    Game.availableSouflaForHuman = null;
+    Game.availableSouflaForLocalPlayer = null;
 
     try {
       Turn.start();
       if (!Rules.boardsEqual(Game.board, prepared.board)) {
         throw new Error('soufla/resolved-board-mismatch');
       }
-      scheduleForcedOpeningAutoIfNeeded();
-    } catch (error) {
+      } catch (error) {
       try { restoreSnapshotSilent(stateBefore); } catch (_) {}
       Game._souflaApplying = false;
       try { Visual.setSuspended(false); } catch (_) {}

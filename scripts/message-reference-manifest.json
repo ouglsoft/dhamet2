@@ -4,8 +4,7 @@
     "en",
     "fr"
   ],
-  "mainLeafCount": 418,
-  "backupLeafCount": 420,
+  "onlineOnlyLeafCount": 284,
   "allowedExtraKeys": [
     "errors.render3d.failed",
     "online.errors.joinFailed"
@@ -19,8 +18,8 @@
   ],
   "primaryModuleHashes": {
     "js/modal.js": "d69f88ecc60a3422d6e616c7cd3ab70b17c4a7b9c9de3aaeddd8850e998e75aa",
-    "js/ui/dropdown-view.js": "f3b4ce6d922a9cbfcf633132c4f391fec1329d58cd9189ede62cf0deaa0d8de4",
-    "js/ui/soufla-view.js": "ded2866e5136164a0d7aacb35e93240b6137402cd33d5d3cb78d3e6eabe37eaa"
+    "js/ui/dropdown-view.js": "a80dacc42f2c715d575097bd9f9ee5512f22a4a4b7c6cc84b2727131df68add7",
+    "js/ui/soufla-view.js": "cbccc67f5e11e0a192792284129db18c5463a43011e77e65da5f9bbab87e1a41"
   },
   "bannedLegacyKeys": [
     "modals.gameOver.drawTitle",
@@ -34,15 +33,22 @@
     "online.inviteRejected",
     "online.pvpEndTitle",
     "online.matchEndedReason.absent",
+    "online.status.vsComputer",
     "settings.aiCapture",
     "settings.aiIgnoreRate",
     "settings.aiIgnoreHint",
+    "settings.aiLevel",
+    "settings.thinkTime",
+    "settings.evalNoise",
+    "settings.moveMistake",
     "settings.mandatory",
     "settings.random",
     "soufla.cpu.startedFromPart",
+    "players.computer",
+    "dashboard.vsComputer",
     "status.win",
     "status.draw",
     "status.lose"
   ],
-  "reference": "ouglsoft-main"
+  "reference": "approved-online-only-v20"
 }

@@ -122,7 +122,6 @@
     ssRemove,
     ssSet,
     stripUndefined,
-    tryFinalizeTrainingOnExit,
     writeMigrationVersion
   } = S;
 
@@ -298,20 +297,6 @@
               }
             };
           }
-        },
-
-    _setButtonsVisualDisabled: function (on) {
-          const disableIds = ["btnHint", "btnExportHuman"];
-          disableIds.forEach((id) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (on) {
-              if (el.dataset._oldDisplay == null) el.dataset._oldDisplay = el.style.display || "";
-              el.style.display = "none";
-            } else {
-              el.style.display = el.dataset._oldDisplay || "";
-            }
-          });
         },
 
     start: function () {
@@ -1155,11 +1140,7 @@
               const stLabel =
                 st === "available" || st === "lobby"
                   ? window.I18N.translateArgs("online.status.available")
-                  : st === "available"
-                    ? window.I18N.translateArgs("online.status.vsComputer")
-                    : st === "spectating"
-                      ? window.I18N.translateArgs("online.status.inPvP")
-                      : window.I18N.translateArgs("online.status.inPvP");
+                  : window.I18N.translateArgs("online.status.inPvP");
     
               const row = document.createElement("div");
               row.style.display = "flex";
@@ -1181,7 +1162,7 @@
                                     ? "spectator"
                                     : st === "available"
                                       ? "lobby"
-                                      : "pvc";
+                                      : "lobby";
                             const roomId = p && p.roomId ? String(p.roomId).trim() : "";
                             const inMatchAsPlayer = role === "player" && !!roomId;
                             return inMatchAsPlayer || !acceptsInvites ? "disabled" : "";
@@ -1726,7 +1707,6 @@
             if (initialUiHold) this._applyUiHold(true);
           } catch (e) {}
           try {
-            this._setButtonsVisualDisabled(!!on);
           } catch (e) {}
           try {
             document.body.classList.toggle("mode-pvp", !!on);
@@ -1873,10 +1853,6 @@
             this._localEndedOnline = true;
           } catch (e) {}
     
-          try {
-            await tryFinalizeTrainingOnExit("abort", 900);
-          } catch (e) {}
-    
           let wrote = false;
     
           const who = this.myNick || window.I18N.translateArgs("players.player");
@@ -1961,9 +1937,6 @@
         },
 
     _clearPostMatchSession: function () {
-          try {
-            SessionGame && SessionGame.clear && SessionGame.clear();
-          } catch (e) {}
           try {
             sessionStorage && sessionStorage.clear && sessionStorage.clear();
           } catch (e) {}
@@ -2171,7 +2144,7 @@
               Game.chainPos = null;
               Game.awaitingPenalty = false;
               Game.souflaPending = null;
-              Game.availableSouflaForHuman = null;
+              Game.availableSouflaForLocalPlayer = null;
               Game.killTimer && Game.killTimer.hardStop && Game.killTimer.hardStop();
             }
           } catch (e) {}
@@ -2534,7 +2507,6 @@
             if (!data) {
               try {
                 if (this.isActive) {
-                  try { tryFinalizeTrainingOnExit("disconnect", 900); } catch (e) {}
                   try { this._enterPostMatch({ reason: "room_unavailable", missingOfficial: true }); } catch (e) {}
                 }
               } catch (e) {}
@@ -2593,9 +2565,9 @@
     
             try {
               if (data.soufla && data.soufla.availableFor === this.mySide) {
-                Game.availableSouflaForHuman = plainToSoufla(data.soufla.pending);
+                Game.availableSouflaForLocalPlayer = plainToSoufla(data.soufla.pending);
               } else {
-                Game.availableSouflaForHuman = null;
+                Game.availableSouflaForLocalPlayer = null;
               }
             } catch (e) {}
     
@@ -2812,56 +2784,8 @@
               if (mi && mi > (this._lastSeenMoveModal || 0)) {
                 this._lastSeenMoveModal = mi;
                 if (lm.kind === "soufla" && lm.decision) {
-                  try {
-                    if (
-                      typeof TrainRecorder !== "undefined" &&
-                      TrainRecorder &&
-                      typeof TrainRecorder.rollbackLastMoveBoundary === "function"
-                    ) {
-                      if (mi && mi > 0 && !this._lastTrainRollbackEventMI_sf)
-                        this._lastTrainRollbackEventMI_sf = 0;
-                      if (!mi || mi <= (this._lastTrainRollbackEventMI_sf || 0)) {
-                      } else {
-                        this._lastTrainRollbackEventMI_sf = mi;
-                        const undoneMI = (mi | 0) - 1;
-                        try {
-                          TrainRecorder.rollbackLastMoveBoundary({
-                            type: "ext_move",
-                            moveIndex: undoneMI,
-                          });
-                        } catch (e) {}
-                      }
-                    }
-                  } catch (e) {}
                   this._showSouflaModalFromLastMove(lm);
                 } else if (lm.kind === "undo") {
-                  try {
-                    if (
-                      typeof TrainRecorder !== "undefined" &&
-                      TrainRecorder &&
-                      typeof TrainRecorder.rollbackLastMoveBoundary === "function"
-                    ) {
-                      if (mi && mi > 0 && !this._lastTrainRollbackEventMI_undo)
-                        this._lastTrainRollbackEventMI_undo = 0;
-                      if (!mi || mi <= (this._lastTrainRollbackEventMI_undo || 0)) {
-                      } else {
-                        this._lastTrainRollbackEventMI_undo = mi;
-                        const undoneMI = (mi | 0) - 1;
-                        let ok = false;
-                        try {
-                          ok = TrainRecorder.rollbackLastMoveBoundary({
-                            type: "ext_move",
-                            moveIndex: undoneMI,
-                          });
-                        } catch (e) {}
-                        if (!ok) {
-                          try {
-                            TrainRecorder.rollbackLastMoveBoundary();
-                          } catch (e) {}
-                        }
-                      }
-                    }
-                  } catch (e) {}
                   const gameData = this._lastGameData || data || {};
                   const players = gameData.players || {};
                   const nameForUid = (uid, fallbackNick) => {
@@ -6277,13 +6201,9 @@
                   const stLabel =
                     st === "available"
                       ? window.I18N.translateArgs("online.status.available")
-                      : st === "vsComputer"
-                        ? window.I18N.translateArgs("online.status.vsComputer")
-                        : st === "inPvP"
-                          ? window.I18N.translateArgs("online.status.inPvP")
-                          : st === "spectating"
-                            ? window.I18N.translateArgs("online.status.inPvP")
-                            : st;
+                      : st === "inPvP" || st === "spectating"
+                        ? window.I18N.translateArgs("online.status.inPvP")
+                        : st;
     
                   const roomId = (p.roomId || "").trim();
                   const roomListRoomId = this._lobbyActivePlayerRooms && this._lobbyActivePlayerRooms[uid]
@@ -6323,9 +6243,7 @@
                 .map((r) => {
                   const playerStatusClass = r.st === "available"
                     ? "is-available"
-                    : (r.st === "vsComputer"
-                        ? "is-computer"
-                        : (r.st === "inPvP" ? "is-online" : "is-no-invites"));
+                    : (r.st === "inPvP" ? "is-online" : "is-no-invites");
                   const statusMarkup = `<span class="z-player-status ${playerStatusClass}">${escapeHtml(r.stLabel)}</span>`;
                   if (r.isSelf) {
                     return `

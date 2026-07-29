@@ -38,7 +38,6 @@ const excludedPaths = new Set([
   "node_modules",
   "scripts",
   "deploy",
-  "assets/models/human",
 ]);
 
 const excludedFileNames = new Set([

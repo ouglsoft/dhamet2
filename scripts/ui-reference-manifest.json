@@ -1,9 +1,9 @@
 {
   "css": {
-    "css/style.css": "9ee353b20fc6cf988e936fe9f21c1de9713a5fce9a7cb3464efd4fa5d0dba7c0",
-    "css/pages.css": "89a6453cd3cb5572a15a63ebdd91fedde96ccf451d9ec3f25b307e11671290eb",
-    "css/mobile.css": "b36e37e7d3315476dc31545404869ad925837baf1a714c5f7b98005989792258",
-    "css/theme.css": "04455f817ee17c5788e78d97e731c4f46f0ed7e30c208a5011c7168cde46589e"
+    "css/style.css": "d5604d9c2fc206416729757ed43cf09fe3a853013a14badcb70a1d1600f8efac",
+    "css/pages.css": "a7aee22afab3b7b5d9a48567c38ae06509bd72302f7bbdeb40bd8140ad12dac6",
+    "css/mobile.css": "3dd520b6d9534a0e1eb701199278e2b38c9901431e97e7c22144c11cd7dc9fee",
+    "css/theme.css": "343f210e7442283b2db30758d63b7a650bf9573709b2f0482f82ad33ca74d76f"
   },
   "icons": {
     "assets/icons/chat.svg": "fe1302e4e170cf1e6c3ffbdea5328377e7d67363ce3cc75ef7862bae69d362fc",
@@ -47,5 +47,5 @@
     "assets/icons/volume-on.svg": "37384593ab9cbf6ee7f3c107732d26321ec1ed94abcc74d99beabff8c80b57e7",
     "assets/icons/watch.svg": "fb6d23592cedaa942f8c6ee2633e81abc778a848bbc2f6b5e43f1404472f8cd1"
   },
-  "reference": "ouglsoft-main"
+  "reference": "approved-online-only-v20"
 }

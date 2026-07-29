@@ -12,10 +12,13 @@ const ui = read("js/ui.js");
 const messageRuntime = read("js/message-parity-runtime.js");
 assert.match(messageRuntime, /z-postmatch-confirm-only/);
 assert.doesNotMatch(ui, /requestRematch/);
-assert.match(read("pages/game.html"), /id="controlsPool"/);
+const gamePage = read("pages/game.html");
+assert.match(gamePage, /id="controlsPool"/);
+assert.doesNotMatch(gamePage, /id=["\']aiLevelBox["\']/);
 for (const deadId of ["btnEndLocalMatch", "btnNew", "btnSave", "btnResume", "btnRefreshLocal", "pvcControlsBox"]) {
-  assert.doesNotMatch(read("pages/game.html"), new RegExp(`id=["\']${deadId}["\']`));
+  assert.doesNotMatch(gamePage, new RegExp(`id=["\']${deadId}["\']`));
 }
+assert.doesNotMatch(messageRuntime, /installSettingsParity|installSouflaParity|showSouflaAgainstHuman/);
 const online = read("js/online.js") + read("js/online.passive.js");
 assert.doesNotMatch(online, /rematch_request|rematch_accept|rematch_reject|requestRematch|_resetRoomForRematch/);
 console.log("structure tests passed");

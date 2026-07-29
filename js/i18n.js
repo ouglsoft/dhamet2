@@ -27,16 +27,6 @@
         "btnRemove": "إزالة القطعة",
         "btnForcePath": "إجبارها على المسار ${n}"
       },
-      "cpu": {
-        "reason": "تجاهلت قطعتك الأسر المحدد بالمسار الأحمر الظاهر على الرقعة.",
-        "forcedPathLine": "اتبع المسار الملوّن الظاهر على الرقعة.",
-        "penaltyRemove": "العقوبة: <b>إزالة القطعة المخالفة</b> من الموضع المعلّم بعلامة X حمراء.",
-        "revertNotice": "أُلغيت نقلتك الأخيرة، ويظهر مسارها بالسهم الأصفر.",
-        "title": "طُبقت السوفلة عليك",
-        "penaltyForceInline": "العقوبة: <b>إجبار القطعة</b> على تنفيذ الأسر المحدد بالمسار الملوّن على الرقعة.",
-        "forcedPathIntro": "مسار الأسر الذي ستنفذه القطعة:",
-        "penaltyForcePicked": "العقوبة: <b>إجبار القطعة على الأسر</b>."
-      },
       "applied": {
         "force": "أُجبرت قطعة الخصم على تنفيذ مسار الأسر الصحيح.",
         "remove": "أُزيلت قطعة الخصم التي تجاهلت الأسر.",
@@ -90,119 +80,16 @@
       },
       "leave": "مغادرة"
     },
-    "advHelp": {
-      "title": "شرح المستويات",
-      "levelsIntro": "يعتمد اللعب ضد الحاسوب على محرك PVS/Alpha-Beta واحد ببحث تكراري وإدارة زمن تلقائية. حدود العمق المذكورة حدود أمان قصوى، وقد يتوقف البحث قبلها حسب الزمن وتعقيد الوضع. المستويات الأعلى تمنح المحرك وقتًا وعقدًا وذاكرة أكثر.",
-      "levelDetails": {
-        "beginner": "حد العمق: 7؛ زمن أساسي: 180 مللي ثانية؛ حد نهائي: 420 مللي ثانية؛ اختيار آمن من أفضل 4 نقلات متقاربة.",
-        "easy": "حد العمق: 10؛ زمن أساسي: 500 مللي ثانية؛ حد نهائي: 1.1 ثانية؛ اختيار آمن من أفضل 3 نقلات متقاربة.",
-        "medium": "حد العمق: 14؛ زمن أساسي: 1.4 ثانية؛ حد نهائي: 3 ثوانٍ؛ أفضل نقلة من آخر عمق مكتمل.",
-        "hard": "حد العمق: 18؛ زمن أساسي: 3.5 ثوانٍ؛ حد نهائي: 7 ثوانٍ؛ أفضل نقلة من آخر عمق مكتمل؛ المستوى الافتراضي.",
-        "strong": "حد العمق: 22؛ زمن أساسي: 7.5 ثوانٍ؛ حد نهائي: 15 ثانية؛ بحث كامل دون إضعاف اختياري.",
-        "expert": "حد العمق: 28؛ زمن أساسي: 14 ثانية؛ حد نهائي: 26 ثانية؛ أعلى حدود البحث والذاكرة المتاحة."
-      }
-    },
-    "auth": {
-      "brandSubtitle": "نسخة جديدة أقوى وأكثر ثباتًا",
-      "msgPopupBlocked": "تعذر فتح نافذة تسجيل Google. تأكد من السماح بالنوافذ المنبثقة.",
-      "loginGoogleOption": "تسجيل الدخول عبر Google",
-      "guestNoLogin": "المتابعة دون تسجيل الدخول",
-      "msgResetNotAllowed": "استعادة كلمة المرور غير متاحة حاليًا. جرّب تسجيل الدخول بطريقة أخرى أو حاول لاحقًا.",
-      "msgSaved": "تم حفظ التعديلات.",
-      "logoutFailed": "تعذر تسجيل الخروج. حاول مرة أخرى.",
-      "msgResetNoUser": "لا يوجد حساب مرتبط بهذا البريد.",
-      "password": "كلمة المرور",
-      "password2": "تأكيد كلمة المرور",
-      "msgResetDomain": "تعذر إرسال رسالة استعادة كلمة المرور من هذا الموقع. جرّب لاحقًا أو تواصل مع الدعم.",
-      "toRecover": "نسيت كلمة المرور؟",
-      "save": "حفظ التعديلات",
-      "nickname": "الاسم المستعار",
-      "email": "البريد الإلكتروني",
-      "registerTitle": "إنشاء حساب",
-      "register": "تسجيل",
-      "recoverTitle": "استرجاع كلمة المرور",
-      "loginEmailOption": "تسجيل الدخول عبر البريد الإلكتروني",
-      "toRegister": "إنشاء حساب",
-      "msgResetTooMany": "تم حظر الطلب مؤقتًا لكثرة المحاولات. حاول لاحقًا.",
-      "backLogin": "العودة لتسجيل الدخول",
-      "msgResetInvalidEmail": "البريد الإلكتروني غير صالح.",
-      "msgInvalid": "تحقق من البيانات المدخلة وأكمل الحقول المطلوبة.",
-      "msgLoginInvalid": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-      "msgSent": "تم إرسال التعليمات إلى بريدك.",
-      "msgNetwork": "تعذر الاتصال الآن. تحقق من الإنترنت ثم حاول مرة أخرى.",
-      "seo": {
-        "start": {
-          "title": "ابدأ لعب ظامت بسهولة",
-          "b1": "سجّل الدخول أو أنشئ حسابًا جديدًا، ويمكنك أيضًا المتابعة كضيف لتجربة اللعبة بسرعة.",
-          "b2": "بعد الدخول يمكنك اختيار اللعب ضد الحاسوب أو لعب ظامت عبر الإنترنت مع لاعبين آخرين.",
-          "b3": "إنشاء الحساب يمنحك ملفًا شخصيًا، وإحصائيات، وتجربة أكثر اكتمالًا داخل التطبيق.",
-          "b4": "المتابعة كضيف مناسبة للتجربة السريعة، بينما يوفّر الحساب مزايا إضافية وتنظيمًا أفضل لتجربتك.",
-          "b5": "ستجد في أسفل الصفحة روابط شروط الاستخدام، والخصوصية، والقواعد، ووسائل التواصل.",
-          "small": "ابدأ بالطريقة التي تناسبك، ثم اختر نمط اللعب المناسب لك واستمتع بتجربة لعبة ظامت الموريتانية ضد الحاسوب أو عبر الإنترنت."
-        },
-        "what": {
-          "title": "لعبة ظامت الموريتانية | Dhamet",
-          "b1": "ظامت (Dhamet) لعبة موريتانية تقليدية تعتمد على التفكير والتخطيط وحسن قراءة الحركة.",
-          "b2": "تُلعب على رقعة من نقاط ومسارات، وتختلف عن الداما الشائعة في شكل الرقعة واتجاهات اللعب وبعض القواعد الأساسية.",
-          "b3": "تعتمد اللعبة على التمركز الجيد، واستغلال فرص الأسر، وحسن توقيت ترقية القطع إلى ظائم.",
-          "b4": "تطبيق ظامت من إنشاء وتطوير العُقل للبرمجيات / El Ougl Software SARL، وهي الجهة المالكة لحقوقه، ويمكنكم زيارة موقع الشركة للتعرف على منتجاتها على الرابط التالي: <a href=\"https://ouglsoft.com\" target=\"_blank\" rel=\"noopener\">ouglsoft.com</a>.",
-          "small": "ظامت لعبة موريتانية تقليدية تعتمد على التفكير والتخطيط وحسن قراءة الحركة. تطبيق ظامت من إنشاء وتطوير العُقل للبرمجيات / El Ougl Software SARL، وهي الجهة المالكة لحقوقه. موقع الشركة: <a href=\"https://ouglsoft.com\" target=\"_blank\" rel=\"noopener\">ouglsoft.com</a>."
-        }
-      }
-    },
     "buttons": {
-      "newGame": "لعبة جديدة",
       "soufla": "سوفلة",
       "settings": "الإعدادات",
-      "resume": "استئناف ",
-      "home": "الرئيسية",
       "sync": "تحديث",
-      "save": "حفظ ",
       "endKill": "إنهاء الأسر",
       "undo": "تراجع",
       "endMatch": "خروج"
     },
     "dashboard": {
-      "draws": "التعادل",
-      "losses": "الخسارة",
-      "editEmail": "تغيير البريد",
-      "title": "لوحة التحكم",
-      "points": "النقاط",
-      "editPass": "تغيير كلمة المرور",
-      "editNick": "تغيير الاسم",
-      "wins": "الفوز",
-      "vsComputer": "ضد الحاسوب",
-      "vsHumans": "ضد البشر",
-      "totalGames": "إجمالي المباريات",
-      "rank": "الترتيب",
-      "matches": "المباريات",
-      "total": "المجموع",
-      "showLeaderboard": "عرض الترتيب العام",
-      "leaderboard": {
-        "title": "الترتيب العام",
-        "empty": "لا توجد بيانات بعد."
-      },
-      "editIcon": "تغيير الصورة",
-      "nameLabel": "الاسم",
-      "logoutConfirm": {
-        "body": "هل تريد تسجيل الخروج من حسابك؟"
-      },
-      "delete": {
-        "title": "حذف الحساب",
-        "body": "سيتم حذف الحساب وجميع البيانات المرتبطة به. أدخل كلمة المرور للتأكيد.",
-        "confirm": "حذف",
-        "success": "تم حذف الحساب.",
-        "wrongPassword": "كلمة المرور غير صحيحة.",
-        "recentLogin": "تحتاج لإعادة تسجيل الدخول لحذف الحساب."
-      },
-      "password": {
-        "googleNotSupported": "لا يمكن تغيير كلمة المرور لحساب Google.",
-        "oldWrong": "كلمة المرور الحالية غير صحيحة.",
-        "weak": "كلمة المرور الجديدة ضعيفة.",
-        "recentLogin": "تحتاج لإعادة تسجيل الدخول لتعديل كلمة المرور.",
-        "currentLabel": "كلمة المرور الحالية",
-        "newLabel": "كلمة المرور الجديدة"
-      }
+      "showLeaderboard": "عرض الترتيب العام"
     },
     "settings": {
       "board2d": "ثنائي الأبعاد",
@@ -210,24 +97,10 @@
       "dark": "داكن",
       "coords": "إظهار ترقيم النقاط",
       "boardStyle": "شكل الرقعة",
-      "starter": "من يبدأ",
       "light": "فاتح",
       "theme": "الوضع البصري",
-      "starterNextGameNote": "سيُطبَّق اختيار من يبدأ في اللعبة الجديدة فقط.",
-      "aiLevel": "المستوى",
-      "aiLevelHint": "يحدد قوة الحاسوب ووقت تفكيره تلقائيًا.",
-      "aiLevelWithValue": "المستوى: ${level}",
-      "aiLevelNextMoveNote": "سيُطبَّق ابتداءً من نقلة الحاسوب القادمة.",
       "enabled": "مفعّل",
       "disabled": "غير مفعّل",
-      "levels": {
-        "beginner": "مبتدئ",
-        "easy": "سهل",
-        "medium": "متوسط",
-        "hard": "صعب",
-        "strong": "قوي",
-        "expert": "محترف"
-      },
       "showCoords": "عرض الترقيم"
     },
     "modals": {
@@ -240,10 +113,6 @@
           "noLegalMoves": "لا يملك {player} أي نقلة قانونية.",
           "oneKingEach": "تعادل اللاعبان بعد بقاء ظائم واحد لكل منهما."
         }
-      },
-      "newGame": {
-        "title": "بدء مباراة جديدة",
-        "confirm": "سيؤدي ذلك إلى إنهاء المباراة الحالية. هل تريد بدء مباراة جديدة؟"
       },
       "endMatch": {
         "confirm": "هل تريد إنهاء المباراة الحالية؟"
@@ -282,28 +151,6 @@
         "openingStarted": "بدأ الافتتاح الإجباري.",
         "openingEnded": "انتهى الافتتاح الإجباري."
       },
-      "save": {
-        "none": "لا توجد مباراة محفوظة لاستئنافها.",
-        "done": "تم حفظ المباراة الحالية.",
-        "confirm": "سيؤدي ذلك إلى إنهاء المباراة الحالية وفتح المباراة المحفوظة. هل تريد المتابعة؟",
-        "resumed": "تم استئناف المباراة المحفوظة.",
-        "error": "تعذر استئناف المباراة المحفوظة."
-      },
-      "results": {
-        "pvcCounted": "تمت إضافة نتيجة المباراة إلى الترتيب (${points} نقطة).",
-        "pvcCountedCapped": "سُجّلت المباراة في الإحصاءات، لكن هذا المستوى بلغ الحد الأقصى للنقاط.",
-        "pvcRejected": {
-          "restored_from_save": "لم تُضف المباراة إلى النتائج لأنها استُكملت من مباراة محفوظة.",
-          "incomplete_record": "لم تُضف المباراة إلى النتائج لأن سجلها غير مكتمل.",
-          "too_many_undos": "لم تُضف المباراة إلى النتائج بسبب تجاوز الحد المسموح به للتراجع.",
-          "non_counted_ending": "لم تُضف المباراة إلى النتائج لأن نهايتها لا تستوفي شروط الاحتساب.",
-          "already_recorded": "سبق تسجيل نتيجة هذه المباراة.",
-          "network_error": "تعذر تسجيل النتيجة بسبب مشكلة في الاتصال.",
-          "pending_retry": "تعذر الاتصال مؤقتًا؛ حُفظت النتيجة على هذا الجهاز وستُرسل تلقائيًا عند عودة الاتصال.",
-          "rate_limited": "تم بلوغ الحد المؤقت لنتائج اللعب ضد الحاسوب. حاول لاحقًا.",
-          "unknown": "انتهت المباراة، لكن تعذر إضافتها إلى النتائج."
-        }
-      },
       "promote": "تتويج: ${cell} أصبح ظائم (${side})",
       "promoteActor": "${actor}: رقّى القطعة عند النقطة ${cell}.",
       "promoteSelf": "${actor}: رقّيت القطعة عند النقطة ${cell}.",
@@ -330,15 +177,6 @@
       "turnMoveSelf": "أنت: حرّكت القطعة من ${from} إلى ${to}.",
       "turnCaptureFmt": "${side}: أسر ${from}-${to} (${n}).",
       "turnCaptureSelf": "أنت: أسرت من ${from} إلى ${to} (${n})."
-    },
-    "mode": {
-      "subtitle": "اختر الطريقة التي تفضّل أن تلعب بها: مواجهة فردية مع الحاسوب أو مباراة مباشرة مع لاعب آخر.",
-      "pvcDesc": "ابدأ مباراة فردية في مواجهة محرك لعب ذكي، واختر مستوى الصعوبة المناسب لك.",
-      "title": "اختر نمط اللعب",
-      "pvpTitle": "اللعب عبر الإنترنت",
-      "backToAccount": "العودة إلى الحساب",
-      "pvpDesc": "ابدأ مباراة مباشرة وتنافسية مع لاعب آخر متصل عبر الإنترنت.",
-      "pvcTitle": "اللعب ضد الحاسوب"
     },
     "lobby": {
       "backToMode": "العودة إلى اختيار نمط اللعب",
@@ -370,23 +208,16 @@
       "onlineInitHelp": "تحقق من اتصال الإنترنت، ثم حدّث الصفحة لإعادة إنشاء جلسة اللعب المؤقتة.",
       "loading": "جارٍ التحميل…",
       "wait": "الدور على اللاعب الآخر. انتظر قليلًا.",
-      "aiThinkingMove": "الحاسوب يختار نقلته…",
-      "aiThinkingSoufla": "الحاسوب يختار عقوبة السوفلة…",
-      "aiThinkingMoveWaitLine": "انتظر قليلًا بينما يختار الحاسوب النقلة المناسبة.",
-      "currentLevel": "المستوى الحالي",
-      "aiThinkingMoveLevelDuration": "المستوى: ${level} (مدة تفكير الحاسوب من ${min} إلى ${max} ثانية لكل نقلة)",
       "turn": "الدور الآن على:",
       "forcedChainIncomplete": "ما زال هناك أسر متاح. أكمل السلسلة ثم اضغط مؤقت إنهاء الأسر.",
       "forcedMove": "نقلة الافتتاح المطلوبة: من ${from} إلى ${to}",
-      "moveSendFail": "فشل إرسال النقلة، يرجى الضغط على زر التحديث ثم إعادة النقلة.",
-      "aiThinkingMoveLevelNote": "ملاحظة: كلما كان المستوى أعلى، قد يستغرق التفكير وقتًا أطول."
+      "moveSendFail": "فشل إرسال النقلة، يرجى الضغط على زر التحديث ثم إعادة النقلة."
     },
     "players": {
       "player": "لاعب",
       "you": "أنت",
       "white": "⚪ الأبيض",
-      "black": "⚫ الأسود",
-      "computer": "الحاسوب"
+      "black": "⚫ الأسود"
     },
     "aria": {
       "board": "لوحة اللعب",
@@ -411,7 +242,7 @@
       "undoOwnLastOnly": "يمكنك التراجع فقط عن آخر نقلة نفذتها.",
       "language": "اللغة"
     },
-    "meta_keywords": "ظامت, زامت, لعبة موريتانية, داما, لعب ضد الحاسوب, لعب عبر الإنترنت",
+    "meta_keywords": "ظامت, زامت, لعبة موريتانية, داما, لعب عبر الإنترنت, ألعاب استراتيجية",
     "online": {
       "permissionDenied": "تعذر تنفيذ الإجراء بسبب انقطاع جلسة اللعب المؤقتة. حدّث الصفحة ثم حاول مرة أخرى.",
       "authRestoreFailed": "تعذر استعادة جلسة اللعب المؤقتة. حدّث الصفحة ثم حاول مرة أخرى.",
@@ -485,7 +316,6 @@
       },
       "status": {
         "available": "متاح",
-        "vsComputer": "في مباراة ضد الحاسوب",
         "inPvP": "في مباراة أونلاين"
       },
       "syncFail": "تعذر تحديث المباراة. تحقق من الاتصال ثم حاول مرة أخرى.",
@@ -524,7 +354,7 @@
       "back": "رجوع",
       "send": "إرسال"
     },
-    "meta_description": "نسخة ويب متقدمة من لعبة ظامت الموريتانية، تدعم اللعب ضد الحاسوب أو عبر الإنترنت بثلاث لغات.",
+    "meta_description": "نسخة ويب للعب ظامت الموريتانية عبر الإنترنت بثلاث لغات.",
     "topbar": {
       "login": "تسجيل الدخول",
       "logout": "تسجيل الخروج",
@@ -544,9 +374,9 @@
       "rejectedTitle": "رُفض طلب التراجع",
       "spectatorRequested": "طلب {player} التراجع عن النقلة الأخيرة.",
       "spectatorAccepted": "وافق {responder} على تراجع {requester} عن النقلة الأخيرة المحددة بالسهم الأصفر المعكوس.",
-      "spectatorRejected": "رفض {responder} طلب {requester} التراجع عن النقلة الأخيرة المحددة بالسهم الأصفر المعكوس.",
+      "spectatorRejected": "رفض {responder} طلب {requester} التراجع عن النقلة الأخيرة.",
       "requesterAccepted": "وافق {responder} على التراجع عن النقلة الأخيرة المحددة بالسهم الأصفر المعكوس.",
-      "requesterRejected": "رفض {responder} التراجع عن النقلة الأخيرة المحددة بالسهم الأصفر المعكوس.",
+      "requesterRejected": "رفض {responder} التراجع عن النقلة الأخيرة.",
       "request": {
         "body": "يريد {name} التراجع عن النقلة الأخيرة. هل توافق؟",
         "title": "طلب التراجع عن نقلة"
@@ -594,16 +424,6 @@
         "title": "You may claim Soufla. Select the piece that skipped the capture and is marked with a red X, then choose the penalty.",
         "btnRemove": "Remove piece",
         "btnForcePath": "Force path ${n}"
-      },
-      "cpu": {
-        "reason": "Your piece skipped the capture shown by the red path on the board.",
-        "forcedPathLine": "Follow the highlighted path shown on the board.",
-        "penaltyRemove": "Penalty: <b>remove the offending piece</b> from the position marked with a red X.",
-        "revertNotice": "Your last move was undone and is shown by the yellow arrow.",
-        "title": "Soufla was claimed against you",
-        "penaltyForceInline": "Penalty: <b>force the piece</b> to complete the capture shown by the highlighted path.",
-        "forcedPathIntro": "Capture path the piece must follow:",
-        "penaltyForcePicked": "Penalty: <b>force the piece to capture</b>."
       },
       "applied": {
         "force": "The opponent’s piece was forced to follow the valid capture path.",
@@ -658,119 +478,16 @@
       },
       "leave": "Leave"
     },
-    "advHelp": {
-      "title": "Level guide",
-      "levelsIntro": "Computer play uses one iterative-deepening PVS/Alpha-Beta engine with automatic time management. The listed depths are safety ceilings; search may stop earlier according to time and position complexity. Higher levels receive more time, nodes, and memory.",
-      "levelDetails": {
-        "beginner": "Depth ceiling: 7; base time: 180 ms; hard limit: 420 ms; safe choice among up to 4 close moves.",
-        "easy": "Depth ceiling: 10; base time: 500 ms; hard limit: 1.1 s; safe choice among up to 3 close moves.",
-        "medium": "Depth ceiling: 14; base time: 1.4 s; hard limit: 3 s; best move from the last completed iteration.",
-        "hard": "Depth ceiling: 18; base time: 3.5 s; hard limit: 7 s; best move from the last completed iteration; default level.",
-        "strong": "Depth ceiling: 22; base time: 7.5 s; hard limit: 15 s; full-strength move selection.",
-        "expert": "Depth ceiling: 28; base time: 14 s; hard limit: 26 s; highest search and memory limits."
-      }
-    },
-    "auth": {
-      "brandSubtitle": "A new, stronger and more stable version",
-      "msgPopupBlocked": "Couldn't open Google sign-in window. Please allow pop-ups.",
-      "loginGoogleOption": "Sign in with Google",
-      "guestNoLogin": "Continue without signing in",
-      "msgResetNotAllowed": "Password recovery is not available right now. Use another sign-in method or try again later.",
-      "msgSaved": "Changes saved.",
-      "logoutFailed": "Sign-out failed. Please try again.",
-      "msgResetNoUser": "No account found for this email.",
-      "password": "Password",
-      "password2": "Confirm password",
-      "msgResetDomain": "A password-recovery message cannot be sent from this site right now. Try again later or contact support.",
-      "toRecover": "Forgot password?",
-      "save": "Save changes",
-      "nickname": "Nickname",
-      "email": "Email",
-      "registerTitle": "Create account",
-      "register": "Sign up",
-      "recoverTitle": "Password reset",
-      "loginEmailOption": "Sign in with email",
-      "toRegister": "Create account",
-      "msgResetTooMany": "Too many attempts. Try again later.",
-      "backLogin": "Back to sign in",
-      "msgResetInvalidEmail": "Invalid email address.",
-      "msgInvalid": "Check the information you entered and complete the required fields.",
-      "msgLoginInvalid": "The email address or password is incorrect.",
-      "msgSent": "Instructions sent to your email.",
-      "msgNetwork": "Unable to connect right now. Check your internet connection and try again.",
-      "seo": {
-        "start": {
-          "title": "Start Playing Dhamet Easily",
-          "b1": "Sign in or create a new account, and you can also continue as a guest for a quick trial.",
-          "b2": "After signing in, you can choose to play against the computer or play Dhamet online with other players.",
-          "b3": "Creating an account gives you a personal profile, statistics, and a more complete experience inside the app.",
-          "b4": "Continuing as a guest is suitable for a quick try, while an account gives you extra features and better organization for your experience.",
-          "b5": "At the bottom of the page you will find links to the terms of use, privacy policy, rules, and contact options.",
-          "small": "Start in the way that suits you, then choose the play mode that fits you and enjoy the Mauritanian Dhamet game against the computer or online."
-        },
-        "what": {
-          "title": "Mauritanian Dhamet Game | Dhamet",
-          "b1": "Dhamet is a traditional Mauritanian game built on thinking, planning, and reading movement well.",
-          "b2": "It is played on a board of points and paths, and it differs from common checkers in board shape, directions of play, and some core rules.",
-          "b3": "The game depends on good positioning, using capture opportunities, and choosing the right moment to promote pieces into Dhaim.",
-          "b4": "The Dhamet application was created and developed by العُقل للبرمجيات / El Ougl Software SARL, the rights holder. You can visit the company website to learn about its products: <a href=\"https://ouglsoft.com\" target=\"_blank\" rel=\"noopener\">ouglsoft.com</a>.",
-          "small": "Dhamet is a traditional Mauritanian strategy game based on thinking, planning, and reading movement well. The application was created and developed by El Ougl Software SARL. Company website: <a href=\"https://ouglsoft.com\" target=\"_blank\" rel=\"noopener\">ouglsoft.com</a>."
-        }
-      }
-    },
     "buttons": {
-      "newGame": "New ",
       "soufla": "Soufla",
       "settings": "Settings",
-      "home": "Home",
-      "resume": "Resume",
       "sync": "Refresh",
-      "save": "Save",
       "endKill": "End capture",
       "undo": "Undo",
       "endMatch": "Exit"
     },
     "dashboard": {
-      "draws": "Draws",
-      "losses": "Losses",
-      "editEmail": "Change email",
-      "title": "Dashboard",
-      "points": "Points",
-      "editPass": "Change password",
-      "editNick": "Change name",
-      "wins": "Wins",
-      "vsComputer": "Vs computer",
-      "vsHumans": "Vs humans",
-      "totalGames": "Total games",
-      "rank": "Rank",
-      "matches": "Matches",
-      "total": "Total",
-      "showLeaderboard": "Show leaderboard",
-      "leaderboard": {
-        "title": "Leaderboard",
-        "empty": "No data yet."
-      },
-      "editIcon": "Change picture",
-      "nameLabel": "Name",
-      "logoutConfirm": {
-        "body": "Sign out of your account?"
-      },
-      "delete": {
-        "title": "Delete account",
-        "body": "This will delete your account and all related data. Enter your password to confirm.",
-        "confirm": "Delete",
-        "success": "Your account has been deleted.",
-        "wrongPassword": "Incorrect password.",
-        "recentLogin": "Please sign in again to delete your account."
-      },
-      "password": {
-        "googleNotSupported": "You can't change the password for a Google account.",
-        "oldWrong": "The current password is incorrect.",
-        "weak": "The new password is too weak.",
-        "recentLogin": "Please sign in again to change your password.",
-        "currentLabel": "Current password",
-        "newLabel": "New password"
-      }
+      "showLeaderboard": "Show leaderboard"
     },
     "settings": {
       "board2d": "2D",
@@ -778,24 +495,10 @@
       "dark": "Dark",
       "coords": "Show point numbering",
       "boardStyle": "Board style",
-      "starter": "Starting player",
       "light": "Light",
       "theme": "Theme",
-      "starterNextGameNote": "The starting player setting applies to the next new game only.",
-      "aiLevel": "Level",
-      "aiLevelHint": "Automatically controls computer strength and thinking time.",
-      "aiLevelWithValue": "Level: ${level}",
-      "aiLevelNextMoveNote": "Applies starting from the computer’s next move.",
       "enabled": "Enabled",
       "disabled": "Disabled",
-      "levels": {
-        "beginner": "Beginner",
-        "easy": "Easy",
-        "medium": "Medium",
-        "hard": "Hard",
-        "strong": "Strong",
-        "expert": "Expert"
-      },
       "showCoords": "Show coordinates"
     },
     "modals": {
@@ -808,10 +511,6 @@
           "noLegalMoves": "{player} has no legal move left.",
           "oneKingEach": "The match is a draw with one king left for each player."
         }
-      },
-      "newGame": {
-        "title": "Start a new match",
-        "confirm": "This will end the current match. Start a new one?"
       },
       "endMatch": {
         "confirm": "End the current match?"
@@ -850,28 +549,6 @@
         "openingStarted": "Forced opening started.",
         "openingEnded": "Forced opening ended."
       },
-      "save": {
-        "none": "There is no saved match to resume.",
-        "done": "The current match was saved.",
-        "confirm": "This will end the current match and open the saved one. Continue?",
-        "resumed": "The saved match was resumed.",
-        "error": "The saved match could not be resumed."
-      },
-      "results": {
-        "pvcCounted": "The match was added to the ranking (${points} points).",
-        "pvcCountedCapped": "The match was recorded in statistics, but this level has reached its points limit.",
-        "pvcRejected": {
-          "restored_from_save": "The match was not added because it was resumed from a saved game.",
-          "incomplete_record": "The match was not added because its record is incomplete.",
-          "too_many_undos": "The match was not added because the undo limit was exceeded.",
-          "non_counted_ending": "The match was not added because its ending does not meet the scoring conditions.",
-          "already_recorded": "This match result was already recorded.",
-          "network_error": "The result could not be recorded because of a network problem.",
-          "pending_retry": "The connection is temporarily unavailable. The result was saved on this device and will be retried automatically.",
-          "rate_limited": "The temporary limit for computer-match results has been reached. Try again later.",
-          "unknown": "The match ended, but it could not be added to the results."
-        }
-      },
       "promote": "Promotion: ${cell} became a king (${side})",
       "promoteActor": "${actor}: Promoted the piece at ${cell}.",
       "promoteSelf": "${actor}: Promoted the piece at ${cell}.",
@@ -898,15 +575,6 @@
       "turnMoveSelf": "You: moved from ${from} to ${to}.",
       "turnCaptureFmt": "${side}: Capture ${from}-${to} (${n}).",
       "turnCaptureSelf": "You: captured from ${from} to ${to} (${n})."
-    },
-    "mode": {
-      "subtitle": "Choose how you want to play: a solo match against the computer or a live match with another player.",
-      "pvcDesc": "Start a solo match against an intelligent game engine and choose the difficulty that suits you.",
-      "title": "Choose game mode",
-      "pvpTitle": "Play Online",
-      "backToAccount": "Back to account",
-      "pvpDesc": "Start a live competitive match against another online player.",
-      "pvcTitle": "Play vs Computer"
     },
     "lobby": {
       "backToMode": "Back to mode selection",
@@ -938,23 +606,16 @@
       "onlineInitHelp": "Check your internet connection, then refresh the page to recreate the temporary play session.",
       "loading": "Loading…",
       "wait": "It is the other player’s turn. Please wait.",
-      "aiThinkingMove": "The computer is choosing a move…",
-      "aiThinkingSoufla": "The computer is choosing a Soufla penalty…",
-      "aiThinkingMoveWaitLine": "Please wait while the computer chooses its move.",
-      "currentLevel": "Current level",
-      "aiThinkingMoveLevelDuration": "Level: ${level} (computer thinking time from ${min} to ${max} seconds per move)",
       "turn": "Turn:",
       "forcedChainIncomplete": "Another capture is available. Finish the chain, then press the end-capture timer.",
       "forcedMove": "Required opening move: ${from} → ${to}",
-      "moveSendFail": "The move could not be sent. Press Refresh, then make the move again.",
-      "aiThinkingMoveLevelNote": "Note: higher levels may take longer to think."
+      "moveSendFail": "The move could not be sent. Press Refresh, then make the move again."
     },
     "players": {
       "player": "Player",
       "you": "You",
       "white": "⚪ White",
-      "black": "⚫ Black",
-      "computer": "Computer"
+      "black": "⚫ Black"
     },
     "aria": {
       "board": "Game board",
@@ -979,7 +640,7 @@
       "undoOwnLastOnly": "You can only undo the latest move that you made.",
       "language": "Language"
     },
-    "meta_keywords": "zamat, zamet, mauritanian game, board game, checkers, draughts, computer play, online multiplayer",
+    "meta_keywords": "zamat, zamet, mauritanian game, board game, checkers, draughts, online multiplayer",
     "online": {
       "permissionDenied": "The temporary play session was interrupted. Refresh the page and try again.",
       "authRestoreFailed": "The temporary play session could not be restored. Refresh the page and try again.",
@@ -1053,7 +714,6 @@
       },
       "status": {
         "available": "Available",
-        "vsComputer": "In a match vs computer",
         "inPvP": "In online match"
       },
       "syncFail": "The match could not be refreshed. Check your connection and try again.",
@@ -1092,7 +752,7 @@
       "back": "Back",
       "send": "Send"
     },
-    "meta_description": "An advanced web version of the Mauritanian game Zamat. Play against the computer or online in Arabic, English, and French.",
+    "meta_description": "A web version of the Mauritanian game Zamat for online play in Arabic, English, and French.",
     "topbar": {
       "logout": "Sign out",
       "account": "Account",
@@ -1112,9 +772,9 @@
       "rejectedTitle": "Undo request declined",
       "spectatorRequested": "{player} requested to undo the last move.",
       "spectatorAccepted": "{responder} accepted {requester}’s request to undo the last move marked by the reversed yellow arrow.",
-      "spectatorRejected": "{responder} declined {requester}’s request to undo the last move marked by the reversed yellow arrow.",
+      "spectatorRejected": "{responder} declined {requester}’s request to undo the last move.",
       "requesterAccepted": "{responder} accepted undoing the last move marked by the reversed yellow arrow.",
-      "requesterRejected": "{responder} declined undoing the last move marked by the reversed yellow arrow.",
+      "requesterRejected": "{responder} declined undoing the last move.",
       "request": {
         "body": "{name} wants to undo the last move. Allow it?",
         "title": "Undo request"
@@ -1162,16 +822,6 @@
         "title": "Vous pouvez réclamer Soufla. Sélectionnez la pièce qui a ignoré la prise et qui est marquée d’une croix rouge, puis choisissez la sanction.",
         "btnRemove": "Retirer la pièce",
         "btnForcePath": "Imposer le chemin ${n}"
-      },
-      "cpu": {
-        "reason": "Votre pièce a ignoré la prise indiquée par le chemin rouge sur le plateau.",
-        "forcedPathLine": "Suivez le chemin coloré affiché sur le plateau.",
-        "penaltyRemove": "Sanction : <b>retirer la pièce fautive</b> de la position marquée d’une croix rouge.",
-        "revertNotice": "Votre dernier coup a été annulé et apparaît avec la flèche jaune.",
-        "title": "Soufla réclamée contre vous",
-        "penaltyForceInline": "Sanction : <b>forcer la pièce</b> à effectuer la prise indiquée par le chemin coloré.",
-        "forcedPathIntro": "Chemin de prise que la pièce doit suivre :",
-        "penaltyForcePicked": "Sanction : <b>forcer la pièce à prendre</b>."
       },
       "applied": {
         "force": "La pièce adverse a été forcée à suivre le chemin de prise valide.",
@@ -1226,119 +876,16 @@
       },
       "leave": "Quitter"
     },
-    "advHelp": {
-      "title": "Guide des niveaux",
-      "levelsIntro": "Le jeu contre l’ordinateur utilise un moteur unique PVS/Alpha-Beta à approfondissement itératif et gestion automatique du temps. Les profondeurs indiquées sont des plafonds de sécurité; la recherche peut s’arrêter plus tôt selon le temps et la complexité. Les niveaux élevés disposent de plus de temps, de nœuds et de mémoire.",
-      "levelDetails": {
-        "beginner": "Plafond de profondeur : 7 ; temps de base : 180 ms ; limite stricte : 420 ms ; choix sûr parmi 4 coups proches au maximum.",
-        "easy": "Plafond de profondeur : 10 ; temps de base : 500 ms ; limite stricte : 1,1 s ; choix sûr parmi 3 coups proches au maximum.",
-        "medium": "Plafond de profondeur : 14 ; temps de base : 1,4 s ; limite stricte : 3 s ; meilleur coup de la dernière itération terminée.",
-        "hard": "Plafond de profondeur : 18 ; temps de base : 3,5 s ; limite stricte : 7 s ; meilleur coup de la dernière itération terminée ; niveau par défaut.",
-        "strong": "Plafond de profondeur : 22 ; temps de base : 7,5 s ; limite stricte : 15 s ; sélection à pleine puissance.",
-        "expert": "Plafond de profondeur : 28 ; temps de base : 14 s ; limite stricte : 26 s ; limites maximales de recherche et de mémoire."
-      }
-    },
-    "auth": {
-      "brandSubtitle": "Une nouvelle version, plus puissante et plus stable",
-      "msgPopupBlocked": "Impossible d’ouvrir la fenêtre Google. Autorisez les pop-ups.",
-      "loginGoogleOption": "Se connecter avec Google",
-      "guestNoLogin": "Continuer sans se connecter",
-      "msgResetNotAllowed": "La récupération du mot de passe n’est pas disponible pour le moment. Utilisez une autre méthode de connexion ou réessayez plus tard.",
-      "msgSaved": "Modifications enregistrées.",
-      "logoutFailed": "La déconnexion a échoué. Réessayez.",
-      "msgResetNoUser": "Aucun compte n’est associé à cet e-mail.",
-      "password": "Mot de passe",
-      "password2": "Confirmer le mot de passe",
-      "msgResetDomain": "Le message de récupération du mot de passe ne peut pas être envoyé depuis ce site pour le moment. Réessayez plus tard ou contactez l’assistance.",
-      "toRecover": "Mot de passe oublié ?",
-      "save": "Enregistrer",
-      "nickname": "Pseudo",
-      "email": "Email",
-      "registerTitle": "Créer un compte",
-      "register": "S’inscrire",
-      "recoverTitle": "Réinitialiser le mot de passe",
-      "loginEmailOption": "Se connecter avec e-mail",
-      "toRegister": "Créer un compte",
-      "msgResetTooMany": "Trop de tentatives. Réessayez plus tard.",
-      "backLogin": "Retour",
-      "msgResetInvalidEmail": "Adresse e-mail invalide.",
-      "msgInvalid": "Vérifiez les informations saisies et remplissez les champs obligatoires.",
-      "msgLoginInvalid": "L’adresse e-mail ou le mot de passe est incorrect.",
-      "msgSent": "Instructions envoyées.",
-      "msgNetwork": "Connexion impossible pour le moment. Vérifiez votre accès à Internet puis réessayez.",
-      "seo": {
-        "start": {
-          "title": "Commencez à jouer à Dhamet facilement",
-          "b1": "Connectez-vous ou créez un nouveau compte, et vous pouvez aussi continuer comme invité pour essayer rapidement le jeu.",
-          "b2": "Après la connexion, vous pouvez choisir de jouer contre l’ordinateur ou de jouer à Dhamet en ligne avec d’autres joueurs.",
-          "b3": "La création d’un compte vous donne un profil personnel, des statistiques et une expérience plus complète dans l’application.",
-          "b4": "Le mode invité convient à un essai rapide, tandis qu’un compte vous offre des fonctionnalités supplémentaires et une meilleure organisation de votre expérience.",
-          "b5": "Au bas de la page, vous trouverez des liens vers les conditions d’utilisation, la politique de confidentialité, les règles et les moyens de contact.",
-          "small": "Commencez de la manière qui vous convient, puis choisissez le mode de jeu qui vous correspond et profitez de l’expérience du jeu mauritanien Dhamet contre l’ordinateur ou en ligne."
-        },
-        "what": {
-          "title": "Jeu mauritanien Dhamet | Dhamet",
-          "b1": "Dhamet est un jeu mauritanien traditionnel fondé sur la réflexion, la planification et une bonne lecture du mouvement.",
-          "b2": "Il se joue sur un plateau de points et de trajets, et se distingue des dames courantes par la forme du plateau, les directions de jeu et certaines règles fondamentales.",
-          "b3": "Le jeu repose sur un bon placement, l’exploitation des occasions de prise et le bon moment pour promouvoir les pièces en Dhaïm.",
-          "b4": "L’application Dhamet a été créée et développée par العُقل للبرمجيات / El Ougl Software SARL, titulaire des droits. Vous pouvez visiter le site de l’entreprise pour découvrir ses produits : <a href=\"https://ouglsoft.com\" target=\"_blank\" rel=\"noopener\">ouglsoft.com</a>.",
-          "small": "Dhamet est un jeu stratégique mauritanien traditionnel fondé sur la réflexion, la planification et une bonne lecture du mouvement. L’application a été créée et développée par El Ougl Software SARL. Site de l’entreprise : <a href=\"https://ouglsoft.com\" target=\"_blank\" rel=\"noopener\">ouglsoft.com</a>."
-        }
-      }
-    },
     "buttons": {
-      "newGame": "Nouveau",
       "soufla": "Soufla",
       "settings": "Paramètres",
-      "home": "Accueil",
-      "resume": "Reprendre",
       "sync": "Actualiser",
-      "save": "Enregistrer",
       "endKill": "Terminer la prise",
       "undo": "Annuler",
       "endMatch": "Quitter"
     },
     "dashboard": {
-      "draws": "Nuls",
-      "losses": "Défaites",
-      "editEmail": "Changer l'e-mail",
-      "title": "Tableau de bord",
-      "points": "Points",
-      "editPass": "Changer le mot de passe",
-      "editNick": "Changer le nom",
-      "wins": "Victoires",
-      "vsComputer": "Contre l’ordinateur",
-      "vsHumans": "Contre des humains",
-      "totalGames": "Total des parties",
-      "rank": "Classement",
-      "matches": "Matchs",
-      "total": "Total",
-      "showLeaderboard": "Afficher le classement",
-      "leaderboard": {
-        "title": "Classement",
-        "empty": "Aucune donnée pour le moment."
-      },
-      "editIcon": "Changer l'image",
-      "nameLabel": "Nom",
-      "logoutConfirm": {
-        "body": "Voulez-vous vous déconnecter de votre compte ?"
-      },
-      "delete": {
-        "title": "Supprimer le compte",
-        "body": "Cette action supprimera votre compte et toutes les données associées. Saisissez votre mot de passe pour confirmer.",
-        "confirm": "Supprimer",
-        "success": "Votre compte a été supprimé.",
-        "wrongPassword": "Mot de passe incorrect.",
-        "recentLogin": "Veuillez vous reconnecter pour supprimer votre compte."
-      },
-      "password": {
-        "googleNotSupported": "Vous ne pouvez pas changer le mot de passe d’un compte Google.",
-        "oldWrong": "Le mot de passe actuel est incorrect.",
-        "weak": "Le nouveau mot de passe est trop faible.",
-        "recentLogin": "Veuillez vous reconnecter pour changer votre mot de passe.",
-        "currentLabel": "Mot de passe actuel",
-        "newLabel": "Nouveau mot de passe"
-      }
+      "showLeaderboard": "Afficher le classement"
     },
     "settings": {
       "board2d": "2D",
@@ -1346,24 +893,10 @@
       "dark": "Sombre",
       "coords": "Afficher la numérotation",
       "boardStyle": "Style du plateau",
-      "starter": "Joueur qui commence",
       "light": "Clair",
       "theme": "Thème",
-      "starterNextGameNote": "Le choix du joueur qui commence ne s’applique qu’à la prochaine nouvelle partie.",
-      "aiLevel": "Niveau",
-      "aiLevelHint": "Règle automatiquement la force de l’ordinateur et son temps de réflexion.",
-      "aiLevelWithValue": "Niveau : ${level}",
-      "aiLevelNextMoveNote": "S’applique à partir du prochain coup de l’ordinateur.",
       "enabled": "Activé",
       "disabled": "Désactivé",
-      "levels": {
-        "beginner": "Débutant",
-        "easy": "Facile",
-        "medium": "Moyen",
-        "hard": "Difficile",
-        "strong": "Fort",
-        "expert": "Expert"
-      },
       "showCoords": "Afficher les coordonnées"
     },
     "modals": {
@@ -1376,10 +909,6 @@
           "noLegalMoves": "{player} n’a plus de coup légal.",
           "oneKingEach": "La partie est nulle avec un roi restant pour chaque joueur."
         }
-      },
-      "newGame": {
-        "title": "Démarrer une nouvelle partie",
-        "confirm": "La partie en cours sera terminée. Voulez-vous en démarrer une nouvelle ?"
       },
       "endMatch": {
         "confirm": "Voulez-vous terminer la partie en cours ?"
@@ -1418,28 +947,6 @@
         "openingStarted": "Ouverture obligatoire démarrée.",
         "openingEnded": "Ouverture obligatoire terminée."
       },
-      "save": {
-        "none": "Aucune partie enregistrée ne peut être reprise.",
-        "done": "La partie en cours a été enregistrée.",
-        "confirm": "La partie en cours sera terminée et la partie enregistrée sera ouverte. Continuer ?",
-        "resumed": "La partie enregistrée a été reprise.",
-        "error": "La partie enregistrée n’a pas pu être reprise."
-      },
-      "results": {
-        "pvcCounted": "La partie a été ajoutée au classement (${points} points).",
-        "pvcCountedCapped": "La partie a été enregistrée dans les statistiques, mais ce niveau a atteint sa limite de points.",
-        "pvcRejected": {
-          "restored_from_save": "La partie n’a pas été ajoutée car elle a été reprise depuis une sauvegarde.",
-          "incomplete_record": "La partie n’a pas été ajoutée car son journal est incomplet.",
-          "too_many_undos": "La partie n’a pas été ajoutée car la limite d’annulations a été dépassée.",
-          "non_counted_ending": "La partie n’a pas été ajoutée car sa fin ne remplit pas les conditions de comptabilisation.",
-          "already_recorded": "Le résultat de cette partie a déjà été enregistré.",
-          "network_error": "Le résultat n’a pas pu être enregistré en raison d’un problème réseau.",
-          "pending_retry": "La connexion est temporairement indisponible. Le résultat a été conservé sur cet appareil et sera renvoyé automatiquement.",
-          "rate_limited": "La limite temporaire des résultats contre l’ordinateur a été atteinte. Réessayez plus tard.",
-          "unknown": "La partie est terminée, mais elle n’a pas pu être ajoutée aux résultats."
-        }
-      },
       "promote": "Promotion : ${cell} est devenu roi (${side})",
       "promoteActor": "${actor} : a promu la pièce au point ${cell}.",
       "promoteSelf": "${actor} : avez promu la pièce au point ${cell}.",
@@ -1466,15 +973,6 @@
       "turnMoveSelf": "Vous : déplacement de ${from} à ${to}.",
       "turnCaptureFmt": "${side} : Prise ${from}-${to} (${n}).",
       "turnCaptureSelf": "Vous : prise de ${from} à ${to} (${n})."
-    },
-    "mode": {
-      "subtitle": "Choisissez votre façon de jouer : une partie en solo contre l’ordinateur ou une partie en direct avec un autre joueur.",
-      "pvcDesc": "Commencez une partie en solo contre un moteur de jeu intelligent et choisissez le niveau de difficulté adapté.",
-      "title": "Choisir le mode",
-      "pvpTitle": "En ligne",
-      "backToAccount": "Retour au compte",
-      "pvpDesc": "Commencez une partie directe et compétitive contre un autre joueur connecté.",
-      "pvcTitle": "Contre l’ordinateur"
     },
     "lobby": {
       "backToMode": "Retour au choix du mode",
@@ -1506,23 +1004,16 @@
       "onlineInitHelp": "Vérifiez la connexion Internet, puis actualisez la page pour recréer la session de jeu temporaire.",
       "loading": "Chargement…",
       "wait": "C’est au tour de l’autre joueur. Veuillez patienter.",
-      "aiThinkingMove": "L’ordinateur choisit son coup…",
-      "aiThinkingSoufla": "L’ordinateur choisit la sanction de Soufla…",
-      "aiThinkingMoveWaitLine": "Veuillez patienter pendant que l’ordinateur choisit son coup.",
-      "currentLevel": "Niveau actuel",
-      "aiThinkingMoveLevelDuration": "Niveau : ${level} (temps de réflexion de l’ordinateur de ${min} à ${max} secondes par coup)",
       "turn": "Au tour de :",
       "forcedChainIncomplete": "Une autre prise est disponible. Terminez la chaîne, puis appuyez sur le minuteur de fin de prise.",
       "forcedMove": "Coup d’ouverture requis : ${from} → ${to}",
-      "moveSendFail": "Échec de l’envoi du coup. Appuyez sur Actualiser, puis rejouez-le.",
-      "aiThinkingMoveLevelNote": "Remarque : plus le niveau est élevé, plus la réflexion peut durer."
+      "moveSendFail": "Échec de l’envoi du coup. Appuyez sur Actualiser, puis rejouez-le."
     },
     "players": {
       "player": "Joueur",
       "you": "Vous",
       "white": "⚪ Blanc",
-      "black": "⚫ Noir",
-      "computer": "Ordinateur"
+      "black": "⚫ Noir"
     },
     "aria": {
       "board": "Plateau de jeu",
@@ -1547,7 +1038,7 @@
       "undoOwnLastOnly": "Vous pouvez uniquement annuler le dernier coup que vous avez joué.",
       "language": "Langue"
     },
-    "meta_keywords": "zamat, zamet, jeu mauritanien, jeu de plateau, dames, jeu contre ordinateur, multijoueur en ligne",
+    "meta_keywords": "zamat, zamet, jeu mauritanien, jeu de plateau, dames, multijoueur en ligne",
     "online": {
       "permissionDenied": "La session de jeu temporaire a été interrompue. Actualisez la page puis réessayez.",
       "authRestoreFailed": "Impossible de restaurer la session de jeu temporaire. Actualisez la page puis réessayez.",
@@ -1624,7 +1115,6 @@
       "waitingAcceptance": "Invitation envoyée. En attente de la réponse du joueur.",
       "status": {
         "available": "Disponible",
-        "vsComputer": "Dans une partie contre l’ordinateur",
         "inPvP": "Dans une partie en ligne"
       },
       "playersLoadFail": "Impossible de charger les joueurs connectés. Actualisez le lobby et réessayez."
@@ -1660,7 +1150,7 @@
       "back": "Retour",
       "send": "Envoyer"
     },
-    "meta_description": "Une version web avancée du jeu mauritanien Zamat. Jouez contre l’ordinateur ou en ligne en arabe, anglais et français.",
+    "meta_description": "Une version web du jeu mauritanien Zamat pour jouer en ligne en arabe, anglais et français.",
     "topbar": {
       "logout": "Déconnexion",
       "account": "Compte",
@@ -1680,9 +1170,9 @@
       "rejectedTitle": "Demande d’annulation refusée",
       "spectatorRequested": "{player} a demandé l’annulation du dernier coup.",
       "spectatorAccepted": "{responder} a accepté la demande de {requester} d’annuler le dernier coup indiqué par la flèche jaune inversée.",
-      "spectatorRejected": "{responder} a refusé la demande de {requester} d’annuler le dernier coup indiqué par la flèche jaune inversée.",
+      "spectatorRejected": "{responder} a refusé la demande de {requester} d’annuler le dernier coup.",
       "requesterAccepted": "{responder} a accepté d’annuler le dernier coup indiqué par la flèche jaune inversée.",
-      "requesterRejected": "{responder} a refusé d’annuler le dernier coup indiqué par la flèche jaune inversée.",
+      "requesterRejected": "{responder} a refusé d’annuler le dernier coup.",
       "request": {
         "body": "{name} souhaite annuler le dernier coup. Acceptez-vous ?",
         "title": "Demande d’annulation"

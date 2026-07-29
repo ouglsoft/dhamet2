@@ -363,14 +363,6 @@
     "achievements": {
       ".read": false,
       ".write": false
-    },
-    "trainGamesV3": {
-      ".read": false,
-      ".write": false
-    },
-    "Human-model": {
-      ".read": false,
-      ".write": false
     }
   }
 }

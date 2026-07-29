@@ -59,7 +59,7 @@
   --mark-danger-strong: rgb(var(--rgb-danger-600));
   --mark-move: rgb(var(--rgb-secondary-600));
   --mark-move-strong: rgb(var(--rgb-secondary-700));
-  --mark-undo: rgb(var(--rgb-gold-600));
+  --mark-undo: rgb(255 221 0);
   --mark-label-bg: rgb(var(--rgb-white) / .88);
   --mark-overlay-light: rgb(var(--rgb-white) / .76);
   --mark-overlay-dark: rgb(var(--rgb-black) / .60);
@@ -211,7 +211,6 @@
   --color-border-strong: rgb(var(--rgb-light-primary-500) / .42);
   --gradient-surface: linear-gradient(150deg, rgb(var(--rgb-white) / .99) 0%, rgb(var(--rgb-sand-100) / .97) 58%, rgb(var(--rgb-light-primary-200) / .82) 100%);
   --gradient-game-panel: linear-gradient(150deg, rgb(var(--rgb-white) / .99) 0%, rgb(var(--rgb-sand-100) / .96) 56%, rgb(var(--rgb-secondary-100) / .84) 100%);
-  --gradient-mode-pvc: linear-gradient(145deg, rgb(var(--rgb-white)) 0%, rgb(var(--rgb-light-primary-200) / .94) 64%, rgb(var(--rgb-secondary-100) / .86) 100%);
   --gradient-mode-pvp: linear-gradient(145deg, rgb(var(--rgb-white)) 0%, rgb(var(--rgb-secondary-100) / .96) 62%, rgb(var(--rgb-light-primary-200) / .84) 100%);
   --gradient-lobby-rooms: linear-gradient(150deg, rgb(var(--rgb-white)) 0%, rgb(var(--rgb-light-primary-200) / .88) 100%);
   --gradient-lobby-players: linear-gradient(150deg, rgb(var(--rgb-white)) 0%, rgb(var(--rgb-secondary-100) / .95) 100%);
@@ -335,7 +334,6 @@
   --gradient-secondary: linear-gradient(135deg, rgb(var(--rgb-secondary-700)) 0%, rgb(var(--rgb-secondary-500)) 58%, rgb(var(--rgb-primary-400)) 100%);
   --gradient-surface: linear-gradient(150deg, rgb(var(--rgb-dark-surface) / .99) 0%, rgb(var(--rgb-primary-800) / .96) 58%, rgb(var(--rgb-secondary-700) / .28) 100%);
   --gradient-game-panel: linear-gradient(150deg, rgb(var(--rgb-dark-surface) / .99) 0%, rgb(var(--rgb-primary-800) / .96) 58%, rgb(var(--rgb-secondary-700) / .32) 100%);
-  --gradient-mode-pvc: linear-gradient(145deg, rgb(var(--rgb-primary-800)) 0%, rgb(var(--rgb-primary-600)) 64%, rgb(var(--rgb-secondary-700)) 100%);
   --gradient-mode-pvp: linear-gradient(145deg, rgb(var(--rgb-secondary-700)) 0%, rgb(var(--rgb-secondary-600)) 62%, rgb(var(--rgb-primary-700)) 100%);
   --gradient-lobby-rooms: linear-gradient(150deg, rgb(var(--rgb-primary-800)) 0%, rgb(var(--rgb-primary-700)) 100%);
   --gradient-lobby-players: linear-gradient(150deg, rgb(var(--rgb-dark-surface)) 0%, rgb(var(--rgb-secondary-700) / .52) 100%);
@@ -358,7 +356,7 @@
   --mark-move-strong: rgb(133 255 235);
   --mark-danger: rgb(255 107 120);
   --mark-danger-strong: rgb(255 160 168);
-  --mark-undo: rgb(255 202 114);
+  --mark-undo: rgb(255 221 0);
   --mark-label-bg: rgb(8 31 44 / .94);
   --mark-overlay-dark: rgb(var(--rgb-black) / .72);
   --piece-white-light: rgb(255 255 255);
@@ -408,8 +406,7 @@ body::before {
 }
 
 h1,
-.z-page-title,
-.z-dash-title {
+.z-page-title {
   color: var(--color-text-strong);
   font-size: clamp(1.55rem, 2.4vw, 2rem);
   font-weight: 800;
@@ -419,14 +416,12 @@ h1,
 
 h2,
 h3,
-.z-mode-text h2,
 .z-lobby-h2 {
   color: var(--color-text-strong);
   letter-spacing: -.012em;
 }
 
 .muted,
-.z-mode-sub,
 .z-lobby-subtitle {
   color: var(--color-text-muted);
 }
@@ -435,12 +430,7 @@ h3,
    SHARED SURFACES, CONTROLS AND BUTTON HIERARCHY
    ========================================================================== */
 
-.z-auth-card,
-.z-auth-seo-card,
 .z-reset-card,
-.z-dash-summary,
-.z-dash-details,
-.z-dash-actions-panel,
 .z-lobby-panel,
 .dialog,
 .status,
@@ -456,23 +446,13 @@ h3,
   box-shadow: var(--shadow-md-unified) !important;
 }
 
-.z-auth-card,
-.z-auth-seo-card,
 .z-reset-card,
-.z-dash-summary,
-.z-dash-details,
-.z-dash-actions-panel,
 .z-lobby-panel,
 .dialog {
   border-radius: var(--radius-card) !important;
 }
 
-.z-auth-card::before,
-.z-auth-seo-card::before,
 .z-reset-card::before,
-.z-dash-summary::before,
-.z-dash-details::before,
-.z-dash-actions-panel::before,
 .z-lobby-panel::before,
 .dialog::before,
 .status::before,
@@ -490,12 +470,7 @@ h3,
   z-index: 0;
 }
 
-.z-auth-card > *,
-.z-auth-seo-card > *,
 .z-reset-card > *,
-.z-dash-summary > *,
-.z-dash-details > *,
-.z-dash-actions-panel > *,
 .z-lobby-panel > *,
 .dialog > *,
 .status > *,
@@ -540,7 +515,6 @@ button {
 
 .btn.primary,
 button.primary,
-.z-dash-play-btn,
 .z-lobby-back {
   background: var(--gradient-primary) !important;
   color: var(--color-on-primary) !important;
@@ -578,7 +552,6 @@ button.warning {
 .btn.danger,
 button.danger,
 .btn.end,
-#btnEndLocalMatch,
 #btnEndOnline,
 #btnLeaveRoom,
 #btnDashLogout {
@@ -602,9 +575,7 @@ button.ghost {
     transform: translateY(-1px);
     filter: brightness(1.035);
   }
-  .z-lobby-panel:hover,
-.z-dash-summary:hover,
-.z-dash-details:hover {
+  .z-lobby-panel:hover {
     border-color: var(--color-border-strong) !important;
   }
 }
@@ -613,46 +584,22 @@ button.ghost {
    AUTHENTICATION / FIRST IMPRESSION
    ========================================================================== */
 
-.z-auth-wrap {
-  position: relative;
-}
 
-.z-auth-main {
-  align-items: center;
-}
 
-.z-auth-card {
-  border-color: var(--color-border-strong) !important;
-  box-shadow: var(--shadow-lg-unified) !important;
-}
 
-.z-auth-card::before {
-  background: radial-gradient(circle at top right, var(--color-primary-soft), transparent 46%) !important;
-}
 
-.z-auth-seo-card {
-  box-shadow: var(--shadow-sm-unified) !important;
-}
 
-.z-auth-login-heading,
-.z-auth-card h2 {
-  font-size: clamp(1.25rem, 2vw, 1.65rem);
-  font-weight: 800;
-}
 
-.z-auth-google-top {
-  color: var(--color-text-strong) !important;
-  background: var(--color-surface-solid) !important;
-  border-color: var(--color-border) !important;
-  box-shadow: var(--shadow-sm-unified) !important;
-}
 
-.z-auth-links a {
-  color: var(--color-primary) !important;
-  font-weight: 700;
-}
 
-.z-auth-brand img,
+
+
+
+
+
+
+
+
 .z-reset-brand img {
   filter: drop-shadow(0 16px 28px rgb(var(--rgb-primary-500) / .22));
 }
@@ -661,137 +608,47 @@ button.ghost {
    MODE SELECTION — TWO DISTINCT GAME EXPERIENCES
    ========================================================================== */
 
-.z-mode-grid {
-  perspective: 1000px;
-}
-
-.z-mode-card {
-  position: relative;
-  border: 1px solid var(--mode-card-border) !important;
-  color: var(--mode-card-text) !important;
-  box-shadow: var(--shadow-lg-unified) !important;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.z-mode-card.pvc {
-  background: var(--gradient-mode-pvc) !important;
-}
-
-.z-mode-card.pvp {
-  background: var(--gradient-mode-pvp) !important;
-}
-
-.z-mode-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at top right, var(--mode-card-glow), transparent 34%),
-    linear-gradient(180deg, rgb(var(--rgb-white) / .14), transparent 38%);
-  z-index: 0;
-}
-
-.z-mode-card::after {
-  content: "";
-  position: absolute;
-  inset-inline: 16px;
-  inset-block-end: 12px;
-  height: 4px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgb(var(--rgb-white) / .28), transparent);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.z-mode-card > * {
-  position: relative;
-  z-index: 1;
-}
-
-.z-mode-card,
-.z-mode-card h2,
-.z-mode-card p {
-  color: var(--mode-card-text) !important;
-}
 
 
 
 
 
-@media (min-width: 900px) {
-  .z-mode-card.pvc {
-    transform: translateY(-6px);
-  }
-  .z-mode-card.pvp {
-    transform: translateY(8px);
-  }
-  @media (hover: hover) {
-    .z-mode-card.pvc:hover {
-      transform: translateY(-10px) scale(1.012);
-    }
-    .z-mode-card.pvp:hover {
-      transform: translateY(4px) scale(1.012);
-    }
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ========================================================================== 
    DASHBOARD / PLAYER PROFILE
    ========================================================================== */
 
-.z-dash-profile-card {
-  position: relative;
-  overflow: hidden;
-  padding: 16px !important;
-  color: var(--color-on-primary) !important;
-  background: var(--gradient-profile) !important;
-  border: 1px solid rgb(var(--rgb-white) / .20) !important;
-  box-shadow: var(--shadow-lg-unified) !important;
-}
 
-.z-dash-profile-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(45deg, transparent 0 24px, rgb(var(--rgb-white) / .045) 24px 25px);
-}
 
-.z-dash-profile-card > * {
-  position: relative;
-  z-index: 1;
-}
 
-.z-dash-profile-card .z-dash-profile-label,
-.z-dash-profile-card .z-dash-profile-sep,
-.z-dash-profile-card .z-dash-profile-name,
-.z-dash-profile-card .z-dash-profile-text {
-  color: var(--color-on-primary) !important;
-}
 
-.z-dash-profile-icon {
-  filter: drop-shadow(0 12px 24px rgb(var(--rgb-black) / .24));
-}
 
-.z-dash-summary-table th,
-.z-dash-details-table thead th,
-.z-dash-details-table tbody th {
-  color: var(--color-text-strong) !important;
-  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-secondary-soft)) !important;
-}
 
-.z-dash-summary-table-rank {
-  color: var(--color-primary) !important;
-  background: var(--color-primary-soft) !important;
-  border-color: var(--color-border-strong) !important;
-}
 
-.z-dash-summary-card {
-  background: linear-gradient(145deg, var(--color-surface-solid), var(--color-surface-muted)) !important;
-  border-color: var(--color-border) !important;
-  box-shadow: var(--shadow-sm-unified) !important;
-}
+
+
+
+
+
+
+
+
 
 /* ========================================================================== 
    LOBBY / LIVE PRESENCE
@@ -976,10 +833,6 @@ canvas#board {
 
 #btnSettings,
 #btnUndo,
-#btnSave,
-#btnResume,
-#btnNew,
-#btnRefreshLocal,
 #btnSync,
 #btnChat,
 #btnSpk,
@@ -996,8 +849,7 @@ canvas#board {
   background: var(--color-warning-soft) !important;
 }
 
-#btnSync,
-#btnRefreshLocal {
+#btnSync {
   color: var(--color-secondary) !important;
   border-color: rgb(var(--rgb-secondary-500) / .30) !important;
   background: var(--color-secondary-soft) !important;
@@ -1018,17 +870,9 @@ canvas#board {
   box-shadow: var(--shadow-lg-unified) !important;
 }
 
-.z-auth-msg.ok {
-  color: var(--color-success) !important;
-  background: var(--color-success-soft) !important;
-  border-color: rgb(var(--rgb-success-500) / .34) !important;
-}
 
-.z-auth-msg.error {
-  color: var(--color-danger) !important;
-  background: var(--color-danger-soft) !important;
-  border-color: rgb(var(--rgb-danger-500) / .34) !important;
-}
+
+
 
 /* ========================================================================== 
    MOBILE: SHARED IDENTITY FOR PORTRAIT AND LANDSCAPE
@@ -1046,35 +890,17 @@ body.z-mobile-on[data-mobile-orientation="landscape"] {
   --m-card-radius: 18px;
 }
 
-body.z-mobile-on .z-auth-card,
-body.z-mobile-on .z-auth-seo-card,
-body.z-mobile-on .z-mode-card,
-body.z-mobile-on .z-lobby-panel,
-body.z-mobile-on .z-dash-summary,
-body.z-mobile-on .z-dash-details,
-body.z-mobile-on .z-dash-actions-panel {
+body.z-mobile-on .z-lobby-panel {
   border-radius: var(--m-card-radius) !important;
 }
 
-body.z-mobile-on .z-mode-card {
-  color: var(--mode-card-text) !important;
-  border-color: var(--mode-card-border) !important;
-  box-shadow: var(--shadow-md-unified) !important;
-}
 
-body.z-mobile-on[data-mobile-page="mode"] .z-mode-card.pvc {
-  background: var(--gradient-mode-pvc) !important;
-}
 
-body.z-mobile-on[data-mobile-page="mode"] .z-mode-card.pvp {
-  background: var(--gradient-mode-pvp) !important;
-}
 
-body.z-mobile-on[data-mobile-page="mode"] .z-mode-card,
-body.z-mobile-on[data-mobile-page="mode"] .z-mode-card h2,
-body.z-mobile-on[data-mobile-page="mode"] .z-mode-card p {
-  color: var(--mode-card-text) !important;
-}
+
+
+
+
 
 body.z-mobile-on[data-mobile-page="game"] .side,
 body.z-mobile-on.z-game-page .side {
@@ -1087,10 +913,7 @@ body.z-mobile-on[data-mobile-orientation="landscape"].z-game-page .board-wrap {
   box-shadow: var(--shadow-md-unified) !important;
 }
 
-body.z-mobile-on[data-mobile-orientation="landscape"] .z-mode-card.pvc,
-body.z-mobile-on[data-mobile-orientation="landscape"] .z-mode-card.pvp {
-  transform: none;
-}
+
 
 body.z-mobile-on .z-mobile-shell-menu {
   color: var(--color-on-primary) !important;
@@ -1114,97 +937,42 @@ body.z-mobile-on .z-mobile-shell-menu {
    mobile orientation. */
 
 body.z-mobile-on h1,
-body.z-mobile-on .z-page-title,
-body.z-mobile-on .z-dash-title {
+body.z-mobile-on .z-page-title {
   font-size: 22px !important;
 }
 
 body.z-mobile-on[data-mobile-orientation="landscape"] h1,
-body.z-mobile-on[data-mobile-orientation="landscape"] .z-page-title,
-body.z-mobile-on[data-mobile-orientation="landscape"] .z-dash-title {
+body.z-mobile-on[data-mobile-orientation="landscape"] .z-page-title {
   font-size: 19px !important;
 }
 
-.z-auth-card {
-  background: linear-gradient(155deg, rgb(var(--rgb-white) / .99) 0%, rgb(var(--rgb-light-primary-200) / .60) 50%, rgb(var(--rgb-secondary-100) / .74) 100%) !important;
-  border: 1px solid rgb(var(--rgb-light-primary-400) / .28) !important;
-}
 
-.z-auth-card::after,
-.z-auth-seo-card::after {
-  content: "";
-  position: absolute;
-  inset-inline-end: -48px;
-  inset-block-start: -48px;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgb(var(--rgb-white) / .32), transparent 70%);
-  pointer-events: none;
-}
 
-.z-auth-seo-card {
-  background: linear-gradient(145deg, rgb(var(--rgb-white) / .97), rgb(var(--rgb-sand-100) / .94), rgb(var(--rgb-light-primary-200) / .58)) !important;
-}
 
-.z-auth-page #btnLogin,
-.z-auth-page #btnRegister,
-.z-auth-page #btnRecover,
-.z-auth-page #btnLoginGoogle {
-  background: var(--gradient-primary) !important;
-  color: var(--color-on-primary) !important;
-  border-color: rgb(var(--rgb-white) / .24) !important;
-  box-shadow: var(--shadow-primary) !important;
-}
 
-.z-auth-page #btnGuest {
-  border-color: rgb(var(--rgb-white) / .18) !important;
-}
 
-.z-auth-row label,
-.z-auth-seo-para,
-.z-auth-seo-list li,
-.z-auth-foot a,
-.z-auth-links a {
-  color: var(--color-text-strong) !important;
-}
 
-.z-auth-links a,
-.z-auth-foot a {
-  opacity: .96;
-}
 
-.z-auth-msg {
-  background: rgb(var(--rgb-white) / .86) !important;
-  color: var(--color-text) !important;
-}
 
-html.dark .z-auth-card {
-  background: linear-gradient(150deg, rgb(var(--rgb-primary-800) / .98), rgb(var(--rgb-dark-surface-alt) / .97), rgb(var(--rgb-primary-700) / .86)) !important;
-}
 
-html.dark .z-auth-seo-card {
-  background: linear-gradient(150deg, rgb(var(--rgb-dark-surface) / .98), rgb(var(--rgb-primary-800) / .94), rgb(var(--rgb-secondary-700) / .24)) !important;
-}
 
-.z-mode-card,
-.z-mode-card h2 {
-  color: var(--color-text-strong) !important;
-}
 
-.z-mode-text {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
-.z-mode-card h2 {
-  order: 1;
-}
 
-.z-mode-card p {
-  order: 3;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .z-lobby-panel:first-child,
 .z-lobby-panel:nth-child(2) {
@@ -1221,22 +989,12 @@ html.dark .z-auth-seo-card {
   box-shadow: var(--shadow-xs);
 }
 
-html.dark .z-mode-card,
-html.dark .z-mode-card h2,
-html.dark .z-mode-card p {
-  color: rgb(var(--rgb-white)) !important;
-}
 
-html.dark .z-mode-card p {
-  color: rgb(var(--rgb-white) / .86) !important;
-}
+
+
 
 /* Login and lobby actions use one strong, harmonious family instead of pale tints. */
 
-.z-auth-page #btnLogin,
-.z-auth-page #btnRegister,
-.z-auth-page #btnRecover,
-.z-auth-page #btnLoginGoogle,
 .z-lobby-panel .btn.primary,
 .z-lobby-panel .btn.secondary,
 .z-lobby-panel .btn.ok,
@@ -1251,9 +1009,7 @@ html.dark .z-mode-card p {
   box-shadow: 0 12px 28px rgb(var(--rgb-light-primary-700) / .24) !important;
 }
 
-.z-auth-page #btnGuest {
-  color: rgb(var(--rgb-white)) !important;
-}
+
 
 .z-lobby-panel .btn:disabled,
 .z-lobby-panel button:disabled {
@@ -1356,12 +1112,8 @@ html.dark body.z-mobile-on .z-mobile-shell-btn img {
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .btn,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .soufla-row .btn,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSync,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnRefreshLocal,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnUndo,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSettings,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSave,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnResume,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnNew,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnChat,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSpk,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnMic {
@@ -1370,7 +1122,6 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnMic {
 }
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSync.z-sync-issue,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnEndLocalMatch,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnEndOnline,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnLeaveRoom {
   background: var(--gradient-game-control-danger) !important;
@@ -1405,10 +1156,6 @@ body.z-game-page:not(.z-mobile-on) .side .btn,
 body.z-game-page:not(.z-mobile-on) .controls-box .btn,
 body.z-game-page:not(.z-mobile-on) #btnUndo,
 body.z-game-page:not(.z-mobile-on) #btnSettings,
-body.z-game-page:not(.z-mobile-on) #btnSave,
-body.z-game-page:not(.z-mobile-on) #btnResume,
-body.z-game-page:not(.z-mobile-on) #btnNew,
-body.z-game-page:not(.z-mobile-on) #btnRefreshLocal,
 body.z-game-page:not(.z-mobile-on) #btnSync,
 body.z-game-page:not(.z-mobile-on) #btnChat,
 body.z-game-page:not(.z-mobile-on) #btnSpk,
@@ -1420,7 +1167,6 @@ body.z-game-page:not(.z-mobile-on) #btnMic {
 }
 
 body.z-game-page:not(.z-mobile-on) #btnEndKill,
-body.z-game-page:not(.z-mobile-on) #btnEndLocalMatch,
 body.z-game-page:not(.z-mobile-on) #btnEndOnline,
 body.z-game-page:not(.z-mobile-on) #btnLeaveRoom,
 body.z-game-page:not(.z-mobile-on) #btnSync.z-sync-issue {
@@ -1430,10 +1176,6 @@ body.z-game-page:not(.z-mobile-on) #btnSync.z-sync-issue {
 
 
 
-.z-auth-page #btnLogin,
-.z-auth-page #btnRegister,
-.z-auth-page #btnRecover,
-.z-auth-page #btnLoginGoogle,
 .z-lobby-panel .btn:not(.danger):not(.end),
 .z-lobby-panel button:not(.danger):not(.end) {
   background: var(--gradient-primary) !important;
@@ -1442,9 +1184,7 @@ body.z-game-page:not(.z-mobile-on) #btnSync.z-sync-issue {
   box-shadow: 0 10px 24px rgb(10 48 66 / .22), inset 0 1px 0 rgb(var(--rgb-white) / .22) !important;
 }
 
-.z-auth-page #btnGuest {
-  background: linear-gradient(145deg, rgb(33 52 67), rgb(41 79 91)) !important;
-}
+
 
 .z-lobby-list.players .z-row::before {
   content: none !important;
@@ -1466,12 +1206,8 @@ body.z-game-page:not(.z-mobile-on) #btnSync.z-sync-issue {
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .btn,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .soufla-row .btn,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSync,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnRefreshLocal,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnUndo,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSettings,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSave,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnResume,
-body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnNew,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnChat,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnSpk,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid #btnMic {
@@ -1528,7 +1264,6 @@ html.dark .dialog {
 #authLangSel,
 #langSel,
 #zLangSel,
-.z-auth-lang select,
 .z-topbar select,
 .z-mobile-shell-menu,
 .z-mobile-game-shell-menu {
@@ -1540,7 +1275,6 @@ html.dark .dialog {
 #authLangSel option,
 #langSel option,
 #zLangSel option,
-.z-auth-lang select option,
 .z-topbar select option {
   color: rgb(var(--rgb-white)) !important;
   background: rgb(var(--rgb-primary-800)) !important;
@@ -1559,7 +1293,6 @@ html.dark .dialog {
 
 /* Stronger page guidance text. */
 
-.z-mode-sub,
 .z-lobby-subtitle {
   color: var(--color-text-strong) !important;
   opacity: .96 !important;
@@ -1567,19 +1300,10 @@ html.dark .dialog {
   line-height: 1.65;
 }
 
-.z-mode-card h2 {
-  color: var(--color-text-strong) !important;
-}
 
-.z-mode-card p {
-  color: var(--color-text) !important;
-  opacity: .96 !important;
-  font-weight: 650 !important;
-}
 
-html.dark .z-mode-card h2,
-html.dark .z-mode-card p,
-html.dark .z-mode-sub,
+
+
 html.dark .z-lobby-subtitle {
   color: rgb(var(--rgb-white)) !important;
 }
@@ -1591,9 +1315,7 @@ html.dark .z-lobby-subtitle {
 /* Dark mode icon treatment outside game controls: preserve glyph, remove white discs. */
 
 html.dark body.z-mobile-on .z-mobile-shell-btn img,
-html.dark body.z-mobile-on[data-mobile-page="auth"] .btn-ico,
 html.dark body.z-mobile-on[data-mobile-page="lobby"] .btn-ico,
-html.dark body.z-mobile-on[data-mobile-page="dashboard"] .btn-ico,
 html.dark body:not(.z-game-page) .btn-ico {
   background: transparent !important;
   border: 0 !important;
@@ -1604,9 +1326,7 @@ html.dark body:not(.z-game-page) .btn-ico {
 }
 
 html.dark body.z-mobile-on .z-mobile-shell-btn,
-html.dark body.z-mobile-on[data-mobile-page="auth"] .btn,
-html.dark body.z-mobile-on[data-mobile-page="lobby"] .btn,
-html.dark body.z-mobile-on[data-mobile-page="dashboard"] .btn {
+html.dark body.z-mobile-on[data-mobile-page="lobby"] .btn {
   overflow: visible;
 }
 
@@ -1619,8 +1339,6 @@ html.dark body.z-mobile-on[data-mobile-page="dashboard"] .btn {
 
 /* Login footer content and external links remain readable over dark surfaces. */
 
-html.dark .z-auth-foot,
-html.dark .z-auth-foot a,
 html.dark body.z-mobile-on .z-mobile-footer,
 html.dark body.z-mobile-on .z-mobile-footer-rights,
 html.dark body.z-mobile-on .z-mobile-footer-nav,
@@ -1657,7 +1375,7 @@ html.dark body.z-mobile-on .z-mobile-footer-rights {
   --mark-move-strong: rgb(0 89 92);
   --mark-danger: rgb(212 49 61);
   --mark-danger-strong: rgb(148 20 31);
-  --mark-undo: rgb(174 101 8);
+  --mark-undo: rgb(255 221 0);
   --piece-white-dot: rgb(20 73 95);
   --piece-black-light: rgb(48 88 102);
   --piece-black-mid: rgb(18 53 68);
@@ -1724,36 +1442,11 @@ html.dark .z-lobby-panel:nth-child(2) .z-lobby-h2 {
 
 /* Auth page in dark mode: keep every entry and footer link readable and on-brand. */
 
-html.dark .z-auth-page #btnLogin,
-html.dark .z-auth-page #btnRegister,
-html.dark .z-auth-page #btnRecover,
-html.dark .z-auth-page #btnLoginGoogle,
-html.dark body.z-mobile-on[data-mobile-page="auth"] #btnLogin,
-html.dark body.z-mobile-on[data-mobile-page="auth"] #btnRegister,
-html.dark body.z-mobile-on[data-mobile-page="auth"] #btnRecover,
-html.dark body.z-mobile-on[data-mobile-page="auth"] #btnLoginGoogle {
-  background: var(--gradient-primary) !important;
-  color: rgb(var(--rgb-white)) !important;
-  border-color: rgb(var(--rgb-white) / .18) !important;
-  box-shadow: 0 10px 24px rgb(var(--rgb-black) / .24), inset 0 1px 0 rgb(var(--rgb-white) / .16) !important;
-}
 
-html.dark .z-auth-page #btnGuest,
-html.dark body.z-mobile-on[data-mobile-page="auth"] #btnGuest {
-  background: linear-gradient(145deg, rgb(22 43 58), rgb(29 75 91)) !important;
-  color: rgb(var(--rgb-white)) !important;
-}
 
-html.dark .z-auth-links a,
-html.dark .z-auth-links button,
-html.dark .z-auth-foot,
-html.dark .z-auth-foot a,
-html.dark body.z-mobile-on[data-mobile-page="auth"] .z-mobile-auth-links a,
-html.dark body.z-mobile-on[data-mobile-page="auth"] .z-mobile-footer-rights,
-html.dark body.z-mobile-on[data-mobile-page="auth"] .z-mobile-footer-rights a,
-html.dark body.z-mobile-on[data-mobile-page="auth"] .z-mobile-footer-nav a {
-  color: rgb(var(--rgb-white)) !important;
-}
+
+
+
 
 /* Dark mode mode-selection icons: keep a visible glyph, not a pale square. */
 
@@ -1761,9 +1454,7 @@ html.dark body.z-mobile-on[data-mobile-page="auth"] .z-mobile-footer-nav a {
 
 
 
-html.dark body.z-mobile-on[data-mobile-page="mode"] .z-mode-card p {
-  color: rgb(var(--rgb-white) / .88) !important;
-}
+
 
 /* Light board: a little brighter, while lines, diagonals, routes and pieces stay clearer. */
 
@@ -1865,11 +1556,6 @@ body.z-mobile-on[data-mobile-page="lobby"] .z-lobby-h2 {
   border-color: rgb(var(--rgb-success-600) / .22);
 }
 
-.z-player-status.is-computer {
-  color: rgb(var(--rgb-light-primary-700));
-  background: rgb(var(--rgb-light-primary-500) / .12);
-  border-color: rgb(var(--rgb-light-primary-500) / .22);
-}
 
 .z-player-status.is-online {
   color: rgb(var(--rgb-gold-800));
@@ -1893,10 +1579,6 @@ html.dark .z-player-status.is-available {
   background: rgb(var(--rgb-success-500) / .18);
 }
 
-html.dark .z-player-status.is-computer {
-  color: rgb(var(--rgb-light-primary-200));
-  background: rgb(var(--rgb-light-primary-400) / .18);
-}
 
 html.dark .z-player-status.is-online {
   color: rgb(var(--rgb-gold-400));
@@ -1994,30 +1676,13 @@ html.dark body.z-mobile-on[data-mobile-page="lobby"] .z-lobby-panel .z-player-ro
 /* The mobile login artwork replaces only the stretched mobile brand image.
    Desktop keeps the compact application icon. */
 
-.z-auth-mobile-hero {
-  display: none;
-}
 
-body.z-mobile-on[data-mobile-page="auth"] .z-auth-brand {
-  position: relative;
-}
 
-body.z-mobile-on[data-mobile-page="auth"] .z-auth-brand-icon {
-  display: none !important;
-}
 
-body.z-mobile-on[data-mobile-page="auth"] .z-auth-mobile-hero {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0;
-  min-height: 0;
-  flex: 1 1 auto;
-  max-width: none !important;
-  max-height: none !important;
-  object-fit: fill !important;
-  border-radius: 0 !important;
-}
+
+
+
+
 
 /* Keep the orientation action at its existing position, but always above the
    bottom drawer handle and its pointer layer. */
@@ -2035,17 +1700,9 @@ body.board-depth canvas#board {
   visibility: visible !important;
 }
 
-.z-mode-card h2 {
-  font-size: clamp(1.28rem, 2.1vw, 1.62rem) !important;
-  line-height: 1.3 !important;
-  font-weight: 950 !important;
-  margin-block: 0 7px !important;
-}
 
-.z-mode-card p {
-  font-size: clamp(.94rem, 1.45vw, 1.06rem) !important;
-  line-height: 1.65 !important;
-}
+
+
 
 /* Strong, opposing outlines keep the flat pieces separate from every board line. */
 

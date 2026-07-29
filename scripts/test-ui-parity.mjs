@@ -86,4 +86,4 @@ for (const cssPath of ["css/style.css", "css/pages.css", "css/mobile.css", "css/
   }
 }
 
-console.log("main-interface parity tests passed");
+console.log("approved online-interface parity tests passed");

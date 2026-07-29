@@ -12,9 +12,8 @@
   // Routine desktop state refreshes must not remount the sidebar controls.
   var GAME_LAYOUT_MOBILE_ACTIVE = false;
   var GAME_HOME_RECORDS = [];
-  var AI_LEVEL_INTERACTION_UNTIL = 0;
   var LAST_GAME_MODE = null;
-  var MOBILE_PAGES = { auth: 1, mode: 1, lobby: 1, dashboard: 1, game: 1 };
+  var MOBILE_PAGES = { lobby: 1, game: 1 };
   var ORIENTATION_REQUEST_TARGET = '';
   var ORIENTATION_REQUEST_TIMER = 0;
   var ORIENTATION_PREF_KEY = 'zamat.mobile.orientation.v1';
@@ -27,10 +26,7 @@
 
   function pageType() {
     var path = pathName();
-    if (path.endsWith('/index.html') || path === '/' || path.endsWith('/')) return 'auth';
-    if (path.indexOf('/mode') !== -1) return 'mode';
     if (path.indexOf('/loby') !== -1) return 'lobby';
-    if (path.indexOf('/dashboard') !== -1) return 'dashboard';
     if (path.indexOf('/game') !== -1) return 'game';
     return 'generic';
   }
@@ -126,39 +122,13 @@
     clearOrientationRequest(target);
     return false;
   }
-
-  function hasRegisteredSession() {
-    try {
-      var s = window.ZAuth && typeof window.ZAuth.readSession === 'function' ? window.ZAuth.readSession() : null;
-      return !!(s && s.kind === 'registered' && s.uid);
-    } catch (_) {}
-    return false;
-  }
-
-  function publicLinks() {
-    try { return window.ZShell.getPublicLinks(baseHref()) || []; } catch (_) { return []; }
-  }
-
-  function shortLinkLabel(item) {
-    return window.I18N.translate(item.shortKey || item.key, null, window.I18N.translate(item.key, null, String(item.key || ''), currentLang()), currentLang());
-  }
-
-  function rightsText() {
-    try { return window.ZShell.getFooterText() || ''; } catch (_) { return ''; }
-  }
-
   function backTarget() {
-    var type = pageType();
-    var registered = hasRegisteredSession();
-    var base = baseHref();
-    if (type === 'mode') return registered ? base + '/pages/dashboard.html' : base + '/index.html';
-    if (type === 'lobby') return 'https://ouglsoft.com/dhamet/pages/mode.html';
-    return '';
+    return pageType() === 'lobby' ? 'https://ouglsoft.com/dhamet/pages/mode.html' : '';
   }
 
   function setLanguage(lang) {
     var nextLang = lang || 'ar';
-    var sel = qs('#authLangSel') || qs('#langSel');
+    var sel = qs('#langSel');
     var applied = false;
 
     if (sel) {
@@ -272,40 +242,17 @@
     root.appendChild(menu);
     return root;
   }
-
-  async function handleDashboardMobileLogout(event) {
-    if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    try {
-      if (window.ZAuth && typeof window.ZAuth.confirmLogoutAndRedirect === 'function') {
-        await window.ZAuth.confirmLogoutAndRedirect(baseHref() + '/index.html');
-        return;
-      }
-    } catch (_) {}
-    try {
-      if (window.ZAuth && typeof window.ZAuth.logoutAndRedirect === 'function') {
-        await window.ZAuth.logoutAndRedirect(baseHref() + '/index.html');
-        return;
-      }
-    } catch (_) {}
-    location.href = baseHref() + '/index.html';
-  }
-
   function ensureShell() {
     if (!document.body || !document.body.classList.contains('z-mobile-on')) return;
     if (pageType() === 'generic' || pageType() === 'game' || qs('.z-mobile-shell')) return;
 
-    var dashboardPage = pageType() === 'dashboard';
     var shell = createShell({
       rootClass: 'z-mobile-shell',
       innerClass: 'z-mobile-shell-spacer',
       menuClass: 'z-mobile-shell-menu',
-      hideBack: pageType() === 'auth',
-      backAction: dashboardPage ? 'logout' : 'back',
+      hideBack: false,
+      backAction: 'back',
       onBack: function (event) {
-        if (dashboardPage) {
-          handleDashboardMobileLogout(event);
-          return;
-        }
         var target = backTarget();
         if (!target) return;
         event.preventDefault();
@@ -414,30 +361,6 @@ function ensureOrientButton() {
   });
   document.body.appendChild(btn);
 }
-
-  function createFooter(variant) {
-    var footer = document.createElement('div');
-    footer.className = 'z-mobile-footer';
-    footer.setAttribute('data-variant', variant);
-
-    var nav = document.createElement('div');
-    nav.className = 'z-mobile-footer-nav';
-    publicLinks().forEach(function (item) {
-      var link = document.createElement('a');
-      link.href = item.href;
-      if (item.external && item.legalKind) link.setAttribute('data-ouglsoft-link', item.legalKind);
-      link.setAttribute('data-link-key', item.key);
-      nav.appendChild(link);
-    });
-
-    var rights = document.createElement('div');
-    rights.className = 'z-mobile-footer-rights';
-
-    footer.appendChild(nav);
-    footer.appendChild(rights);
-    return footer;
-  }
-
   function viewportHeight() {
     var vv = window.visualViewport;
     var h = Math.round((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 0);
@@ -449,61 +372,7 @@ function ensureOrientButton() {
     var height = viewportHeight();
     if (height > 0) document.body.style.setProperty('--m-vh', height + 'px');
   }
-
-  function syncFooterMetrics() {
-    if (!document.body) return;
-    var footer = qs('.z-mobile-footer');
-    if (!footer) {
-      document.body.style.removeProperty('--m-footer-actual-h');
-      return;
-    }
-    var height = footer.offsetHeight || 0;
-    if (height > 0) document.body.style.setProperty('--m-footer-actual-h', height + 'px');
-  }
-
-  function ensureFooter() {
-    var variant = (pageType() === 'auth') ? 'full' : '';
-    var footer = qs('.z-mobile-footer');
-    if (!variant) {
-      if (footer) footer.remove();
-      syncFooterMetrics();
-      return;
-    }
-    if (!footer) {
-      footer = createFooter(variant);
-      document.body.appendChild(footer);
-    }
-    footer.setAttribute('data-variant', variant);
-    requestAnimationFrame(syncFooterMetrics);
-  }
-
   /* Shared page scaffolding */
-
-  function restoreModeHead() {
-    if (pageType() !== 'mode') return;
-    var inner = qs('.z-page-inner');
-    var box = qs('.z-mobile-head-box', inner);
-    if (!inner || !box) return;
-    var title = qs('.z-page-title', box);
-    var sub = qs('.z-mode-sub', box);
-    if (title && title.parentNode !== inner) inner.insertBefore(title, inner.firstChild || null);
-    if (sub && sub.parentNode !== inner) inner.insertBefore(sub, title ? title.nextSibling : inner.firstChild || null);
-    if (!box.children.length) box.remove();
-  }
-
-  function ensureModeHead() {
-    if (pageType() !== 'mode' || !document.body || !document.body.classList.contains('z-mobile-on')) return;
-    var inner = qs('.z-page-inner');
-    var title = qs('.z-page-title', inner);
-    var sub = qs('.z-mode-sub', inner);
-    if (!inner || !title || !sub || qs('.z-mobile-head-box', inner)) return;
-    var box = document.createElement('div');
-    box.className = 'z-mobile-head-box';
-    box.appendChild(title);
-    box.appendChild(sub);
-    inner.insertBefore(box, inner.firstChild);
-  }
-
   function restoreLobbyHead() {
     if (pageType() !== 'lobby') return;
     var inner = qs('.z-lobby-inner');
@@ -601,218 +470,39 @@ if (!icon) {
     }
     placeLobbyInviteControls(box);
   }
-
-  function buildAuthLoginLinks() {
-    var links = document.createElement('div');
-    links.className = 'z-mobile-auth-links';
-    links.innerHTML = [
-      '<a data-go="register" href="#"><span data-i18n="auth.toRegister">إنشاء حساب</span></a>',
-      '<a data-go="recover" href="#"><span data-i18n="auth.toRecover">نسيت كلمة المرور؟</span></a>'
-    ].join('');
-    return links;
-  }
-
-  function ensureAuthLoginLayout() {
-    if (pageType() !== 'auth') return;
-    var section = qs('section[data-auth-view="login"]');
-    if (!section) return;
-
-    var grid = qs('.z-auth-grid', section);
-    var emailRow = qs('#loginEmail') ? qs('#loginEmail').closest('.z-auth-row') : null;
-    var passRow = qs('#loginPass') ? qs('#loginPass').closest('.z-auth-row') : null;
-    var loginBtn = qs('#btnLogin');
-    var guestBtn = qs('#btnGuest');
-    var googleBtn = qs('#btnLoginGoogle');
-    if (!grid || !emailRow || !passRow || !loginBtn || !guestBtn || !googleBtn) return;
-
-    var wrap = qs('.z-mobile-auth-login', section);
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.className = 'z-mobile-auth-login';
-    }
-
-    var fields = qs('.z-mobile-auth-fields', wrap);
-    if (!fields) {
-      fields = document.createElement('div');
-      fields.className = 'z-mobile-auth-fields';
-    }
-    if (emailRow.parentNode !== fields) fields.appendChild(emailRow);
-    if (passRow.parentNode !== fields) fields.appendChild(passRow);
-    if (loginBtn.parentNode !== fields) fields.appendChild(loginBtn);
-
-    var social = qs('.z-mobile-auth-social', wrap);
-    if (!social) {
-      social = document.createElement('div');
-      social.className = 'z-mobile-auth-social';
-    }
-    if (googleBtn.parentNode !== social) social.appendChild(googleBtn);
-    if (guestBtn.parentNode !== social) social.appendChild(guestBtn);
-
-    var links = qs('.z-mobile-auth-links', wrap) || qs('.z-mobile-auth-links', section) || qs('.z-auth-links', section);
-    if (!links) links = buildAuthLoginLinks();
-    links.className = 'z-mobile-auth-links';
-
-    if (fields.parentNode !== wrap) wrap.appendChild(fields);
-    if (social.parentNode !== wrap) wrap.appendChild(social);
-    if (links.parentNode !== wrap) wrap.appendChild(links);
-    if (wrap.parentNode !== grid) grid.appendChild(wrap);
-  }
-
-  function ensureAuthRegisterLayout() {
-    if (pageType() !== 'auth') return;
-    var section = qs('section[data-auth-view="register"]');
-    if (!section) return;
-    var title = qs('h2', section);
-    var grid = qs('#regEmailForm', section) || qs('.z-auth-grid', section);
-    var rows = qsa('.z-auth-row', grid);
-    var submit = qs('#btnRegister', section);
-    var back = qs('[data-go="login"]', section);
-    if (!title || !grid || rows.length < 4 || !submit || !back) return;
-
-    var wrap = qs('.z-mobile-auth-register', section);
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.className = 'z-mobile-auth-register';
-    }
-
-    var titleWrap = qs('.z-mobile-auth-register-title', wrap);
-    if (!titleWrap) {
-      titleWrap = document.createElement('div');
-      titleWrap.className = 'z-mobile-auth-register-title';
-    }
-    if (title.parentNode !== titleWrap) titleWrap.appendChild(title);
-
-    var line1 = qs('.z-mobile-auth-register-line.is-line1', wrap);
-    if (!line1) {
-      line1 = document.createElement('div');
-      line1.className = 'z-mobile-auth-register-line is-line1';
-    }
-    if (rows[0].parentNode !== line1) line1.appendChild(rows[0]);
-    if (rows[1].parentNode !== line1) line1.appendChild(rows[1]);
-
-    var line2 = qs('.z-mobile-auth-register-line.is-line2', wrap);
-    if (!line2) {
-      line2 = document.createElement('div');
-      line2.className = 'z-mobile-auth-register-line is-line2';
-    }
-    if (rows[2].parentNode !== line2) line2.appendChild(rows[2]);
-    if (rows[3].parentNode !== line2) line2.appendChild(rows[3]);
-
-    var submitWrap = qs('.z-mobile-auth-register-submit', wrap);
-    if (!submitWrap) {
-      submitWrap = document.createElement('div');
-      submitWrap.className = 'z-mobile-auth-register-submit';
-    }
-    if (submit.parentNode !== submitWrap) submitWrap.appendChild(submit);
-
-    var backWrap = qs('.z-mobile-auth-register-back', wrap);
-    if (!backWrap) {
-      backWrap = document.createElement('div');
-      backWrap.className = 'z-mobile-auth-register-back';
-    }
-    if (back.parentNode !== backWrap) backWrap.appendChild(back);
-
-    if (titleWrap.parentNode !== wrap) wrap.appendChild(titleWrap);
-    if (line1.parentNode !== wrap) wrap.appendChild(line1);
-    if (line2.parentNode !== wrap) wrap.appendChild(line2);
-    if (submitWrap.parentNode !== wrap) wrap.appendChild(submitWrap);
-    if (backWrap.parentNode !== wrap) wrap.appendChild(backWrap);
-    if (wrap.parentNode !== grid) grid.appendChild(wrap);
-  }
-
   var AUTH_CARD_RAF = 0;
+/* Game page */
 
-  function updateAuthCardHeight() {
-    if (pageType() !== 'auth' || !document.body || !document.body.classList.contains('z-mobile-on')) return;
-    var activeEl = document.activeElement;
-    if (activeEl) {
-      var tag = String(activeEl.tagName || '').toLowerCase();
-      if ((tag === 'input' || tag === 'textarea' || tag === 'select') && qs('#authRoot') && qs('#authRoot').contains(activeEl)) return;
-    }
-    var card = qs('.z-auth-card');
-    if (!card) return;
-    if (document.body.getAttribute('data-mobile-orientation') !== 'portrait') {
-      card.style.removeProperty('--m-auth-card-h-auto');
-      return;
-    }
+  var GAME_EXIT_ICON_RAF = 0;
 
-    var active = qs('section[data-auth-view]:not([style*="display:none"])', card);
-    if (!active) {
-      var root = qs('#authRoot');
-      var current = root ? root.getAttribute('data-auth-current') : '';
-      if (current) active = qs('section[data-auth-view="' + current + '"]', card);
-    }
-    if (!active) active = qs('section[data-auth-view]', card);
-    if (!active) return;
-
-    var cardWidth = Math.max(280, (card.clientWidth || 0) - 28);
-    var prev = {
-      display: active.style.display,
-      position: active.style.position,
-      visibility: active.style.visibility,
-      pointerEvents: active.style.pointerEvents,
-      left: active.style.left,
-      top: active.style.top,
-      width: active.style.width,
-      height: active.style.height,
-      minHeight: active.style.minHeight
-    };
-
-    active.style.display = 'flex';
-    active.style.position = 'absolute';
-    active.style.visibility = 'hidden';
-    active.style.pointerEvents = 'none';
-    active.style.left = '-10000px';
-    active.style.top = '0';
-    active.style.width = cardWidth + 'px';
-    active.style.height = 'auto';
-    active.style.minHeight = '0';
-
-    var contentHeight = active.scrollHeight || 0;
-
-    active.style.display = prev.display;
-    active.style.position = prev.position;
-    active.style.visibility = prev.visibility;
-    active.style.pointerEvents = prev.pointerEvents;
-    active.style.left = prev.left;
-    active.style.top = prev.top;
-    active.style.width = prev.width;
-    active.style.height = prev.height;
-    active.style.minHeight = prev.minHeight;
-
-    var cardStyles = window.getComputedStyle ? window.getComputedStyle(card) : null;
-    var paddingY = 28;
-    if (cardStyles) {
-      paddingY = (parseFloat(cardStyles.paddingTop) || 0) + (parseFloat(cardStyles.paddingBottom) || 0);
-    }
-
-    if (contentHeight > 0) card.style.setProperty('--m-auth-card-h-auto', Math.ceil(contentHeight + paddingY) + 'px');
-  }
-
-  function scheduleAuthCardHeight() {
-    if (AUTH_CARD_RAF) cancelAnimationFrame(AUTH_CARD_RAF);
-    AUTH_CARD_RAF = requestAnimationFrame(function () {
-      AUTH_CARD_RAF = 0;
-      updateAuthCardHeight();
+  function syncGameDirectionalExitIcons() {
+    if (pageType() !== 'game' || !document.body) return;
+    var viewportMid = Math.max(0, window.innerWidth || document.documentElement.clientWidth || 0) / 2;
+    qsa('.directional-exit-icon', document.body).forEach(function (icon) {
+      var owner = icon.closest ? (icon.closest('button, a') || icon) : icon;
+      if (!owner || !owner.getClientRects || owner.getClientRects().length === 0) return;
+      var rect = owner.getBoundingClientRect();
+      var pointsRight = (rect.left + rect.width / 2) >= viewportMid;
+      icon.classList.toggle('z-points-outward-right', pointsRight);
+      icon.classList.toggle('z-points-outward-left', !pointsRight);
     });
   }
 
-/* Game page */
+  function scheduleGameDirectionalExitIcons() {
+    if (pageType() !== 'game') return;
+    if (GAME_EXIT_ICON_RAF) window.cancelAnimationFrame(GAME_EXIT_ICON_RAF);
+    GAME_EXIT_ICON_RAF = window.requestAnimationFrame(function () {
+      GAME_EXIT_ICON_RAF = window.requestAnimationFrame(function () {
+        GAME_EXIT_ICON_RAF = 0;
+        syncGameDirectionalExitIcons();
+      });
+    });
+  }
+
+  window.DhametSyncGameExitIcons = scheduleGameDirectionalExitIcons;
 
   function gameMode() {
-    try {
-      var mm = window.DhametMatchMode;
-      if (mm && typeof mm.detectMode === 'function') {
-        var detected = mm.detectMode();
-        if (detected === mm.MODE_SPECTATOR) return 'spectator';
-        if (detected === mm.MODE_ONLINE) return 'pvp';
-        return 'pvc';
-      }
-    } catch (_) {}
-    var body = document.body;
-    if (body && body.classList.contains('z-spectator')) return 'spectator';
-    if (body && body.classList.contains('mode-pvp')) return 'pvp';
-    return 'pvc';
+    return document.body && document.body.classList.contains('z-spectator') ? 'spectator' : 'pvp';
   }
 
   function gameBack() {
@@ -904,55 +594,6 @@ if (!icon) {
         gameBack();
       }
     });
-  }
-
-  function ensureGameLevelSlot(shell) {
-    if (!shell) return null;
-    var bar = qs('.z-mobile-game-shell-inner', shell);
-    if (!bar) return null;
-    var slot = qs('.z-mobile-game-level-slot', bar);
-    if (slot) return slot;
-    slot = document.createElement('div');
-    slot.className = 'z-mobile-game-level-slot';
-    bar.appendChild(slot);
-    return slot;
-  }
-
-  function bindAiLevelInteraction(box) {
-    if (!box || box.__zMobileAiInteractionBound) return;
-    box.__zMobileAiInteractionBound = true;
-    var hold = function (ms) { AI_LEVEL_INTERACTION_UNTIL = Date.now() + (ms || 500); };
-    box.addEventListener('pointerdown', function () { hold(1400); }, true);
-    box.addEventListener('focusin', function () { hold(60000); }, true);
-    box.addEventListener('change', function () { hold(350); }, true);
-    box.addEventListener('focusout', function () { hold(180); }, true);
-  }
-
-  function isAiLevelSelectInteracting() {
-    var box = qs('#aiLevelBox');
-    if (!box) return false;
-    bindAiLevelInteraction(box);
-    try {
-      if (box.contains(document.activeElement)) return true;
-      if (box.matches && box.matches(':focus-within')) return true;
-    } catch (_) {}
-    return Date.now() < AI_LEVEL_INTERACTION_UNTIL;
-  }
-
-  function syncGameLevelInShell(shell) {
-    var box = qs('#aiLevelBox');
-    if (!box) return;
-    bindAiLevelInteraction(box);
-    if (gameMode() !== 'pvc') {
-      box.classList.remove('z-mobile-game-top-level');
-      restoreGameNode(box);
-      return;
-    }
-    if (isAiLevelSelectInteracting()) return;
-    box.classList.add('z-mobile-game-top-level');
-    var slot = ensureGameLevelSlot(shell || qs('.z-mobile-game-shell'));
-    if (slot) moveGameNode(box, slot);
-    try { if (window.UI && typeof window.UI.updateAiLevelDisplay === 'function') window.UI.updateAiLevelDisplay(); } catch (_) {}
   }
 
   function ensureGameHead() {
@@ -1145,8 +786,7 @@ if (!icon) {
 
   function gameButtons() {
     if (gameMode() === 'spectator') return [qs('#btnChat')].filter(Boolean);
-    if (gameMode() === 'pvp') return [qs('.timer-row'), qs('.soufla-row'), qs('#btnUndo'), qs('#syncControlWrap'), qs('#btnSettings'), qs('#btnChat'), qs('#btnMic'), qs('#btnSpk')].filter(Boolean);
-    return [qs('.timer-row'), qs('.soufla-row'), qs('#btnUndo'), qs('#btnSettings')].filter(Boolean);
+    return [qs('.timer-row'), qs('.soufla-row'), qs('#btnUndo'), qs('#syncControlWrap'), qs('#btnSettings'), qs('#btnChat'), qs('#btnMic'), qs('#btnSpk')].filter(Boolean);
   }
 
   function syncKillTile() {
@@ -1176,6 +816,7 @@ if (!icon) {
     items.forEach(function (item) { moveGameNode(item, grid); });
     if (grid.getAttribute('data-mode') !== mode) grid.setAttribute('data-mode', mode);
     syncKillTile();
+    scheduleGameDirectionalExitIcons();
   }
 
   function syncGameDrawer() {
@@ -1246,16 +887,13 @@ if (!icon) {
       });
       var lane = qs('.z-mobile-game-side-lane');
       if (lane && lane.parentNode) lane.parentNode.removeChild(lane);
-      var ai = qs('#aiLevelBox');
-      if (ai) ai.classList.remove('z-mobile-game-top-level');
       if (body) body.removeAttribute('data-mobile-game-mode');
       try {
-        var online = gameMode() !== 'pvc';
         var spectator = gameMode() === 'spectator';
-        if (window.ZamatControls && typeof window.ZamatControls.mount === 'function') window.ZamatControls.mount(online, spectator);
+        if (window.ZamatControls && typeof window.ZamatControls.mount === 'function') window.ZamatControls.mount(true, spectator);
       } catch (_) {}
-      try { if (window.UI && typeof window.UI.updateAiLevelDisplay === 'function') window.UI.updateAiLevelDisplay(); } catch (_) {}
       GAME_LAYOUT_MOBILE_ACTIVE = false;
+      scheduleGameDirectionalExitIcons();
     });
   }
 
@@ -1272,9 +910,9 @@ if (!icon) {
       placeGameLayout();
       syncGameShellPins();
       syncGameHead();
-      syncGameLevelInShell(qs('.z-mobile-game-shell'));
       syncGameControls();
       syncGameDrawer();
+      scheduleGameDirectionalExitIcons();
     });
   }
 
@@ -1341,109 +979,7 @@ if (!icon) {
 
 
   /* Dashboard page */
-
-  function ensureDashboardSummaryTable() {
-    if (pageType() !== 'dashboard') return;
-    var summary = qs('.z-dash-summary');
-    if (!summary) return;
-    if (!qs('.z-dash-summary-table', summary)) {
-      var table = document.createElement('table');
-      table.className = 'z-dash-summary-table';
-      table.innerHTML = [
-        '<thead><tr>',
-        '<th data-summary-key="games"></th>',
-        '<th data-summary-key="points"></th>',
-        '<th data-summary-key="rank"></th>',
-        '</tr></thead>',
-        '<tbody><tr>',
-        '<td data-stat="statTotalGames">—</td>',
-        '<td data-stat="statPoints">—</td>',
-        '<td><button type="button" class="z-dash-summary-table-rank z-dash-summary-card" data-open-leaderboard="1" data-stat="statRank"></button></td>',
-        '</tr></tbody>'
-      ].join('');
-      summary.appendChild(table);
-    }
-  }
-
-  function placeDashboardSummary() {
-    if (pageType() !== 'dashboard' || !document.body || !document.body.classList.contains('z-mobile-on')) return;
-    var summary = qs('.z-dash-summary');
-    var profile = qs('.z-dash-profile-card');
-    var sideTop = qs('.z-dash-side-top');
-    if (!summary || !profile || !sideTop) return;
-
-    var anchor = qs('.z-dash-summary-anchor', sideTop);
-    if (!anchor) {
-      anchor = document.createElement('div');
-      anchor.className = 'z-dash-summary-anchor';
-      anchor.hidden = true;
-      sideTop.insertBefore(anchor, summary);
-    }
-
-    if (document.body.getAttribute('data-mobile-orientation') === 'landscape') {
-      if (summary.parentNode !== profile) profile.appendChild(summary);
-    } else if (summary.parentNode !== sideTop) {
-      sideTop.insertBefore(summary, anchor.nextSibling);
-    }
-  }
-
-  function bindDashboardSummaryLeaderboard() {
-    if (pageType() !== 'dashboard') return;
-    qsa('.z-dash-summary-table [data-open-leaderboard="1"]').forEach(function (el) {
-      if (!el || el.__zLeaderboardBound) return;
-      var openLeaderboard = function () {
-        if (window.ZLeaderboard && typeof window.ZLeaderboard.openModal === 'function') {
-          window.ZLeaderboard.openModal();
-        }
-      };
-      el.addEventListener('click', openLeaderboard);
-      el.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault();
-          openLeaderboard();
-        }
-      });
-      el.__zLeaderboardBound = true;
-    });
-  }
-
-  function refreshDashboardSummaryText() {
-    if (pageType() !== 'dashboard') return;
-    ensureDashboardSummaryTable();
-    qsa('.z-dash-summary-table [data-summary-key="games"]').forEach(function (el) {
-      el.textContent = window.I18N.text('dashboard.totalGames', null, currentLang());
-    });
-    qsa('.z-dash-summary-table [data-summary-key="points"]').forEach(function (el) {
-      el.textContent = window.I18N.text('dashboard.points', null, currentLang());
-    });
-    qsa('.z-dash-summary-table [data-summary-key="rank"]').forEach(function (el) {
-      el.textContent = window.I18N.text('dashboard.rank', null, currentLang());
-    });
-    qsa('.z-dash-summary-table [data-open-leaderboard="1"]').forEach(function (el) {
-      var label = window.I18N.text('dashboard.showLeaderboard', null, currentLang());
-      el.setAttribute('title', label);
-      el.setAttribute('aria-label', label);
-    });
-    bindDashboardSummaryLeaderboard();
-  }
-
   /* Text and i18n refresh */
-
-  function refreshFooterText() {
-    var footer = qs('.z-mobile-footer');
-    if (!footer) return;
-    var rights = qs('.z-mobile-footer-rights', footer);
-    if (rights) rights.textContent = rightsText();
-    qsa('.z-mobile-footer-nav a', footer).forEach(function (link, index) {
-      var item = publicLinks()[index];
-      if (!item) return;
-      link.href = item.href;
-      link.title = window.I18N.text(item.key, null, currentLang());
-      link.textContent = isLandscape() ? window.I18N.text(item.key, null, currentLang()) : shortLinkLabel(item);
-    });
-    requestAnimationFrame(syncFooterMetrics);
-  }
-
   function refreshShellText() {
     qsa('.z-mobile-shell-menu [data-lang], .z-mobile-game-shell-menu [data-lang]').forEach(function (btn) {
       var lang = btn.getAttribute('data-lang');
@@ -1470,8 +1006,6 @@ if (!icon) {
 function refreshMobileText() {
     if (!document.body || !document.body.classList.contains('z-mobile-on')) return;
     refreshShellText();
-    refreshFooterText();
-    refreshDashboardSummaryText();
     ensureLobbyHead();
   }
 
@@ -1520,9 +1054,9 @@ function refreshMobileText() {
     document.body.setAttribute('data-mobile-orientation', orientation);
     document.body.classList.add('z-mobile-layout-ready');
     reconcileGameFullscreenForOrientation(mobile, orientation);
+    scheduleGameDirectionalExitIcons();
 
     if (!mobile) {
-      restoreModeHead();
       restoreLobbyHead();
       restoreDesktopGameLayout();
       qsa('.z-mobile-shell-menu, .z-mobile-game-shell-menu').forEach(function (menu) { menu.hidden = true; });
@@ -1533,14 +1067,7 @@ function refreshMobileText() {
 
     ensureShell();
     ensureOrientButton();
-    ensureFooter();
-    ensureModeHead();
     ensureLobbyHead();
-    ensureAuthLoginLayout();
-    ensureAuthRegisterLayout();
-    scheduleAuthCardHeight();
-    ensureDashboardSummaryTable();
-    placeDashboardSummary();
     syncGameLayout();
     ensureGameLayoutObservers();
     refreshMobileText();
@@ -1585,15 +1112,6 @@ function refreshMobileText() {
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleViewportChange, { passive: true });
       window.visualViewport.addEventListener('scroll', handleViewportChange, { passive: true });
-    }
-    if (pageType() === 'auth') {
-      var authRoot = qs('#authRoot');
-      if (authRoot) {
-        try {
-          var authObserver = new MutationObserver(function () { scheduleAuthCardHeight(); });
-          authObserver.observe(authRoot, { attributes: true, subtree: true, attributeFilter: ['style', 'data-auth-current', 'class'] });
-        } catch (_) {}
-      }
     }
     try {
       var observer = new MutationObserver(function () {

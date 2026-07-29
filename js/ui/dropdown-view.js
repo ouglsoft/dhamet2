@@ -86,7 +86,6 @@
 
     var wrapper = document.createElement("span");
     wrapper.className = "z-select-dropdown";
-    if (select.classList.contains("ai-level-select")) wrapper.classList.add("is-ai-level");
 
     var trigger = document.createElement("button");
     trigger.type = "button";

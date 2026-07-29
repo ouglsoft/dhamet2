@@ -69,7 +69,7 @@ for (const [page, info] of Object.entries(signatures)) {
   const actual = crypto.createHash("sha256").update(Buffer.from(JSON.stringify(canonical))).digest("hex");
   // Stored signature was generated from the same canonical JSON representation.
   if (actual !== info.jsonSha256) {
-    throw new Error(`Visible ${page} DOM differs from primary UI: expected ${info.jsonSha256}, actual ${actual}`);
+    throw new Error(`Visible ${page} DOM differs from approved online-only UI: expected ${info.jsonSha256}, actual ${actual}`);
   }
 }
-console.log("primary visible lobby and game DOM structures match");
+console.log("approved online-only lobby and game DOM structures match");

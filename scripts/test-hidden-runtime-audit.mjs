@@ -29,9 +29,19 @@ assert.match(online, /_applyRemoteState:\s*function \(data, applyOptions\)/);
 assert.match(online, /const skipFx = !!\(applyOptions && applyOptions\.skipFx\)/);
 assert.doesNotMatch(online, /__skipFx/);
 assert.doesNotMatch(online, /_maybeRecordOpponentMoveForTraining/);
+const onlineOnlyCorpus = [game, online, ui, souflaView, read('js/message-parity-runtime.js')].join('\n');
+for (const forbidden of [
+  /\bTrainRecorder\b/i,
+  /\bDhametAI\b|\bAI_LEVEL\w*\b|\baiLevel\w*\b/i,
+  /showSouflaAgainstHuman|soufla\.cpu|players\.computer/i,
+  /vsComputer|normalizeAdvancedSettings|thinkTime|evalNoise|moveMistake/i,
+  /controls-pvc|mode-pvc|btnEndLocalMatch|btnNew|btnSave|btnResume/i,
+  /\bSessionGame\b/i,
+  /availableSouflaForHuman|isHumanTurn|btnExportHuman|btnHint/i,
+]) assert.doesNotMatch(onlineOnlyCorpus, forbidden);
 
 const prefillCalls = ui.match(/UI\.showSettingsModal\(prefill\)/g) || [];
-assert.equal(prefillCalls.length, 1, 'only the intentional advanced-settings Back action may reuse prefill');
+assert.equal(prefillCalls.length, 0, 'the online-only settings modal must not retain advanced-settings prefill paths');
 assert.doesNotMatch(ui, /modals\.forcedOpening[\s\S]{0,500}showSettingsModal\(prefill\)/);
 assert.doesNotMatch(ui, /!Game\.history\.length[\s\S]{0,350}showSettingsModal\(prefill\)/);
 
@@ -78,7 +88,6 @@ context.Game = {
 context.Turn = { ctx: null, start() {} };
 context.Visual = new Proxy({}, { get: () => () => {} });
 context.UI = new Proxy({}, { get: () => () => {} });
-context.SessionGame = { saveSoon() {} };
 context.Input = { selected: null };
 context.DhametRules = {
   TOP: 1,

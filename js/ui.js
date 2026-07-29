@@ -757,58 +757,6 @@ try {
   if (typeof globalThis !== "undefined") globalThis.Visual = Visual;
 } catch (_) {}
 
-function trBegin(payload) {
-  try {
-    if (typeof TrainRecorder === "undefined") return null;
-    return TrainRecorder.beginDecision(payload);
-  } catch {
-    return null;
-  }
-}
-
-function trEnd(token, payload) {
-  try {
-    if (typeof TrainRecorder === "undefined") return;
-    TrainRecorder.endDecision(token, payload);
-  } catch {}
-}
-
-function _trFinalizeOnce(reason) {
-  try {
-    if (window.__zamat_tr_finalized) return;
-    try {
-      const isOnline = !!(window.Online && window.Online.isActive);
-      if (isOnline) {
-        let internalNav = false;
-        try {
-          const ts = parseInt(
-            (sessionStorage && sessionStorage.getItem("zamat.internalNavTs")) || "0",
-            10,
-          );
-          internalNav = !!(ts && Date.now() - ts < 2500);
-        } catch (e) {}
-        if (internalNav) return;
-      }
-    } catch (e) {}
-    if (window.Game && Game.gameOver) return;
-    if (
-      typeof TrainRecorder === "undefined" ||
-      !TrainRecorder ||
-      typeof TrainRecorder.finalizeAndUpload !== "function"
-    )
-      return;
-    window.__zamat_tr_finalized = true;
-    TrainRecorder.finalizeAndUpload({
-      winner: window.Game ? Game.winner : null,
-      endReason: String(reason || "disconnect"),
-    });
-  } catch {}
-}
-
-try {
-  window.addEventListener("pagehide", () => _trFinalizeOnce("disconnect"), { capture: true });
-} catch {}
-
 function boardIdxFromClient(canvas, clientX, clientY) {
   if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
@@ -831,46 +779,7 @@ function boardIdxFromClient(canvas, clientX, clientY) {
 
 
 
-function computerBusyKind() {
-  try {
-    if (window.Online && window.Online.isActive) return null;
-  } catch (_) {}
-
-  try {
-    if (document && document.body && document.body.classList) {
-      if (document.body.classList.contains("mode-pvp") || document.body.classList.contains("z-spectator")) return null;
-    }
-  } catch (_) {}
-
-  try {
-    if (window.Game && Game && Game.awaitingPenalty && Game.souflaPending) {
-      try {
-        if (Game.souflaPending && Game.souflaPending.penalizer === aiSide()) return "soufla";
-      } catch (_) {}
-    }
-  } catch (_) {}
-
-  try {
-    if (window.AI && typeof AI.isThinking === "function" && AI.isThinking()) {
-      try {
-        if (window.Game && Game && Game.player === aiSide()) return "move";
-      } catch (_) {}
-    }
-  } catch (_) {}
-
-  try {
-    if (window.Game && Game) {
-      if (Game.awaitingPenalty) return null;
-      if (Game.player === aiSide()) return "move";
-    }
-  } catch (_) {}
-
-  return null;
-}
-
-let __aiBusyToastAt = 0;
-
-function aiText(key, args) {
+function uiText(key, args) {
   return window.I18N && typeof window.I18N.text === "function"
     ? window.I18N.text(key, args)
     : String(key);
@@ -878,146 +787,10 @@ function aiText(key, args) {
 
 function showUiNotice(message, title, opts) {
   const cfg = opts && typeof opts === "object" ? { ...opts } : {};
-  cfg.title = title || cfg.title || aiText("modals.notice");
+  cfg.title = title || cfg.title || uiText("modals.notice");
   if (cfg.body == null && cfg.text == null) cfg.text = String(message == null ? "" : message);
-  if (!cfg.okLabel) cfg.okLabel = aiText("actions.ok");
+  if (!cfg.okLabel) cfg.okLabel = uiText("actions.ok");
   Modal.alert(cfg);
-}
-
-function formatAiThinkingSeconds(ms) {
-  const n = Number(ms);
-  if (!Number.isFinite(n) || n < 0) return "0";
-  const sec = n / 1000;
-  if (sec > 0 && sec < 1) return String(Math.round(sec * 10) / 10);
-  if (Math.abs(sec - Math.round(sec)) < 0.05) return String(Math.round(sec));
-  return String(Math.round(sec * 10) / 10);
-}
-
-function getAiThinkingContext() {
-  const adv = Game && Game.settings && Game.settings.advanced ? Game.settings.advanced : {};
-  const level = typeof normalizeAILevel === "function"
-    ? normalizeAILevel(adv.aiLevel || "medium")
-    : String(adv.aiLevel || "medium");
-  const levelLabel = aiText("settings.levels." + level) || level;
-
-  let isCritical = false;
-  try {
-    if (typeof detectCriticalState === "function") isCritical = !!detectCriticalState(Game.player);
-  } catch (_) {}
-
-  let cfg = null;
-  try {
-    if (typeof getAILevelConfig === "function") cfg = getAILevelConfig(level);
-  } catch (_) {}
-  if (!cfg && window.AI_LEVEL_CONFIGS) cfg = window.AI_LEVEL_CONFIGS[level] || window.AI_LEVEL_CONFIGS.medium || null;
-
-  const baseMs = Math.max(0, Number((cfg && cfg.thinkTimeMs) || adv.thinkTimeMs || 0) || 0);
-  const boostMs = Math.max(0, Number((cfg && cfg.timeBoostCriticalMs) || adv.timeBoostCriticalMs || 0) || 0);
-  const minSeconds = formatAiThinkingSeconds(baseMs);
-  const maxSeconds = formatAiThinkingSeconds(baseMs + boostMs);
-  const durationLine = aiText("status.aiThinkingMoveLevelDuration", {
-    level: levelLabel,
-    min: minSeconds,
-    max: maxSeconds,
-  });
-
-  return { adv, level, levelLabel, isCritical, baseMs, boostMs, minSeconds, maxSeconds, durationLine };
-}
-
-function openAiBusyMoveModal(info) {
-  if (!(window.Modal && Modal && typeof Modal.alert === "function")) return false;
-
-  const wrap = document.createElement("div");
-  wrap.style.textAlign = "center";
-  wrap.style.fontSize = "1.1em";
-  wrap.style.lineHeight = "1.55";
-  wrap.style.whiteSpace = "normal";
-
-  const waitLine = document.createElement("div");
-  waitLine.textContent = aiText("status.aiThinkingMoveWaitLine");
-
-  const levelLine = document.createElement("div");
-  levelLine.textContent = info.durationLine || `${aiText("status.currentLevel")}: ${info.levelLabel}`;
-
-  const noteLine = document.createElement("div");
-  noteLine.textContent = aiText("status.aiThinkingMoveLevelNote");
-
-  wrap.appendChild(waitLine);
-  wrap.appendChild(document.createElement("br"));
-  wrap.appendChild(levelLine);
-  wrap.appendChild(document.createElement("br"));
-  wrap.appendChild(noteLine);
-
-  Modal.alert({
-    title: aiText("status.aiThinkingMove"),
-    body: wrap,
-    okLabel: aiText("actions.ok"),
-    okClassName: "primary",
-  });
-  return true;
-}
-
-function toastComputerBusy(kind) {
-  try {
-    if (!window.Game) return;
-
-    const now = Date.now();
-    if (now - (__aiBusyToastAt || 0) < 350) return;
-
-    let msg = "";
-    let title = null;
-
-    if (kind === "soufla") {
-      msg = aiText("status.aiThinkingSoufla");
-    } else {
-      try {
-        const info = getAiThinkingContext();
-        title = aiText("status.aiThinkingMove");
-        msg = [
-          aiText("status.aiThinkingMoveWaitLine"),
-          info.durationLine || `${aiText("status.currentLevel")}: ${info.levelLabel}`,
-          aiText("status.aiThinkingMoveLevelNote"),
-        ].join("\n");
-        if (openAiBusyMoveModal(info)) {
-          __aiBusyToastAt = now;
-          return;
-        }
-      } catch (_) {
-        msg = aiText("status.aiThinkingMove");
-        title = null;
-      }
-    }
-
-    try {
-      showUiNotice(msg, title, { allowSpectator: true });
-      __aiBusyToastAt = now;
-    } catch (_) {
-      __aiBusyToastAt = 0;
-    }
-  } catch (_) {}
-}
-
-let __aiThinkingNoticeShownKey = null;
-
-function showAiThinkingNoticeOncePerTurn() {
-  try {
-    if (!window.AI || typeof window.AI.isThinking !== "function") return;
-    if (!AI.isThinking()) return;
-    if (!window.Game) return;
-
-    const key = String(Game.moveCount) + "|" + String(Game.player);
-    if (__aiThinkingNoticeShownKey === key) return;
-    __aiThinkingNoticeShownKey = key;
-
-    const info = getAiThinkingContext();
-    const msg = [
-      aiText("status.aiThinkingMoveWaitLine"),
-      info.durationLine || `${aiText("status.currentLevel")}: ${info.levelLabel}`,
-      aiText("status.aiThinkingMoveLevelNote"),
-    ].join("\n");
-
-    showUiNotice(msg, aiText("status.aiThinkingMove"), { allowSpectator: true });
-  } catch (_) {}
 }
 
 const Input = {
@@ -1072,27 +845,6 @@ const Input = {
     const idx = boardIdxFromClient(cv, ev.clientX, ev.clientY);
     if (idx == null) return;
 
-    try {
-      const busy = computerBusyKind();
-      if (busy) {
-        const clickedValue = valueAt(idx);
-        if (clickedValue) {
-          Input.selected = null;
-          try {
-            Visual.setHighlightCells([]);
-            Visual.draw();
-          } catch (_) {}
-
-          try {
-            if (window.UI && typeof UI.updateStatus === "function") UI.updateStatus();
-          } catch (_) {}
-
-          toastComputerBusy(busy);
-        }
-        return;
-      }
-    } catch (_) {}
-
     if (Game.awaitingPenalty) {
       return;
     }
@@ -1104,7 +856,7 @@ const Input = {
     }
 
     if (Game.forcedEnabled && Game.forcedPly < 10) {
-      if (Game.player !== humanSide()) return;
+      if (Game.player !== localPlayerSide()) return;
 
       const openingOptions = getForcedOpeningOptions();
       if (!openingOptions.length) return;
@@ -1228,15 +980,6 @@ const Input = {
             Visual.setHighlightCells([]);
 
             Turn.finishTurnAndSoufla();
-
-            if (
-              !Game.awaitingPenalty &&
-              !Game.gameOver &&
-              Game.player === aiSide() &&
-              !(Game.forcedEnabled && Game.forcedPly < 10)
-            ) {
-              window.AI && window.AI.scheduleMove();
-            }
             return;
           }
 
@@ -1276,15 +1019,7 @@ const Input = {
       }
     }
 
-    if (Game.player !== humanSide()) {
-      try {
-        const onlineActive = !!(window.Online && window.Online.isActive);
-        if (!onlineActive && Game.player === aiSide()) {
-          showAiThinkingNoticeOncePerTurn();
-        }
-      } catch (_) {}
-      return;
-    }
+    if (Game.player !== localPlayerSide()) return;
     const v = valueAt(idx);
     if (Input.selected == null) {
       if (!v || pieceOwner(v) !== Game.player) {
@@ -1320,12 +1055,6 @@ const Input = {
       if (isCap) {
         if (!Turn.ctx) Turn.start();
         Turn.beginCapture(fromIdx);
-        const tr = trBegin({
-          fromIdx,
-          toIdx,
-          action: encodeAction(fromIdx, toIdx),
-          actor: Game.player,
-        });
         try { Visual && typeof Visual.consumeTurnClear === "function" && Visual.consumeTurnClear(); } catch (_) {}
         applyMove(fromIdx, toIdx, true, jumped);
         Turn.recordCapture();
@@ -1333,8 +1062,6 @@ const Input = {
         Game.chainPos = toIdx;
         Game.lastMovedTo = toIdx;
         Visual.setLastMovePath(Game.lastMoveFrom, Game.lastMovePath);
-
-        trEnd(tr, { cap: 1, fromStr: rcStr(fromIdx), toStr: rcStr(toIdx) });
 
         const caps = generateCapturesFrom(toIdx, valueAt(toIdx));
         if (caps.length === 0) {
@@ -1349,20 +1076,12 @@ const Input = {
           Visual.draw();
           return;
         }
-        const tr = trBegin({
-          fromIdx,
-          toIdx,
-          action: encodeAction(fromIdx, toIdx),
-          actor: Game.player,
-        });
         try { Visual && typeof Visual.consumeTurnClear === "function" && Visual.consumeTurnClear(); } catch (_) {}
         applyMove(fromIdx, toIdx, false, null);
         Game.inChain = false;
         Game.chainPos = null;
         Game.lastMovedTo = toIdx;
         Visual.setLastMove(fromIdx, toIdx);
-
-        trEnd(tr, { cap: 0, fromStr: rcStr(fromIdx), toStr: rcStr(toIdx) });
 
         maybeQueueDeferredPromotion(toIdx);
         Turn.finishTurnAndSoufla();
@@ -1376,15 +1095,6 @@ const Input = {
         Visual.setHighlightCells([]);
       }
       Visual.draw();
-
-      if (
-        !Game.awaitingPenalty &&
-        !Game.gameOver &&
-        Game.player === aiSide() &&
-        !(Game.forcedEnabled && Game.forcedPly < 10)
-      ) {
-        window.AI && window.AI.scheduleMove();
-      }
     }
   },
 };
@@ -1398,7 +1108,7 @@ function restoreCaptureContinuationVisualState() {
   Visual.setHighlightCells([[r, c]]);
   syncEndKillAvailability(true);
 
-  if (!Game.killTimer.running && Game.player === humanSide()) {
+  if (!Game.killTimer.running && Game.player === localPlayerSide()) {
     Game.killTimer.start();
   }
 
@@ -1458,7 +1168,7 @@ function endKillPressed() {
     }
   } catch (_) {}
 
-  if (Game.player !== humanSide()) {
+  if (Game.player !== localPlayerSide()) {
     try {
       if (window.Online && window.Online.isActive && !window.Online.isSpectator) {
         showUiNotice(t("status.wait"));
@@ -1525,20 +1235,6 @@ function endKillPressed() {
     completeForcedOpeningPly();
   }
 
-  try {
-    const fromIdx = Game.chainPos ?? Game.lastMovedTo ?? null;
-    if (
-      typeof TrainRecorder !== "undefined" &&
-      TrainRecorder &&
-      typeof TrainRecorder.beginMoveBoundary === "function"
-    ) {
-      TrainRecorder.beginMoveBoundary({ type: "end_chain", actor: Game.player, fromIdx });
-    }
-    const tr = trBegin({ action: ACTION_ENDCHAIN, actor: Game.player, fromIdx });
-    const fromStr = fromIdx != null ? rcStr(fromIdx) : "END";
-    trEnd(tr, { cap: 0, fromStr, toStr: "END" });
-  } catch {}
-
   maybeQueueDeferredPromotion(Game.chainPos ?? Game.lastMovedTo);
 
   Game.inChain = false;
@@ -1552,15 +1248,6 @@ function endKillPressed() {
   } catch (_) {}
 
   Turn.finishTurnAndSoufla();
-
-  if (
-    !Game.awaitingPenalty &&
-    !Game.gameOver &&
-    Game.player === aiSide() &&
-    !(Game.forcedEnabled && Game.forcedPly < 10)
-  ) {
-    window.AI && window.AI.scheduleMove();
-  }
 }
 
 const UI = {
@@ -1568,14 +1255,10 @@ const UI = {
   restoreCaptureContinuationVisualState,
   updateAll() {
     this.updateStatus();
-    this.updateAiLevelDisplay();
     try { if (window.ZGamePlayers && typeof window.ZGamePlayers.refresh === "function") window.ZGamePlayers.refresh(); } catch (_) {}
     try { normalizeMobileControlIcons(); } catch (_) {}
     Visual.draw();
 
-    try {
-      SessionGame.saveSoon();
-    } catch {}
   },
   _setStatusWithPawn(txt, pawnSide) {
     const msgEl = qs("#statusTextMsg") || qs("#statusText");
@@ -1600,96 +1283,6 @@ const UI = {
       return;
     }
     this._setStatusWithPawn(`${t("status.turn")} ${sideLabel(Game.player)}`, Game.player);
-  },
-
-  updateAiLevelDisplay() {
-    try {
-      const box = qs("#aiLevelBox");
-      const valEl = qs("#aiLevelValue");
-      const prefixEl = qs("#aiLevelPrefix");
-      if (!box || !valEl) return;
-
-      try {
-        const lang =
-          document.documentElement && document.documentElement.lang
-            ? document.documentElement.lang
-            : "en";
-        box.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
-        valEl.setAttribute("dir", lang === "ar" ? "auto" : "ltr");
-      } catch (_) {}
-
-      const onlineActive = !!(window.Online && window.Online.isActive);
-      const isPvp = !!(
-        document.documentElement &&
-        document.documentElement.classList &&
-        document.documentElement.classList.contains("mode-pvp")
-      );
-      if (onlineActive || isPvp) {
-        box.style.display = "none";
-        return;
-      }
-      box.style.display = "";
-      if (prefixEl) prefixEl.textContent = t("settings.aiLevel");
-
-      try {
-        Game.normalizeAdvancedSettings();
-      } catch (_) {}
-      const adv = Game.settings && Game.settings.advanced ? Game.settings.advanced : {};
-      const normalizeLevel = (value) => typeof normalizeAILevel === "function"
-        ? normalizeAILevel(value || "medium")
-        : String(value || "medium");
-      const actualLevel = normalizeLevel(adv.aiLevel || "medium");
-      const pendingLevel = Game.pendingAILevel ? normalizeLevel(Game.pendingAILevel) : null;
-      const currentLevel = pendingLevel || actualLevel;
-      const levels = Array.isArray(window.AI_LEVEL_ORDER)
-        ? window.AI_LEVEL_ORDER
-        : ["beginner", "easy", "medium", "hard", "strong", "expert"];
-
-      const existingSelect = valEl.querySelector && valEl.querySelector("select.ai-level-select");
-      if (existingSelect) {
-        existingSelect.setAttribute("aria-label", t("settings.aiLevel"));
-        existingSelect.dataset.currentLevel = currentLevel;
-        existingSelect.dataset.actualLevel = actualLevel;
-        Array.from(existingSelect.options || []).forEach((option) => {
-          try { option.textContent = t("settings.levels." + normalizeLevel(option.value)); } catch (_) {}
-        });
-        if (existingSelect.value !== currentLevel) existingSelect.value = currentLevel;
-        return;
-      }
-
-      valEl.innerHTML = "";
-      const select = document.createElement("select");
-      select.id = "aiLevelQuickSelect";
-      select.className = "ai-level-select";
-      select.setAttribute("aria-label", t("settings.aiLevel"));
-      select.dataset.currentLevel = currentLevel;
-      select.dataset.actualLevel = actualLevel;
-      for (const level of levels) {
-        const option = document.createElement("option");
-        option.value = level;
-        option.textContent = t("settings.levels." + level);
-        if (level === currentLevel) option.selected = true;
-        select.appendChild(option);
-      }
-
-      select.addEventListener("change", () => {
-        const nextLevel = normalizeLevel(select.value);
-        const actualBefore = normalizeLevel(select.dataset.actualLevel || actualLevel);
-        try {
-          Game.pendingAILevel = nextLevel === actualBefore ? null : nextLevel;
-          select.value = nextLevel;
-          select.dataset.currentLevel = nextLevel;
-          select.dataset.actualLevel = actualBefore;
-          if (typeof saveSessionSettings === "function") saveSessionSettings();
-          if (window.UI && typeof UI.updateAll === "function") UI.updateAll();
-          if (window.ZGamePlayers && typeof window.ZGamePlayers.refresh === "function") window.ZGamePlayers.refresh();
-          setTimeout(() => { try { select.blur(); } catch (_) {} }, 0);
-        } catch (_) {}
-      });
-
-
-      valEl.appendChild(select);
-    } catch (_) {}
   },
 
   updateCounts({ top, bot, tKings, bKings }) {
@@ -1754,283 +1347,79 @@ const UI = {
     } catch (_) {}
     logLine(String(txt ?? ""));
   },
-  showSettingsModal(prefill) {
+  showSettingsModal() {
     const wrap = document.createElement("div");
     wrap.className = "settings-general";
-
-    const isOnline = !!(window.Online && window.Online.isActive);
-
-    try {
-      Game.normalizeAdvancedSettings();
-    } catch (_) {}
-
-    const adv = Game.settings && Game.settings.advanced ? Game.settings.advanced : {};
-    const levels = Array.isArray(window.AI_LEVEL_ORDER)
-      ? window.AI_LEVEL_ORDER
-      : ["beginner", "easy", "medium", "hard", "strong", "expert"];
-    const normalizeLevel = (value) => typeof normalizeAILevel === "function"
-      ? normalizeAILevel(value || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"))
-      : String(value || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
-    const selectedLevel = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
-
     const esc = (value) => String(value == null ? "" : value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-    const mkOptions = (arr, selected, labelFn) =>
-      arr
-        .map((v) => {
-          const val = String(v);
-          const lab = labelFn ? labelFn(v) : val;
-          return `<option value="${esc(val)}" ${String(selected) === val ? "selected" : ""}>${esc(lab)}</option>`;
-        })
-        .join("");
-
-    const row = (label, control, hint = "") => `
-      <div class="settings-row">
-        <div class="settings-label"><b>${label}</b>${hint ? `<small>${hint}</small>` : ""}</div>
-        <div class="settings-control">${control}</div>
-      </div>
-    `;
-
-    const starterChoices = [
-      ["white", t("players.white")],
-      ["black", t("players.black")],
-    ];
-    const themeChoices = [
-      ["light", t("settings.light")],
-      ["dark", t("settings.dark")],
-    ];
-    const boardChoices = [
-      ["2d", t("settings.board2d")],
-      ["3d", t("settings.board3d")],
-    ];
-
-    const aiRows = !isOnline ? `
-      ${row(
-        t("settings.aiLevel"),
-        `<select id="advAILevel">${mkOptions(levels, selectedLevel, (level) => t("settings.levels." + level))}</select>`,
-        t("settings.aiLevelHint"),
-      )}
-      ${row(
-        t("settings.starter"),
-        `<select id="setStarter">${starterChoices
-          .map(([value, label]) => `<option value="${value}" ${Game.settings.starter === value ? "selected" : ""}>${label}</option>`)
-          .join("")}</select>`,
-      )}
-    ` : "";
-
-    wrap.innerHTML = `
-      <div class="settings-list simple-settings">
-        ${aiRows}
-        ${row(
-          t("settings.theme"),
-          `<select id="setTheme">${themeChoices
-            .map(([value, label]) => `<option value="${value}" ${Game.settings.theme === value ? "selected" : ""}>${label}</option>`)
-            .join("")}</select>`,
-        )}
-        ${row(
-          t("settings.boardStyle"),
-          `<select id="setBoardStyle">${boardChoices
-            .map(([value, label]) => `<option value="${value}" ${(Game.settings.boardStyle || "2d") === value ? "selected" : ""}>${label}</option>`)
-            .join("")}</select>`,
-        )}
-        ${row(
-          t("settings.coords"),
-          `<label class="checkline"><input id="setCoords" type="checkbox" ${Game.settings.showCoords ? "checked" : ""} /> <span>${t("settings.showCoords")}</span></label>`,
-        )}
-      </div>
-    `;
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const row = (label, control) => `<label class="settings-row"><span class="settings-label">${esc(label)}</span><span class="settings-control">${control}</span></label>`;
+    const themeChoices = [["light", t("settings.light")], ["dark", t("settings.dark")]];
+    const boardChoices = [["2d", t("settings.board2d")], ["3d", t("settings.board3d")]];
+    wrap.innerHTML = `<div class="settings-list simple-settings">
+      ${row(t("settings.theme"), `<select id="setTheme">${themeChoices.map(([value, label]) => `<option value="${value}" ${Game.settings.theme === value ? "selected" : ""}>${label}</option>`).join("")}</select>`)}
+      ${row(t("settings.boardStyle"), `<select id="setBoardStyle">${boardChoices.map(([value, label]) => `<option value="${value}" ${(Game.settings.boardStyle || "2d") === value ? "selected" : ""}>${label}</option>`).join("")}</select>`)}
+      ${row(t("settings.coords"), `<label class="checkline"><input id="setCoords" type="checkbox" ${Game.settings.showCoords ? "checked" : ""} /> <span>${t("settings.showCoords")}</span></label>`)}
+    </div>`;
 
     const settingsDropdowns = [];
     try {
       qsa("select", wrap).forEach((selectEl) => {
-        selectEl.addEventListener("change", () => {
-          setTimeout(() => { try { selectEl.blur(); } catch (_) {} }, 0);
-        });
-        try {
-          if (window.DhametDropdownView) {
-            window.DhametDropdownView.enhance(selectEl);
-            settingsDropdowns.push(selectEl);
-          }
-        } catch (_) {}
+        selectEl.addEventListener("change", () => setTimeout(() => { try { selectEl.blur(); } catch (_) {} }, 0));
+        if (window.DhametDropdownView) {
+          window.DhametDropdownView.enhance(selectEl);
+          settingsDropdowns.push(selectEl);
+        }
       });
     } catch (_) {}
-
-    const onlineNow = () => !!(window.Online && window.Online.isActive);
-    const levelLabel = (value) => t("settings.levels." + normalizeLevel(value));
-    const starterLabel = (value) => value === "black" ? t("players.black") : t("players.white");
     const themeLabel = (value) => value === "dark" ? t("settings.dark") : t("settings.light");
     const boardLabel = (value) => value === "3d" ? t("settings.board3d") : t("settings.board2d");
     const boolLabel = (value) => value ? t("settings.enabled") : t("settings.disabled");
-
-    const renderSettingsResult = (changes, notes) => {
-      const extra = notes ? `<p class="settings-change-note">${esc(notes.trim())}</p>` : "";
-      if (!changes.length) {
-        return `<div class="settings-feedback warn"><p>${esc(t("modals.applySettings.noChanges"))}</p>${extra}</div>`;
-      }
-      const isRtl = !!(document.documentElement && document.documentElement.dir === "rtl");
-      const arrow = isRtl ? "←" : "→";
-      const items = changes
-        .map((ch) => `<li><b>${esc(ch.label)}:</b> <bdi>${esc(ch.from)}</bdi> <span class="settings-change-arrow">${arrow}</span> <bdi>${esc(ch.to)}</bdi>${ch.note ? ` <small>${esc(ch.note)}</small>` : ""}</li>`)
-        .join("");
-      return `<div class="settings-feedback ok"><p>${esc(t("modals.applySettings.applied"))}</p><div><b>${esc(t("modals.applySettings.changedTitle"))}</b></div><ul class="settings-change-list">${items}</ul>${extra}</div>`;
+    const renderResult = (changes) => {
+      if (!changes.length) return `<div class="settings-feedback warn"><p>${esc(t("modals.applySettings.noChanges"))}</p></div>`;
+      const arrow = document.documentElement && document.documentElement.dir === "rtl" ? "←" : "→";
+      const items = changes.map((change) => `<li><b>${esc(change.label)}:</b> <bdi>${esc(change.from)}</bdi> <span class="settings-change-arrow">${arrow}</span> <bdi>${esc(change.to)}</bdi></li>`).join("");
+      return `<div class="settings-feedback ok"><p>${esc(t("modals.applySettings.applied"))}</p><div><b>${esc(t("modals.applySettings.changedTitle"))}</b></div><ul class="settings-change-list">${items}</ul></div>`;
     };
-
     const applyNow = () => {
       const changes = [];
-      const addChange = (label, from, to, note = "") => {
-        if (String(from) === String(to) && !note) return;
-        changes.push({ label, from, to, note });
-      };
-
-      const starterBefore = Game.settings.starter;
-      const levelBefore = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
+      const add = (label, from, to) => { if (String(from) !== String(to)) changes.push({ label, from, to }); };
       const themeBefore = Game.settings.theme === "dark" ? "dark" : "light";
       const boardBefore = (Game.settings.boardStyle || "2d") === "3d" ? "3d" : "2d";
       const coordsBefore = !!Game.settings.showCoords;
-
-      let starterChanged = false;
-      let starterDeferred = false;
-
-      if (!onlineNow()) {
-        const level = normalizeLevel(qs("#advAILevel", wrap)?.value || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
-        if (level !== levelBefore) {
-          if (!Game.settings) Game.settings = {};
-          if (window.DhametAIConfig && typeof window.DhametAIConfig.createDefaultAdvancedSettings === "function") {
-            Game.settings.advanced = window.DhametAIConfig.createDefaultAdvancedSettings(level);
-          } else {
-            Game.settings.advanced = Object.assign({}, Game.settings.advanced || {}, { aiLevel: level });
-          }
-          Game.pendingAILevel = null;
-          addChange(t("settings.aiLevel"), levelLabel(levelBefore), levelLabel(level), t("settings.aiLevelNextMoveNote"));
-        }
-
-        const starterEl = qs("#setStarter", wrap);
-        if (starterEl) {
-          const nextStarter = starterEl.value === "black" ? "black" : "white";
-          starterChanged = String(starterBefore) !== String(nextStarter);
-          if (starterChanged) addChange(t("settings.starter"), starterLabel(starterBefore), starterLabel(nextStarter));
-          Game.settings.starter = nextStarter;
-        }
-      }
-
       const theme = qs("#setTheme", wrap)?.value === "dark" ? "dark" : "light";
       const boardStyle = qs("#setBoardStyle", wrap)?.value === "3d" ? "3d" : "2d";
       const showCoords = !!qs("#setCoords", wrap)?.checked;
-
-      if (theme !== themeBefore) addChange(t("settings.theme"), themeLabel(themeBefore), themeLabel(theme));
-      if (boardStyle !== boardBefore) addChange(t("settings.boardStyle"), boardLabel(boardBefore), boardLabel(boardStyle));
-      if (showCoords !== coordsBefore) addChange(t("settings.coords"), boolLabel(coordsBefore), boolLabel(showCoords));
-
+      add(t("settings.theme"), themeLabel(themeBefore), themeLabel(theme));
+      add(t("settings.boardStyle"), boardLabel(boardBefore), boardLabel(boardStyle));
+      add(t("settings.coords"), boolLabel(coordsBefore), boolLabel(showCoords));
       Game.settings.theme = theme;
       Game.settings.boardStyle = boardStyle;
       Game.settings.showCoords = showCoords;
       applyTheme(theme);
       applyBoardStyle(boardStyle);
       Visual.setShowCoords(showCoords);
-
-      if (!onlineNow() && starterChanged) {
-        const atStart =
-          !Game.gameOver &&
-          (Game.moveCount | 0) === 0 &&
-          (Game.forcedPly | 0) === 0 &&
-          !Game.inChain &&
-          Game.lastMovedTo == null &&
-          (Game.history && Game.history.length ? Game.history.length === 0 : true);
-
-        if (atStart) {
-          try { SessionGame.clear(); } catch (_) {}
-          setupInitialBoard();
-          try {
-            if (window.DhametMatchCoordinator) window.DhametMatchCoordinator.resetPresentation({ draw: true });
-            else Visual.draw();
-            Turn.start();
-            scheduleForcedOpeningAutoIfNeeded();
-          } catch (_) {}
-          try {
-            if (!Game.gameOver && Game.player === aiSide() && !(Game.forcedEnabled && Game.forcedPly < 10)) {
-              window.AI && window.AI.scheduleMove();
-            }
-          } catch (_) {}
-        } else {
-          starterDeferred = true;
-        }
-      }
-
-      try { Visual.draw(); } catch (_) {}
       try { UI.updateAll(); } catch (_) {}
       try { saveSessionSettings(); } catch (_) {}
-
-      const notes = starterDeferred ? "\n" + t("settings.starterNextGameNote") : "";
       Modal.close();
-      setTimeout(() => {
-        showUiNotice(null, t("modals.applySettings.title"), {
-          body: renderSettingsResult(changes, notes),
-          okLabel: t("actions.ok"),
-        });
-      }, 0);
+      setTimeout(() => showUiNotice(null, t("modals.applySettings.title"), { body: renderResult(changes), okLabel: t("actions.ok") }), 0);
     };
-
-    const keyHandler = (e) => {
+    const keyHandler = (event) => {
       if (!Modal.isOpen()) return;
       const bodyEl = Modal.getBody();
       if (!bodyEl || !bodyEl.querySelector(".settings-general")) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        Modal.close();
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        applyNow();
-      }
+      if (event.key === "Escape") { event.preventDefault(); Modal.close(); }
+      else if (event.key === "Enter") { event.preventDefault(); applyNow(); }
     };
-
     document.addEventListener("keydown", keyHandler);
-
     Modal.open({
-      title: t("buttons.settings"),
-      body: wrap,
-      modalClassName: "z-apply-settings",
-      onEnter: applyNow,
+      title: t("buttons.settings"), body: wrap, modalClassName: "z-apply-settings", onEnter: applyNow,
       onClose: () => {
         document.removeEventListener("keydown", keyHandler);
-        try {
-          if (window.DhametDropdownView) settingsDropdowns.forEach((selectEl) => window.DhametDropdownView.destroy(selectEl));
-        } catch (_) {}
+        try { if (window.DhametDropdownView) settingsDropdowns.forEach((selectEl) => window.DhametDropdownView.destroy(selectEl)); } catch (_) {}
       },
       buttons: [
         { label: t("modals.apply"), className: "ok", onClick: applyNow },
-        ...(!isOnline ? [{ label: t("advHelp.title"), className: "adv-help", onClick: () => UI.showAdvancedSettingsHelp(prefill) }] : []),
         { label: t("actions.cancel"), className: "ghost", onClick: () => Modal.close() },
-      ],
-    });
-  },
-
-  showAdvancedSettingsHelp(prefill) {
-    const levels = Array.isArray(window.AI_LEVEL_ORDER)
-      ? window.AI_LEVEL_ORDER
-      : ["beginner", "easy", "medium", "hard", "strong", "expert"];
-    const rows = levels.map((level) => `
-      <section class="ai-level-help-item">
-        <h3>${t("settings.aiLevelWithValue", { level: t("settings.levels." + level) })}</h3>
-        <p>${t("advHelp.levelDetails." + level)}</p>
-      </section>
-    `).join("");
-    const body = `<div class="rules-container ai-level-help">
-      <p>${t("advHelp.levelsIntro")}</p>
-      ${rows}
-    </div>`;
-
-    Modal.open({
-      title: t("advHelp.title"),
-      body,
-      buttons: [
-        { label: t("actions.back"), className: "ghost", onClick: () => UI.showSettingsModal(prefill) },
-        { label: t("actions.close"), className: "ok", onClick: () => Modal.close() },
       ],
     });
   },
@@ -2040,9 +1429,6 @@ const UI = {
       game: Game, t, Modal, Visual, BOARD_N, idxToRC, toViewRC, valueAt, boardIdxFromClient,
       applySouflaDecision, UI,
     });
-  },
-  showSouflaAgainstHuman(decision, pending) {
-    return SouflaViewModule.showSouflaAgainstHuman(decision, pending, { t, Modal, rcStr });
   },
 };
 
@@ -2093,14 +1479,6 @@ function confirmUndo() {
   try {
     __beforeUndoSnap = typeof snapshotState === "function" ? snapshotState() : null;
   } catch {}
-  try {
-    if (
-      typeof TrainRecorder !== "undefined" &&
-      TrainRecorder &&
-      typeof TrainRecorder.rollbackLastMoveBoundary === "function"
-    )
-      TrainRecorder.rollbackLastMoveBoundary();
-  } catch {}
   restoreSnapshot(snap);
 
   try {
@@ -2131,130 +1509,13 @@ function confirmUndo() {
     Turn.start();
   } catch {}
   try {
-    scheduleForcedOpeningAutoIfNeeded();
   } catch {}
   try {
     UI.updateStatus();
   } catch {}
 
   try {
-    if (
-      !Game.awaitingPenalty &&
-      !Game.gameOver &&
-      Game.player === aiSide() &&
-      !(Game.forcedEnabled && Game.forcedPly < 10)
-    ) {
-      window.AI && window.AI.scheduleMove();
-    }
   } catch {}
-}
-
-function saveGame() {
-  const killMs =
-    Game.killTimer.elapsedMs +
-    (Game.killTimer.running ? performance.now() - Game.killTimer.startTs : 0);
-
-  const data = {
-    v: 2,
-    snapshot: snapshotState(),
-    forcedSeqKey:
-      Game.forcedSeq === FO_TOP ? "FO_TOP" : Game.forcedSeq === FO_BOT ? "FO_BOT" : null,
-    settings: Game.settings,
-    history: Game.history,
-    logHtml: qs("#log") ? qs("#log").innerHTML : "",
-    killTimerMs: Math.max(0, killMs | 0),
-  };
-
-  localStorage.setItem("zamat.save", JSON.stringify(data));
-
-  Modal.alert({
-    title: t("buttons.save"),
-    body: `<div>${t("log.save.done")}</div>`,
-    okLabel: t("actions.close"),
-  });
-}
-
-function resumeGame() {
-  const raw = localStorage.getItem("zamat.save");
-  if (!raw) {
-    Modal.alert({
-      title: t("buttons.resume"),
-      body: `<div>${t("log.save.none")}</div>`,
-      okLabel: t("actions.close"),
-    });
-    return;
-  }
-
-  function applySavedGame() {
-    try {
-      const data = JSON.parse(raw);
-      const snap = data.snapshot || data;
-
-      Game.board = snap.board;
-      Game.player = snap.player;
-      Game.inChain = !!snap.inChain;
-      Game.chainPos = snap.chainPos ?? null;
-      Game.lastMovedTo = snap.lastMovedTo ?? null;
-      Game.lastMovedFrom = snap.lastMovedFrom ?? null;
-      Game.moveCount = snap.moveCount ?? 0;
-      Game.forcedEnabled = typeof snap.forcedEnabled === "boolean" ? snap.forcedEnabled : true;
-      Game.forcedPly = typeof snap.forcedPly === "number" ? snap.forcedPly : 0;
-
-      Game.settings = data.settings || snap.settings || Game.settings;
-      Game.normalizeAdvancedSettings();
-      Game.history = Array.isArray(data.history) ? data.history : [];
-
-      if (data.forcedSeqKey === "FO_TOP") Game.forcedSeq = FO_TOP;
-      else if (data.forcedSeqKey === "FO_BOT") Game.forcedSeq = FO_BOT;
-      else {
-        try {
-          const fp = typeof snap.forcedPly === "number" ? snap.forcedPly | 0 : 0;
-          const cur = snap.player;
-          const base = fp % 2 === 0 ? cur : -cur;
-          Game.forcedSeq = base === TOP ? FO_TOP : FO_BOT;
-        } catch {
-          Game.forcedSeq = FO_BOT;
-        }
-      }
-
-      if (qs("#log") && typeof data.logHtml === "string") {
-        qs("#log").innerHTML = data.logHtml;
-      }
-
-      Game.killTimer.hardStop();
-      Game.killTimer.elapsedMs = typeof data.killTimerMs === "number" ? data.killTimerMs : 0;
-      UI.updateKillClock(Game.killTimer.elapsedMs | 0);
-      if (Game.inChain) Game.killTimer.start();
-
-      syncEndKillAvailability(Game.inChain);
-
-      Turn.start();
-      scheduleForcedOpeningAutoIfNeeded();
-      UI.updateAll();
-
-      Modal.alert({
-        title: t("buttons.resume"),
-        body: `<div>${t("log.save.resumed")}</div>`,
-        okLabel: t("actions.close"),
-      });
-    } catch (e) {
-      Modal.alert({
-        title: t("buttons.resume"),
-        body: `<div>${t("log.save.error")}</div>`,
-        okLabel: t("actions.close"),
-      });
-    }
-  }
-
-  Modal.twoAction({
-    title: t("buttons.resume"),
-    body: `<div>${t("log.save.confirm")}</div>`,
-    firstLabel: t("actions.cancel"),
-    firstClassName: "secondary",
-    secondLabel: t("buttons.resume"),
-    secondClassName: "primary",
-    onSecond: applySavedGame,
-  });
 }
 
 function souflaPressed() {
@@ -2293,9 +1554,9 @@ function souflaPressed() {
     showUiNotice(t("modals.soufla.forcedOpeningWarning"));
     return;
   }
-  if (Game.availableSouflaForHuman) {
+  if (Game.availableSouflaForLocalPlayer) {
     Game.awaitingPenalty = true;
-    Game.souflaPending = Game.availableSouflaForHuman;
+    Game.souflaPending = Game.availableSouflaForLocalPlayer;
     UI.showSouflaModal(Game.souflaPending);
     return;
   }
@@ -2318,88 +1579,8 @@ async function confirmMatchExitAction(onConfirm) {
   return true;
 }
 
-async function endLocalMatchPressed() {
-  try {
-    const isOnline = !!(window.Online && window.Online.isActive);
-    if (isOnline) return;
-
-    await confirmMatchExitAction(async () => {
-      try {
-        if (!window.__zamat_tr_finalized) {
-          window.__zamat_tr_finalized = true;
-          if (
-            typeof TrainRecorder !== "undefined" &&
-            TrainRecorder &&
-            typeof TrainRecorder.finalizeAndUpload === "function"
-          ) {
-            await Promise.race([
-              TrainRecorder.finalizeAndUpload({
-                winner: window.Game ? Game.winner : null,
-                endReason: "cancel",
-              }),
-              new Promise((r) => setTimeout(r, 1200)),
-            ]);
-          }
-        }
-      } catch {}
-
-      try {
-        SessionGame.clear();
-      } catch (_) {}
-      try {
-        localStorage.removeItem("zamat.activeGameId");
-      } catch (_) {}
-      try {
-        localStorage.removeItem("zamat.activeGameTs");
-      } catch (_) {}
-
-      const href = "https://ouglsoft.com/dhamet/pages/mode.html";
-      try {
-        location.replace(href);
-      } catch (_) {
-        try {
-          location.href = href;
-        } catch (_) {}
-      }
-    });
-  } catch (e) {
-    try {
-      const msg =
-        (window.I18N && typeof window.I18N.text === "function" ? window.I18N.text("modals.endMatch.confirm") || "" : "") ||
-        "هل تريد إنهاء المباراة؟";
-      if (confirm(msg)) {
-        try {
-          SessionGame.clear();
-        } catch (_) {}
-        const href = "https://ouglsoft.com/dhamet/pages/mode.html";
-        try {
-          location.replace(href);
-        } catch (_) {
-          try {
-            location.href = href;
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
-  }
-}
-
 function bindUI() {
   qs("#btnSoufla").addEventListener("click", souflaPressed);
-
-  try {
-    const endBtn = qs("#btnEndLocalMatch");
-    if (endBtn) {
-      const isOnline = !!(window.Online && window.Online.isActive);
-      const isSpectator = !!(
-        document.body &&
-        document.body.classList &&
-        document.body.classList.contains("z-spectator")
-      );
-      endBtn.style.display = !isOnline && !isSpectator ? "" : "none";
-      endBtn.addEventListener("click", endLocalMatchPressed);
-    }
-  } catch (_) {}
   qs("#btnUndo").addEventListener("click", confirmUndo);
   qs("#btnSync")?.addEventListener("click", async () => {
     try {
@@ -2420,48 +1601,7 @@ function bindUI() {
   qs("#btnMic")?.addEventListener("click", () => window.Online?.toggleMic?.());
   qs("#btnLeaveRoom")?.addEventListener("click", () => window.Online?.leaveRoom?.());
   qs("#btnSettings").addEventListener("click", () => UI.showSettingsModal());
-  qs("#btnNew")?.addEventListener("click", () => {
-    Modal.twoAction({
-      title: t("modals.newGame.title"),
-      body: `<div>${t("modals.newGame.confirm")}</div>`,
-      firstLabel: t("modals.yes"),
-      firstClassName: "ok",
-      onFirst: () => {
-        try {
-          SessionGame.clear();
-        } catch {}
-        setupInitialBoard();
-        Visual.clearCapturedOrder();
-        Visual.clearSouflaFX();
-        Visual.setHighlightCells([]);
-        Visual.clearForcedOpeningArrow();
-        Visual.setLastMove(null, null);
-        Visual.setUndoMove(null, null);
 
-        Visual.draw();
-        try {
-          Turn.start();
-        } catch {}
-        try {
-          scheduleForcedOpeningAutoIfNeeded();
-        } catch {}
-        try {
-          if (
-            !Game.gameOver &&
-            Game.player === aiSide() &&
-            !(Game.forcedEnabled && Game.forcedPly < 10)
-          ) {
-            window.AI && window.AI.scheduleMove();
-          }
-        } catch {}
-      },
-      secondLabel: t("modals.no"),
-      secondClassName: "ghost",
-    });
-  });
-
-  qs("#btnSave")?.addEventListener("click", saveGame);
-  qs("#btnResume")?.addEventListener("click", resumeGame);
   const endKillButton = qs("#btnEndKill");
   if (endKillButton) endKillButton.addEventListener("click", endKillPressed);
 
@@ -2486,22 +1626,6 @@ function bindUI() {
   }
 
   qs("#board").addEventListener("click", Input.onBoardClick);
-  const __boardPd = qs("#board");
-  if (__boardPd)
-    __boardPd.addEventListener(
-      "pointerdown",
-      (ev) => {
-        try {
-          const busy = computerBusyKind();
-          if (busy === "move" || busy === "soufla") {
-            try {
-              ev.preventDefault();
-            } catch (_) {}
-          }
-        } catch (_) {}
-      },
-      true,
-    );
 }
 
 function mountModeControls(_mode, isSpectator) {
@@ -2595,65 +1719,15 @@ function bindEndKillShortcut() {
 function init() {
   initI18n();
   loadSessionSettings();
-
   applyTheme(Game.settings.theme || AppPref.getTheme());
-  try {
-    window.ZamatControls &&
-      window.ZamatControls.mount(
-        document.body.classList.contains("mode-pvp"),
-        document.body.classList.contains("z-spectator"),
-      );
-  } catch (e) {}
+  try { window.ZamatControls?.mount?.(true, document.body.classList.contains("z-spectator")); } catch (_) {}
   bindUI();
   bindEndKillShortcut();
-
-  const _isOnlineMode = !!(
-    document.body &&
-    (document.body.classList.contains("mode-pvp") ||
-      document.body.classList.contains("z-spectator"))
-  );
-
-  if (!_isOnlineMode) {
-    let restored = false;
-    try {
-      restored = !!SessionGame.restore();
-    } catch {
-      restored = false;
-    }
-    if (!restored) {
-      setupInitialBoard();
-      try {
-        SessionGame.saveNow();
-      } catch {}
-    }
-  }
-
+  try { applyBoardStyle(Game.settings.boardStyle || "2d"); } catch (_) {}
   try {
-    applyBoardStyle(Game.settings.boardStyle || "2d");
-  } catch {}
-
-  try {
-    if (window.Online && typeof Online.initPresence === "function") {
-      Online.initPresence();
-    }
-    if (window.Online && typeof Online.initInvitesPassive === "function") {
-      Online.initInvitesPassive();
-    }
-  } catch {}
-
-  if (!_isOnlineMode) {
-    Visual.draw();
-    Turn.start();
-    scheduleForcedOpeningAutoIfNeeded();
-
-    if (
-      !Game.gameOver &&
-      Game.player === aiSide() &&
-      !(Game.forcedEnabled && Game.forcedPly < 10)
-    ) {
-      window.AI && window.AI.scheduleMove();
-    }
-  }
+    window.Online?.initPresence?.();
+    window.Online?.initInvitesPassive?.();
+  } catch (_) {}
 }
 
 window.addEventListener("load", () => {
