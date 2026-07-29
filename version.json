@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260729-v21-match-terminology",
-  "source": "firebase-online-only-native-rtdb-transport-v21-match-terminology",
+  "version": "20260729-v22-soufla-after-undo-sync",
+  "source": "firebase-online-only-native-rtdb-transport-v22-soufla-after-undo-sync",
   "uiReference": "approved-online-only-v21",
-  "release": "20260729-v21-match-terminology"
+  "release": "20260729-v22-soufla-after-undo-sync"
 }

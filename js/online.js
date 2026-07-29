@@ -2563,14 +2563,6 @@
               this._handlePresence(data);
             } catch (e) {}
     
-            try {
-              if (data.soufla && data.soufla.availableFor === this.mySide) {
-                Game.availableSouflaForLocalPlayer = plainToSoufla(data.soufla.pending);
-              } else {
-                Game.availableSouflaForLocalPlayer = null;
-              }
-            } catch (e) {}
-    
             this._handleUndoRequest(data);
     
             if (!__skipApply) {
@@ -2602,6 +2594,8 @@
                 this._applyRemoteState(patched);
               } else if (typeof data.turn === "number") {
                 try {
+                  if (typeof resetTransientGameState === "function") resetTransientGameState();
+                  this._installOfficialSouflaState(data);
                   Game.player = data.turn;
                   Turn.ctx = null;
                   Turn.start();
@@ -2614,6 +2608,37 @@
           try {
             this._installViewHooksOnce();
           } catch (e) {}
+        },
+
+    _installOfficialSouflaState: function (data) {
+          const official = data && data.soufla && typeof data.soufla === "object" ? data.soufla : null;
+          const rawPending =
+            official && official.pending && typeof official.pending === "object"
+              ? official.pending
+              : official && Array.isArray(official.offenders)
+                ? official
+                : null;
+          const pending = rawPending ? plainToSoufla(rawPending) : null;
+          const availableFor =
+            official && official.availableFor != null
+              ? Number(official.availableFor)
+              : pending && pending.penalizer != null
+                ? Number(pending.penalizer)
+                : null;
+          const claimable = !!(
+            pending &&
+            !this.isSpectator &&
+            availableFor === Number(this.mySide)
+          );
+
+          // Firebase owns the official right to claim Soufla. A board snapshot
+          // may contain stale client-local Soufla fields, especially after undo,
+          // so install the official right only after restoring the snapshot.
+          const choiceOpen = !!(claimable && Game.awaitingPenalty && Game.souflaPending);
+          Game.awaitingPenalty = choiceOpen;
+          Game.souflaPending = choiceOpen ? pending : null;
+          Game.availableSouflaForLocalPlayer = claimable ? pending : null;
+          return pending;
         },
 
     _applyRemoteState: function (data, applyOptions) {
@@ -2636,8 +2661,10 @@
             if (!snap) return;
     
     
+            if (typeof resetTransientGameState === "function") resetTransientGameState();
             restoreSnapshot(snap, { redraw: false, visual: false });
-    
+            this._installOfficialSouflaState(data);
+
             try {
               const lm = data && data.lastMove ? data.lastMove : null;
                 const curSide =
