@@ -19,7 +19,7 @@ for (const required of [
 ]) assert.ok(exists(required), `Missing synchronized UI file: ${required}`);
 
 const lobby = read("pages/loby.html");
-assert.match(lobby, /الغرف النشطة واللاعبون المتصلون/);
+assert.match(lobby, /المباريات الجارية واللاعبون المتصلون/);
 assert.match(lobby, /شاهد المباريات الجارية أو اختر لاعبًا متصلًا وادعه إلى مباراة مباشرة/);
 assert.match(lobby, /id="lobbyInviteControls"/);
 assert.match(lobby, /id="btnLobbyManualRefresh"/);
@@ -55,7 +55,7 @@ assert.match(visualShell, /btnLobbyManualRefresh/);
 assert.match(visualShell, /btnShowLeaderboardLobby/);
 
 const i18n = read("js/i18n.js");
-assert.match(i18n, /"title": "الغرف النشطة واللاعبون المتصلون"/);
+assert.match(i18n, /"title": "المباريات الجارية واللاعبون المتصلون"/);
 assert.match(i18n, /"syncIssueNotice": "لم تظهر آخر تغييرات المباراة/);
 assert.match(i18n, /"confirm": "هل تريد إنهاء المباراة الحالية؟"/);
 

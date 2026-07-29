@@ -1,10 +1,10 @@
 {
   "game": {
     "selector": ".app",
-    "jsonSha256": "ba419112412648a468e2f69f896c56971cd391c9faca1f8953db8b5d0198a186"
+    "jsonSha256": "99ab3e098e0f355626209024bd5adf299c42cc3aa891af41397eca4b0a3fc454"
   },
   "loby": {
     "selector": "main",
-    "jsonSha256": "072d62d6131a78bbd7facc2fd432ec343e0a81922113702f8b548b77e668f241"
+    "jsonSha256": "b76d4c6ea4bdf55df3374e1b32fb464ae8dee4da6d3cdf0a2f7a2b4f105e1064"
   }
 }

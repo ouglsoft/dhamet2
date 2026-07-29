@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260729-v20-online-only-cleanup",
-  "source": "firebase-online-only-native-rtdb-transport-v20-cleanup",
-  "uiReference": "approved-online-only-v20",
-  "release": "20260729-v20-online-only-cleanup"
+  "version": "20260729-v21-match-terminology",
+  "source": "firebase-online-only-native-rtdb-transport-v21-match-terminology",
+  "uiReference": "approved-online-only-v21",
+  "release": "20260729-v21-match-terminology"
 }
