@@ -205,11 +205,11 @@
     Game.deferredPromotion = queue.length ? copyEntry(queue[0]) : null;
   };
 
-  hasUnresolvedSoufla = function hasUnresolvedSouflaParity() {
+  function hasUnresolvedSoufla() {
     // A visible but unopened right does not freeze the turn; an actively
     // resolving or authoritative pending penalty does.
     return !!(!Game._souflaApplying && (Game.awaitingPenalty || Game.souflaPending));
-  };
+  }
 
   expireUnclaimedSouflaOnMoveStart = function expireUnclaimedSouflaOnMoveStartParity() {
     const pending = Game.availableSouflaForHuman;

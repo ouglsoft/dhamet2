@@ -876,18 +876,26 @@
       div.style.whiteSpace = "pre-wrap";
       let html = escapeHtml(safeMsg);
       const names = [];
+      const addName = (value) => {
+        const name = String(value || "").trim();
+        if (name && !names.includes(name)) names.push(name);
+      };
+      try {
+        const supplied = cfg && Array.isArray(cfg.playerNames) ? cfg.playerNames : [];
+        supplied.forEach(addName);
+      } catch (_) {}
       try {
         const game = window.Online && window.Online._lastGameData;
         const players = game && game.players ? game.players : {};
         [players.white, players.black].forEach((row) => {
           if (!row) return;
           const name = displayPlayerName(row.uid, row.nickname);
-          if (name && !names.includes(name)) names.push(name);
+          addName(name);
         });
       } catch (_) {}
       try {
         const own = window.Online && displayPlayerName(window.Online.myUid, window.Online.myNick);
-        if (own && !names.includes(own)) names.push(own);
+        addName(own);
       } catch (_) {}
       names.sort((a, b) => b.length - a.length).forEach((name) => {
         const encoded = escapeHtml(name);
@@ -2355,6 +2363,10 @@
           this._presenceTicker = null;
           try { if (this._lobbyLoadTimer) clearTimeout(this._lobbyLoadTimer); } catch (_) {}
           this._lobbyLoadTimer = null;
+          try { if (this._lobbyRestFallbackTimer) clearTimeout(this._lobbyRestFallbackTimer); } catch (_) {}
+          this._lobbyRestFallbackTimer = null;
+          try { if (this._lobbyRestPollTimer) clearTimeout(this._lobbyRestPollTimer); } catch (_) {}
+          this._lobbyRestPollTimer = null;
           try {
             if (this._chat && this._chat._readWriteTimer) clearTimeout(this._chat._readWriteTimer);
           } catch (_) {}

@@ -8,7 +8,7 @@
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
   const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
   const FIREBASE_MIGRATION_KEY = "dhamet2.firebase.migration.v1";
-  const FIREBASE_MIGRATION_VERSION = "2026-07-28-session-audit-clean-v3";
+  const FIREBASE_MIGRATION_VERSION = "2026-07-28-normal-browser-lobby-reset-v4";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
@@ -190,23 +190,59 @@
   async function prepareOneTimeFirebaseMigration() {
     if (!needsFirebaseMigration()) return false;
 
-    // Remove only obsolete connection markers. A valid anonymous identity and
-    // active-match pointer are preserved; validity is checked through Firebase
-    // Auth below before any fresh identity is created.
+    // Normal browser profiles can retain an obsolete anonymous-auth record or a
+    // failed RTDB transport marker while a private profile starts clean. On the
+    // lobby only, remove that stale client state once and create a fresh tab-scoped
+    // anonymous session. Active game pages are deliberately not disrupted.
+    const resetLobbyAuth = isLobbyPage();
     try {
       removeMatchingStorageKeys(sessionStorage, (key) =>
         key === "firebase:previous_websocket_failure" ||
-        key.startsWith("dhamet2.presence.legacy.")
+        key.startsWith("dhamet2.presence.legacy.") ||
+        (resetLobbyAuth && (
+          key === AUTH_TAB_KEY ||
+          key === SESSION_KEY ||
+          key.startsWith("firebase:authUser:")
+        ))
       );
     } catch (_) {}
     try {
       removeMatchingStorageKeys(localStorage, (key) =>
         key === "firebase:previous_websocket_failure" ||
         key === "zamat.session.user.persist.v1" ||
-        key.startsWith("dhamet2.presence.legacy.")
+        key.startsWith("dhamet2.presence.legacy.") ||
+        (resetLobbyAuth && (key.startsWith("firebase:authUser:") || key.startsWith("firebase:host:")))
       );
     } catch (_) {}
+    if (resetLobbyAuth) {
+      try { await deleteIndexedDb("firebaseLocalStorageDb", 2500); } catch (_) {}
+    }
     return true;
+  }
+
+  function deleteIndexedDb(name, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!window.indexedDB || !name) { resolve(false); return; }
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(!!value);
+      };
+      const timer = setTimeout(() => finish(false), Math.max(500, Number(timeoutMs || 2500)));
+      try {
+        const req = indexedDB.deleteDatabase(String(name));
+        req.onsuccess = () => finish(true);
+        req.onerror = () => finish(false);
+        req.onblocked = () => finish(false);
+      } catch (_) { finish(false); }
+    });
+  }
+
+  function isLobbyPage() {
+    try { return /(?:^|\/)loby\.html$/i.test(String(location.pathname || "")); }
+    catch (_) { return false; }
   }
 
   function markFirebaseMigrationComplete() {

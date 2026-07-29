@@ -10,6 +10,8 @@ const ui = read('js/ui.js');
 const page = read('pages/game.html');
 const game = read('js/game.js');
 const online = read('js/online.js');
+const passive = read('js/online.passive.js');
+const shell = read('js/emergency-shell.js');
 const backupSoufla = read('js/ui/soufla-view.js');
 const primaryRoot = String(process.env.DHAMET_PRIMARY_ROOT || '').trim();
 const primaryGamePath = primaryRoot ? path.join(primaryRoot, 'dhamet/site/js/modes/game-runtime.js') : '';
@@ -51,5 +53,11 @@ assert.match(online, /db\.goOffline\(\)/, 'lobby recovery must reset a frozen RT
 assert.match(online, /db\.goOnline\(\)/, 'lobby recovery must bring RTDB back online');
 assert.match(online, /resetAnonymous\(\)/, 'lobby recovery must repair damaged normal-browser auth state');
 assert.match(online, /_lobbyInitGeneration/, 'old lobby callbacks must be invalidated during recovery');
+assert.match(online, /async function readLobbyRest\(path, query, timeoutMs\)/, 'normal-browser lobby needs an independent RTDB REST path');
+assert.match(online, /runRestFallback\("initial"\)/, 'REST recovery must start before the loading watchdog expires');
+assert.match(online, /30000/, 'REST recovery must keep a low-frequency refresh while live listeners are broken');
+assert.match(passive, /_lobbyRestFallbackTimer[\s\S]*_lobbyRestPollTimer/, 'page teardown must clear REST recovery timers');
+assert.match(shell, /normal-browser-lobby-reset-v4/, 'normal browser profiles must receive the one-time clean-session migration');
+assert.match(shell, /deleteIndexedDb\("firebaseLocalStorageDb"/, 'stale Firebase IndexedDB auth must be cleared once on the lobby');
 
 console.log('soufla, log, and mobile lobby recovery tests passed');

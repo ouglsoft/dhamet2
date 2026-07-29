@@ -6,6 +6,7 @@ const passive = fs.readFileSync(new URL("../js/online.passive.js", import.meta.u
 const shell = fs.readFileSync(new URL("../js/emergency-shell.js", import.meta.url), "utf8");
 const headers = fs.readFileSync(new URL("../_headers", import.meta.url), "utf8");
 const mobileCss = fs.readFileSync(new URL("../css/mobile.css", import.meta.url), "utf8");
+const rulesParity = fs.readFileSync(new URL("../js/rules-parity-runtime.js", import.meta.url), "utf8");
 
 if (!shell.includes("waitForInitialAuthState")) throw new Error("auth persistence restoration is not awaited");
 if (!shell.includes("Auth.Persistence.SESSION")) throw new Error("anonymous auth must be tab/session scoped");
@@ -56,6 +57,12 @@ if (!/if \(localOnly\)[\s\S]*_presenceTicker[\s\S]*clearInterval/.test(online)) 
 }
 if (!/_lobbyLoadTimer[\s\S]*clearTimeout/.test(passive)) {
   throw new Error("page teardown must clear the lobby loading watchdog");
+}
+if (!/_lobbyRestFallbackTimer[\s\S]*_lobbyRestPollTimer/.test(passive)) {
+  throw new Error("page teardown must clear lobby REST fallback timers");
+}
+if (!/function hasUnresolvedSoufla\(\)/.test(rulesParity) || /hasUnresolvedSoufla\s*=\s*function/.test(rulesParity)) {
+  throw new Error("hasUnresolvedSoufla must be a strict-mode-safe declaration");
 }
 
 console.log("runtime contract tests passed");

@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260728-asset-audit1",
-  "source": "firebase-online-only-asset-audit-clean",
+  "version": "20260728-message-lobby-fix1",
+  "source": "firebase-online-only-message-lobby-fix",
   "uiReference": "ouglsoft-main",
-  "release": "20260728-asset-audit1"
+  "release": "20260728-message-lobby-fix1"
 }

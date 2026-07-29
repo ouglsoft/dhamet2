@@ -20,7 +20,7 @@
   "primaryModuleHashes": {
     "js/modal.js": "d69f88ecc60a3422d6e616c7cd3ab70b17c4a7b9c9de3aaeddd8850e998e75aa",
     "js/ui/dropdown-view.js": "f3b4ce6d922a9cbfcf633132c4f391fec1329d58cd9189ede62cf0deaa0d8de4",
-    "js/ui/soufla-view.js": "6ab050e64b8b774604166a6c285f77a39f34fa67cc2d994edfc98d67a7dcc122"
+    "js/ui/soufla-view.js": "7c5d23567c320dae338ae759a5ee0b8f575108d1d9f811b6ddfe807828ba834e"
   },
   "bannedLegacyKeys": [
     "modals.gameOver.drawTitle",

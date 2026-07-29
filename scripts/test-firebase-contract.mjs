@@ -21,14 +21,23 @@ assert.match(passive, /const initialPresenceOk = await settleWithin\(\s*safePlay
   "initial presence must be confirmed with a deadline before lobby listeners start");
 assert.doesNotMatch(passive, /const snap = await this\.playersRef\.once\("value"\);\s*const players/s,
   "lobby startup must not block on a full players read before presence registration");
-assert.match(online, /ref\.on\("value", cb, (?:async )?\(err\) =>/,
+assert.match(online, /ref\.on\("value", livePlayersCb, (?:async )?\(err\) =>/,
   "players listener must expose read failures instead of loading forever");
-assert.match(online, /refG\.on\("value", cbG, (?:async )?\(err\) =>/,
+assert.match(online, /refG\.on\("value", liveRoomsCb, (?:async )?\(err\) =>/,
   "rooms listener must expose read failures instead of loading forever");
-
-console.log("Firebase contract regression tests passed");
 
 assert.match(online, /lobbyLoadTimer = setTimeout\(lobbyLoadFailed, 12000\)/,
   "lobby watchdog must start before Firebase initialization can block");
 assert.match(online, /S\.settleWithin\(this\.initPresence\(\), 10000, false\)/,
   "lobby presence initialization must have a deadline");
+
+assert.match(online, /async function readLobbyRest\(path, query, timeoutMs\)/,
+  "normal-browser lobby must have an independent REST fallback");
+assert.match(online, /runRestFallback\("initial"\)/,
+  "REST fallback must start when Firebase listeners do not deliver data");
+assert.match(online, /setTimeout\(async \(\) =>[\s\S]*30000\)/,
+  "broken live listeners must be refreshed by a bounded REST poll");
+assert.match(online, /document\.visibilityState === "hidden"/,
+  "REST polling must pause while the page is hidden");
+
+console.log("Firebase contract regression tests passed");

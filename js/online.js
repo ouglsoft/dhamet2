@@ -128,6 +128,35 @@
 
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
 
+  async function readLobbyRest(path, query, timeoutMs) {
+    const user = auth && auth.currentUser ? auth.currentUser : null;
+    if (!user || !user.isAnonymous || !firebaseConfig || !firebaseConfig.databaseURL) return null;
+    const token = await S.settleWithin(user.getIdToken(false), 5000, null);
+    if (!token) return null;
+    const base = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
+    if (!base) return null;
+    const url = new URL(`${base}/${String(path || "").replace(/^\/+|\/+$/g, "")}.json`);
+    url.searchParams.set("auth", String(token));
+    Object.entries(query || {}).forEach(([key, value]) => {
+      if (value != null) url.searchParams.set(key, String(value));
+    });
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = setTimeout(() => { try { controller && controller.abort(); } catch (_) {} }, Math.max(1000, Number(timeoutMs || 6500)));
+    try {
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        cache: "no-store",
+        credentials: "omit",
+        signal: controller ? controller.signal : undefined,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`firebase-rest-${response.status}`);
+      return await response.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   function deferredPromotionQueue(stateRecord) {
     const source = stateRecord || {};
     const State = window.DhametState;
@@ -2869,24 +2898,29 @@
                       }
                     }
                   } catch (e) {}
+                  const gameData = this._lastGameData || data || {};
+                  const players = gameData.players || {};
+                  const nameForUid = (uid, fallbackNick) => {
+                    const want = String(uid || "");
+                    const rows = [players.white || {}, players.black || {}];
+                    const row = rows.find((item) => want && String(item.uid || "") === want) || {};
+                    const nickname = String(row.nickname || fallbackNick || "").trim();
+                    try { return displayPlayerName(row.uid || want, nickname) || window.I18N.translateArgs("players.player"); }
+                    catch (_) { return nickname || window.I18N.translateArgs("players.player"); }
+                  };
                   if (!this.isSpectator && lm.requesterUid && String(lm.requesterUid) === String(this.myUid || "")) {
-                    showOnlineNotice(window.I18N.translateArgs("undo.requesterAccepted"), {
+                    const responder = nameForUid(lm.responderUid, lm.responderNick);
+                    showOnlineNotice(formatTpl(window.I18N.translateArgs("undo.requesterAccepted"), { responder }), {
                       title: window.I18N.translateArgs("modals.undo.title"),
+                      playerNames: [responder],
                     });
                   } else if (this.isSpectator) {
-                    const gameData = this._lastGameData || data || {};
-                    const players = gameData.players || {};
-                    const nameForUid = (uid) => {
-                      const want = String(uid || "");
-                      const rows = [players.white || {}, players.black || {}];
-                      const row = rows.find((item) => want && String(item.uid || "") === want) || {};
-                      try { return displayPlayerName(row.uid, row.nickname) || window.I18N.translateArgs("players.player"); }
-                      catch (_) { return String(row.nickname || "").trim() || window.I18N.translateArgs("players.player"); }
-                    };
+                    const responder = nameForUid(lm.responderUid, lm.responderNick);
+                    const requester = nameForUid(lm.requesterUid, lm.requesterNick);
                     showOnlineNotice(formatTpl(window.I18N.translateArgs("undo.spectatorAccepted"), {
-                      responder: nameForUid(lm.responderUid),
-                      requester: nameForUid(lm.requesterUid),
-                    }), { allowSpectator: true, title: window.I18N.translateArgs("modals.undo.title") });
+                      responder,
+                      requester,
+                    }), { allowSpectator: true, title: window.I18N.translateArgs("modals.undo.title"), playerNames: [responder, requester] });
                   }
                 }
               }
@@ -5118,8 +5152,11 @@
                   dec.vars && typeof dec.vars === "object" ? dec.vars : {},
                 );
               } else if (dec && dec.kind === "actor_i18n") {
-                const msg = window.I18N.translateArgs(dec.key, dec.vars && typeof dec.vars === "object" ? dec.vars : {});
-                msgEl.textContent = (dec.actor ? String(dec.actor) : window.I18N.translateArgs("players.player")) + ": " + msg;
+                const actorEl = document.createElement("span");
+                actorEl.className = "actor-word";
+                actorEl.textContent = dec.actor ? String(dec.actor) : window.I18N.translateArgs("players.player");
+                msgEl.appendChild(actorEl);
+                msgEl.appendChild(document.createTextNode(`: ${window.I18N.translateArgs(dec.key, dec.vars && typeof dec.vars === "object" ? dec.vars : {})}`));
               } else {
                 msgEl.textContent = rawText ? String(rawText) : "";
               }
@@ -6014,6 +6051,7 @@
                 showOnlineNotice(formatTpl(window.I18N.translateArgs("undo.spectatorRejected"), { requester, responder }), {
                   allowSpectator: true,
                   title: window.I18N.translateArgs("modals.undo.title"),
+                  playerNames: [requester, responder],
                 });
               }
             }
@@ -6059,7 +6097,19 @@
             const key = this._undoWaitKeyOf(ur) || [ur.requesterUid || "", ur.respondedAt || ur.requestedAt || "", "rejected"].join("|");
             if (!this._lastUndoRejectedKey || this._lastUndoRejectedKey !== key) {
               this._lastUndoRejectedKey = key;
-              showOnlineNotice(window.I18N.translateArgs("undo.requesterRejected"), { title: window.I18N.translateArgs("undo.rejectedTitle") });
+              const responder = (() => {
+                const direct = String(ur.responderNick || "").trim();
+                if (direct) return direct;
+                const players = (this._lastGameData && this._lastGameData.players) || {};
+                const rows = [players.white || {}, players.black || {}];
+                const row = rows.find((item) => ur.responderUid && String(item.uid || "") === String(ur.responderUid)) || {};
+                try { return displayPlayerName(row.uid || ur.responderUid, row.nickname) || window.I18N.translateArgs("players.player"); }
+                catch (_) { return String(row.nickname || "").trim() || window.I18N.translateArgs("players.player"); }
+              })();
+              showOnlineNotice(formatTpl(window.I18N.translateArgs("undo.requesterRejected"), { responder }), {
+                title: window.I18N.translateArgs("undo.rejectedTitle"),
+                playerNames: [responder],
+              });
             }
             try {
               this.gameRef.child("undoRequest").remove();
@@ -6229,9 +6279,18 @@
           this._lobbyPlayersCb = null;
           this._lobbyRoomsRef = null;
           this._lobbyRoomsCb = null;
+          try { if (this._lobbyRestFallbackTimer) clearTimeout(this._lobbyRestFallbackTimer); } catch (_) {}
+          try { if (this._lobbyRestPollTimer) clearTimeout(this._lobbyRestPollTimer); } catch (_) {}
+          this._lobbyRestFallbackTimer = null;
+          this._lobbyRestPollTimer = null;
 
           let playersLoaded = false;
           let roomsLoaded = false;
+          let playersLive = false;
+          let roomsLive = false;
+          let renderPlayers = null;
+          let renderRooms = null;
+          let restFallbackInFlight = false;
           let lobbyLoadTimer = null;
           let recoveryInFlight = false;
           const clearLoadTimer = () => {
@@ -6240,14 +6299,69 @@
             lobbyLoadTimer = null;
             this._lobbyLoadTimer = null;
           };
+          const clearRestTimers = () => {
+            try { if (this._lobbyRestFallbackTimer) clearTimeout(this._lobbyRestFallbackTimer); } catch (_) {}
+            try { if (this._lobbyRestPollTimer) clearTimeout(this._lobbyRestPollTimer); } catch (_) {}
+            this._lobbyRestFallbackTimer = null;
+            this._lobbyRestPollTimer = null;
+          };
           const markDataReceived = () => {
             if (!isCurrent()) return;
             this._lobbyLastDataAt = Date.now();
             if (playersLoaded && roomsLoaded) clearLoadTimer();
+            if (playersLive && roomsLive) clearRestTimers();
+          };
+          const scheduleRestPoll = () => {
+            if (!isCurrent() || (playersLive && roomsLive) || this._lobbyRestPollTimer) return;
+            this._lobbyRestPollTimer = setTimeout(async () => {
+              this._lobbyRestPollTimer = null;
+              try { await runRestFallback("poll"); } catch (_) {}
+              if (isCurrent() && (!playersLive || !roomsLive)) scheduleRestPoll();
+            }, 30000);
+          };
+          const runRestFallback = async (source) => {
+            if (!isCurrent() || restFallbackInFlight || (!renderPlayers && !renderRooms)) return false;
+            if (playersLive && roomsLive) return true;
+            try {
+              if (document.visibilityState === "hidden") {
+                scheduleRestPoll();
+                return false;
+              }
+            } catch (_) {}
+            restFallbackInFlight = true;
+            let applied = false;
+            try {
+              const tasks = [];
+              tasks.push(!playersLive && renderPlayers
+                ? readLobbyRest("players", null, 6500).then((data) => ({ kind: "players", data }))
+                : Promise.resolve(null));
+              tasks.push(!roomsLive && renderRooms
+                ? readLobbyRest("roomList", { orderBy: JSON.stringify("status"), equalTo: JSON.stringify("active"), limitToLast: "50" }, 6500).then((data) => ({ kind: "rooms", data }))
+                : Promise.resolve(null));
+              const results = await Promise.allSettled(tasks);
+              for (const item of results) {
+                if (item.status !== "fulfilled" || !item.value || !isCurrent()) continue;
+                const payload = item.value;
+                const snap = { val: () => payload.data };
+                if (payload.kind === "players" && !playersLive && renderPlayers) { renderPlayers(snap); applied = true; }
+                if (payload.kind === "rooms" && !roomsLive && renderRooms) { renderRooms(snap); applied = true; }
+              }
+              if (applied) {
+                try { Logger.info("lobby_rest_fallback_applied", { source: String(source || "initial") }); } catch (_) {}
+                scheduleRestPoll();
+              }
+              return applied;
+            } catch (error) {
+              try { Logger.warn("lobby_rest_fallback_failed", { source: String(source || "initial"), err: String(error && (error.message || error)) }); } catch (_) {}
+              return false;
+            } finally {
+              restFallbackInFlight = false;
+            }
           };
           const showLobbyFailure = () => {
             if (!isCurrent()) return;
             clearLoadTimer();
+            clearRestTimers();
             const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
             if (!playersLoaded && playersEl) playersEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
             if (!roomsLoaded && roomsEl) roomsEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
@@ -6280,6 +6394,7 @@
             }
             recoveryInFlight = true;
             clearLoadTimer();
+            clearRestTimers();
             try {
               try { if (db && typeof db.goOffline === "function") db.goOffline(); } catch (_) {}
               await new Promise((resolve) => setTimeout(resolve, 120));
@@ -6516,8 +6631,14 @@
               }
             };
 
-            this._lobbyPlayersCb = cb;
-            ref.on("value", cb, async (err) => {
+            renderPlayers = cb;
+            const livePlayersCb = (snap) => {
+              playersLive = true;
+              cb(snap);
+              if (playersLive && roomsLive) clearRestTimers();
+            };
+            this._lobbyPlayersCb = livePlayersCb;
+            ref.on("value", livePlayersCb, async (err) => {
               if (!isCurrent()) return;
               playersLoaded = false;
               try { Logger.warn("lobby_players_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
@@ -6580,7 +6701,7 @@
               }
               this._lobbyActivePlayerRooms = activePlayerRooms;
               try {
-                if (this._lobbyPlayersLastSnap && this._lobbyPlayersCb) this._lobbyPlayersCb(this._lobbyPlayersLastSnap);
+                if (this._lobbyPlayersLastSnap && renderPlayers) renderPlayers(this._lobbyPlayersLastSnap);
               } catch (e) {}
               rooms.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     
@@ -6653,8 +6774,14 @@
               }
             };
 
-            this._lobbyRoomsCb = cbG;
-            refG.on("value", cbG, async (err) => {
+            renderRooms = cbG;
+            const liveRoomsCb = (snap) => {
+              roomsLive = true;
+              cbG(snap);
+              if (playersLive && roomsLive) clearRestTimers();
+            };
+            this._lobbyRoomsCb = liveRoomsCb;
+            refG.on("value", liveRoomsCb, async (err) => {
               if (!isCurrent()) return;
               roomsLoaded = false;
               try { Logger.warn("lobby_rooms_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
@@ -6664,6 +6791,13 @@
     
           } catch (e) {
             lobbyLoadFailed();
+          }
+
+          if (isCurrent() && (!playersLoaded || !roomsLoaded)) {
+            this._lobbyRestFallbackTimer = setTimeout(() => {
+              this._lobbyRestFallbackTimer = null;
+              runRestFallback("initial");
+            }, 4500);
           }
         },
 
