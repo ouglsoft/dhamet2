@@ -107,7 +107,6 @@
     playerAcceptsInvites,
     readMigrationVersion,
     readOnceWithOutcome,
-    readFirebaseRest,
     refPathString,
     requireAuthUid,
     runMigrationsOnline,
@@ -128,11 +127,6 @@
   } = S;
 
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
-
-  async function readLobbyRest(path, query, timeoutMs) {
-    if (typeof readFirebaseRest !== "function") throw new Error("firebase-rest-helper-unavailable");
-    return await readFirebaseRest(path, query || {}, timeoutMs || 6500);
-  }
 
   function deferredPromotionQueue(stateRecord) {
     const source = stateRecord || {};
@@ -6256,18 +6250,9 @@
           this._lobbyPlayersCb = null;
           this._lobbyRoomsRef = null;
           this._lobbyRoomsCb = null;
-          try { if (this._lobbyRestFallbackTimer) clearTimeout(this._lobbyRestFallbackTimer); } catch (_) {}
-          try { if (this._lobbyRestPollTimer) clearTimeout(this._lobbyRestPollTimer); } catch (_) {}
-          this._lobbyRestFallbackTimer = null;
-          this._lobbyRestPollTimer = null;
 
           let playersLoaded = false;
           let roomsLoaded = false;
-          let playersLive = false;
-          let roomsLive = false;
-          let renderPlayers = null;
-          let renderRooms = null;
-          let restFallbackInFlight = false;
           let lobbyLoadTimer = null;
           let recoveryInFlight = false;
           const clearLoadTimer = () => {
@@ -6276,69 +6261,14 @@
             lobbyLoadTimer = null;
             this._lobbyLoadTimer = null;
           };
-          const clearRestTimers = () => {
-            try { if (this._lobbyRestFallbackTimer) clearTimeout(this._lobbyRestFallbackTimer); } catch (_) {}
-            try { if (this._lobbyRestPollTimer) clearTimeout(this._lobbyRestPollTimer); } catch (_) {}
-            this._lobbyRestFallbackTimer = null;
-            this._lobbyRestPollTimer = null;
-          };
           const markDataReceived = () => {
             if (!isCurrent()) return;
             this._lobbyLastDataAt = Date.now();
             if (playersLoaded && roomsLoaded) clearLoadTimer();
-            if (playersLive && roomsLive) clearRestTimers();
-          };
-          const scheduleRestPoll = () => {
-            if (!isCurrent() || (playersLive && roomsLive) || this._lobbyRestPollTimer) return;
-            this._lobbyRestPollTimer = setTimeout(async () => {
-              this._lobbyRestPollTimer = null;
-              try { await runRestFallback("poll"); } catch (_) {}
-              if (isCurrent() && (!playersLive || !roomsLive)) scheduleRestPoll();
-            }, 30000);
-          };
-          const runRestFallback = async (source) => {
-            if (!isCurrent() || restFallbackInFlight || (!renderPlayers && !renderRooms)) return false;
-            if (playersLive && roomsLive) return true;
-            try {
-              if (document.visibilityState === "hidden") {
-                scheduleRestPoll();
-                return false;
-              }
-            } catch (_) {}
-            restFallbackInFlight = true;
-            let applied = false;
-            try {
-              const tasks = [];
-              tasks.push(!playersLive && renderPlayers
-                ? readLobbyRest("players", null, 6500).then((data) => ({ kind: "players", data }))
-                : Promise.resolve(null));
-              tasks.push(!roomsLive && renderRooms
-                ? readLobbyRest("roomList", { orderBy: JSON.stringify("status"), equalTo: JSON.stringify("active"), limitToLast: "50" }, 6500).then((data) => ({ kind: "rooms", data }))
-                : Promise.resolve(null));
-              const results = await Promise.allSettled(tasks);
-              for (const item of results) {
-                if (item.status !== "fulfilled" || !item.value || !isCurrent()) continue;
-                const payload = item.value;
-                const snap = { val: () => payload.data };
-                if (payload.kind === "players" && !playersLive && renderPlayers) { renderPlayers(snap); applied = true; }
-                if (payload.kind === "rooms" && !roomsLive && renderRooms) { renderRooms(snap); applied = true; }
-              }
-              if (applied) {
-                try { Logger.info("lobby_rest_fallback_applied", { source: String(source || "initial") }); } catch (_) {}
-                scheduleRestPoll();
-              }
-              return applied;
-            } catch (error) {
-              try { Logger.warn("lobby_rest_fallback_failed", { source: String(source || "initial"), err: String(error && (error.message || error)) }); } catch (_) {}
-              return false;
-            } finally {
-              restFallbackInFlight = false;
-            }
           };
           const showLobbyFailure = () => {
             if (!isCurrent()) return;
             clearLoadTimer();
-            clearRestTimers();
             const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
             if (!playersLoaded && playersEl) playersEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
             if (!roomsLoaded && roomsEl) roomsEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
@@ -6371,7 +6301,6 @@
             }
             recoveryInFlight = true;
             clearLoadTimer();
-            clearRestTimers();
             try {
               try { if (db && typeof db.goOffline === "function") db.goOffline(); } catch (_) {}
               await new Promise((resolve) => setTimeout(resolve, 120));
@@ -6608,14 +6537,8 @@
               }
             };
 
-            renderPlayers = cb;
-            const livePlayersCb = (snap) => {
-              playersLive = true;
-              cb(snap);
-              if (playersLive && roomsLive) clearRestTimers();
-            };
-            this._lobbyPlayersCb = livePlayersCb;
-            ref.on("value", livePlayersCb, async (err) => {
+            this._lobbyPlayersCb = cb;
+            ref.on("value", cb, async (err) => {
               if (!isCurrent()) return;
               playersLoaded = false;
               try { Logger.warn("lobby_players_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
@@ -6678,7 +6601,7 @@
               }
               this._lobbyActivePlayerRooms = activePlayerRooms;
               try {
-                if (this._lobbyPlayersLastSnap && renderPlayers) renderPlayers(this._lobbyPlayersLastSnap);
+                if (this._lobbyPlayersLastSnap && this._lobbyPlayersCb) this._lobbyPlayersCb(this._lobbyPlayersLastSnap);
               } catch (e) {}
               rooms.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     
@@ -6751,14 +6674,8 @@
               }
             };
 
-            renderRooms = cbG;
-            const liveRoomsCb = (snap) => {
-              roomsLive = true;
-              cbG(snap);
-              if (playersLive && roomsLive) clearRestTimers();
-            };
-            this._lobbyRoomsCb = liveRoomsCb;
-            refG.on("value", liveRoomsCb, async (err) => {
+            this._lobbyRoomsCb = cbG;
+            refG.on("value", cbG, async (err) => {
               if (!isCurrent()) return;
               roomsLoaded = false;
               try { Logger.warn("lobby_rooms_read_failed", { code: String((err && err.code) || ""), message: String((err && err.message) || "") }); } catch (e) {}
@@ -6768,13 +6685,6 @@
     
           } catch (e) {
             lobbyLoadFailed();
-          }
-
-          if (isCurrent() && (!playersLoaded || !roomsLoaded)) {
-            this._lobbyRestFallbackTimer = setTimeout(() => {
-              this._lobbyRestFallbackTimer = null;
-              runRestFallback("initial");
-            }, 60);
           }
         },
 
@@ -7001,35 +6911,18 @@
     } catch (_) {}
   }, { passive: true });
 
-  function refreshLobbyTransport(reason, force) {
-    try {
-      if (!document.getElementById("roomsList") || !document.getElementById("playersList")) return false;
-      const last = Number(Online._lobbyLastDataAt || 0);
-      const loading = !!document.querySelector("#roomsList .z-loading, #playersList .z-loading");
-      const failed = !!document.querySelector("#roomsList .z-load-error, #playersList .z-load-error");
-      const stale = last > 0 ? Date.now() - last > 90 * 1000 : loading;
-      if (!force && !stale && !failed) return false;
-      try { if (firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
-      setTimeout(function () {
-        try {
-          Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" });
-          try { Logger.info("lobby_transport_refresh", { reason: String(reason || "unknown") }); } catch (_) {}
-        } catch (_) {}
-      }, 80);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   document.addEventListener("visibilitychange", function () {
     try {
       if (document.visibilityState !== "visible") return;
-      refreshLobbyTransport("visibility", false);
+      if (!document.getElementById("roomsList") || !document.getElementById("playersList")) return;
+      const last = Number(Online._lobbyLastDataAt || 0);
+      const stale = last > 0 && Date.now() - last > 90 * 1000;
+      const failed = !!document.querySelector("#roomsList .z-load-error, #playersList .z-load-error");
+      if (!stale && !failed) return;
+      try { if (firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
+      setTimeout(function () {
+        try { Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" }); } catch (_) {}
+      }, 80);
     } catch (_) {}
-  }, { passive: true });
-
-  window.addEventListener("online", function () {
-    try { refreshLobbyTransport("browser-online", true); } catch (_) {}
   }, { passive: true });
 })();

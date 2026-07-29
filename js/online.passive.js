@@ -1327,81 +1327,6 @@
     }
   }
 
-  async function firebaseRestRequest(path, options) {
-    const cfg = options && typeof options === "object" ? options : {};
-    if (!ensureFirebase()) throw new Error("firebase-unavailable");
-    const user = auth && auth.currentUser ? auth.currentUser : null;
-    if (!user || !user.isAnonymous || !firebaseConfig || !firebaseConfig.databaseURL) {
-      throw new Error("firebase-auth-required");
-    }
-
-    const method = String(cfg.method || "GET").toUpperCase();
-    const timeoutMs = Math.max(1000, Number(cfg.timeoutMs || 6500));
-    const base = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
-    const cleanPath = String(path || "").replace(/^\/+|\/+$/g, "");
-    if (!base || !cleanPath) throw new Error("firebase-rest-path-required");
-
-    let lastError = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const token = await settleWithin(user.getIdToken(attempt > 0), 5000, null);
-      if (!token) throw new Error("firebase-token-timeout");
-      const url = new URL(`${base}/${cleanPath}.json`);
-      url.searchParams.set("auth", String(token));
-      Object.entries(cfg.query || {}).forEach(([key, value]) => {
-        if (value != null) url.searchParams.set(key, String(value));
-      });
-
-      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-      const timer = setTimeout(() => {
-        try { if (controller) controller.abort(); } catch (_) {}
-      }, timeoutMs);
-      try {
-        const init = {
-          method,
-          cache: "no-store",
-          credentials: "omit",
-          signal: controller ? controller.signal : undefined,
-          headers: { Accept: "application/json" },
-        };
-        if (method !== "GET" && method !== "HEAD") {
-          init.headers["Content-Type"] = "application/json";
-          init.body = JSON.stringify(cfg.data == null ? null : cfg.data);
-        }
-        const response = await fetch(url.toString(), init);
-        if ((response.status === 401 || response.status === 403) && attempt === 0) {
-          lastError = new Error(`firebase-rest-${response.status}`);
-          continue;
-        }
-        if (!response.ok) {
-          const error = new Error(`firebase-rest-${response.status}`);
-          error.status = response.status;
-          throw error;
-        }
-        if (response.status === 204) return null;
-        const text = await response.text();
-        return text ? JSON.parse(text) : null;
-      } catch (error) {
-        lastError = error;
-        if (attempt === 0 && error && (error.name === "AbortError" || /network|failed to fetch/i.test(String(error.message || error)))) {
-          continue;
-        }
-        throw error;
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-    throw lastError || new Error("firebase-rest-failed");
-  }
-
-  async function readFirebaseRest(path, query, timeoutMs) {
-    return await firebaseRestRequest(path, { method: "GET", query: query || {}, timeoutMs });
-  }
-
-  async function writeFirebaseRest(path, data, timeoutMs) {
-    await firebaseRestRequest(path, { method: "PATCH", data: data || {}, timeoutMs });
-    return true;
-  }
-
   function getSavedNickOrDefault(uid) {
     const saved = getSavedNick();
     const nick = saved || defaultNick(uid);
@@ -2325,31 +2250,16 @@
             } catch (e) {
               Logger.warn("presence_ondisconnect_failed", { err: String(e && (e.message || e)) });
             }
-            const initialPayload = payload();
-            let initialPresenceOk = await settleWithin(
+            const initialPresenceOk = await settleWithin(
               safePlayerWrite(
                 this.statusRef,
                 this.myUid,
-                initialPayload,
+                payload(),
                 "players.initPresence",
               ),
-              1500,
+              8000,
               false,
             );
-            if (!initialPresenceOk) {
-              try {
-                initialPresenceOk = await settleWithin(
-                  writeFirebaseRest(`players/${encodeURIComponent(this.myUid)}`, initialPayload, 5500),
-                  6000,
-                  false,
-                );
-                if (initialPresenceOk) {
-                  try { Logger.info("presence_rest_fallback_applied", { uid: String(this.myUid || "") }); } catch (_) {}
-                }
-              } catch (_) {
-                initialPresenceOk = false;
-              }
-            }
             if (!initialPresenceOk) return false;
     
             this._presenceInited = true;
@@ -2453,10 +2363,6 @@
           this._presenceTicker = null;
           try { if (this._lobbyLoadTimer) clearTimeout(this._lobbyLoadTimer); } catch (_) {}
           this._lobbyLoadTimer = null;
-          try { if (this._lobbyRestFallbackTimer) clearTimeout(this._lobbyRestFallbackTimer); } catch (_) {}
-          this._lobbyRestFallbackTimer = null;
-          try { if (this._lobbyRestPollTimer) clearTimeout(this._lobbyRestPollTimer); } catch (_) {}
-          this._lobbyRestPollTimer = null;
           try {
             if (this._chat && this._chat._readWriteTimer) clearTimeout(this._chat._readWriteTimer);
           } catch (_) {}
@@ -3838,9 +3744,6 @@
     getSavedNick: getSavedNick,
     saveNickSession: saveNickSession,
     ensureAuthReady: ensureAuthReady,
-    firebaseRestRequest: firebaseRestRequest,
-    readFirebaseRest: readFirebaseRest,
-    writeFirebaseRest: writeFirebaseRest,
     getSavedNickOrDefault: getSavedNickOrDefault,
     allowedUserIcons: allowedUserIcons,
     sanitizeUserIcon: sanitizeUserIcon,

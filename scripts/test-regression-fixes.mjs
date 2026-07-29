@@ -99,14 +99,11 @@ assert.match(passive, /!cfg\.allowSpectator[\s\S]*contains\("z-spectator"\)[\s\S
 assert.match(passive, /Array\.isArray\(cfg\.playerNames\)/);
 assert.match(passive, /z-player-name/);
 assert.match(soufla, /decoratePlayerNames\(message, \[actorName, victimName\]\)/);
-assert.match(online, /async function readLobbyRest\(path, query, timeoutMs\)/);
-assert.match(online, /lobby_rest_fallback_applied/);
-assert.match(online, /_lobbyRestPollTimer/);
+assert.match(online, /actorEl\.className = "actor-word"/);
 assert.doesNotMatch(online, /status\.moveSendFail"\),\s*\{\s*allowSpectator:\s*true/);
 assert.match(online, /spectatorLabel[^\n]*spectatorCount/s);
 assert.match(online, /z-player-status/);
 assert.match(online, /z-room-row/);
-assert.match(online, /actorEl\.className = "actor-word"/);
 
 assert.equal(hash('js/ui/board-geometry.js'), 'd33d4973dbb4c5411db34b6351ffc0687a945f503c3fed9c29c324814fd6358c');
 assert.equal(hash('js/ui/board-view.js'), '5672ea9bcefb34fa1f9eda10a24284e8bbb9e87b4e10a31d95b9966c8d4fb90f');
@@ -119,21 +116,15 @@ assert.match(ui, /function setUndoMove\(fr, to, noDraw\)/);
 assert.match(ui, /setCapturedOrder\(list, noDraw\)/);
 assert.match(theme, /--piece-black-edge:\s*rgb\(154 52 18\)/);
 
-assert.doesNotMatch(shell, /FIREBASE_MIGRATION_VERSION|prepareOneTimeFirebaseMigration|deleteIndexedDb|markFirebaseMigrationComplete/);
+assert.doesNotMatch(shell, /FIREBASE_MIGRATION|prepareOneTimeFirebaseMigration|markFirebaseMigrationComplete/);
+assert.doesNotMatch(shell, /previous_websocket_failure|firebaseLocalStorageDb|deleteIndexedDb/);
 assert.match(shell, /markerMatches/);
 assert.match(shell, /getIdToken\(true\)/);
 assert.match(shell, /auth\.signInAnonymously\(\)/);
-assert.match(shell, /Auth\.Persistence\.SESSION/);
 assert.match(shell, /firebase\.database\(\)\.goOnline\(\)/);
 assert.doesNotMatch(shell, /localStorage\.clear\(|sessionStorage\.clear\(/);
 assert.doesNotMatch(read('js/game.js'), /localStorage\.getItem\("zamat\.session\.user\.persist\.v1"\)/);
-assert.match(passive, /async function firebaseRestRequest\(path, options\)/);
-assert.match(passive, /writeFirebaseRest\(`players\/\$\{encodeURIComponent\(this\.myUid\)\}`/);
-assert.match(passive, /presence_rest_fallback_applied/);
-assert.match(online, /readFirebaseRest/);
-assert.match(online, /runRestFallback\("initial"\)/);
-assert.match(online, /}, 60\);/);
-assert.match(online, /window\.addEventListener\("online"/);
+assert.doesNotMatch(online + passive, /readLobbyRest|firebaseRestRequest|_firebaseTransportDegraded|_startInviteRestPolling/);
 
 for (const file of ['mic-on.svg', 'mic-off.svg', 'volume-on.svg', 'volume-off.svg']) {
   assert.match(read(`assets/icons/${file}`), /<svg/);
@@ -151,7 +142,6 @@ assert.match(online, /lobby\.players\.callback/);
 assert.match(online, /lobby\.rooms\.callback/);
 assert.match(online, /playersLoaded = false;[\s\S]{0,180}showLobbyFailure\(\)/);
 assert.match(online, /roomsLoaded = false;[\s\S]{0,180}showLobbyFailure\(\)/);
-assert.doesNotMatch(shell, /normal-browser-lobby-reset|prepareOneTimeFirebaseMigration|deleteIndexedDb/);
 assert.match(passive, /_teardownPageRuntime/);
 assert.match(passive, /_teardownOnlineSubscriptions\(\{ localOnly: true \}\)/);
 assert.doesNotMatch(passive, /addEventListener\("beforeunload", cleanup/);

@@ -10,8 +10,6 @@ const ui = read('js/ui.js');
 const page = read('pages/game.html');
 const game = read('js/game.js');
 const online = read('js/online.js');
-const passive = read('js/online.passive.js');
-const shell = read('js/emergency-shell.js');
 const backupSoufla = read('js/ui/soufla-view.js');
 const primaryRoot = String(process.env.DHAMET_PRIMARY_ROOT || '').trim();
 const primaryGamePath = primaryRoot ? path.join(primaryRoot, 'dhamet/site/js/modes/game-runtime.js') : '';
@@ -49,17 +47,9 @@ if (primaryAvailable) {
 
 assert.match(online, /event\.persisted/, 'BFCache-restored mobile lobby must rebind listeners');
 assert.match(online, /visibilitychange/, 'stale visible mobile lobby must recover listeners');
+assert.match(online, /db\.goOffline\(\)/, 'lobby recovery must reset a frozen RTDB connection');
 assert.match(online, /db\.goOnline\(\)/, 'lobby recovery must bring RTDB back online');
 assert.match(online, /resetAnonymous\(\)/, 'lobby recovery must repair damaged normal-browser auth state');
 assert.match(online, /_lobbyInitGeneration/, 'old lobby callbacks must be invalidated during recovery');
-assert.match(online, /async function readLobbyRest\(path, query, timeoutMs\)/, 'normal-browser lobby needs an independent RTDB REST path');
-assert.match(online, /runRestFallback\("initial"\)/, 'REST recovery must start before the loading watchdog expires');
-assert.match(online, /30000/, 'REST recovery must keep a low-frequency refresh while live listeners are broken');
-assert.match(passive, /_lobbyRestFallbackTimer[\s\S]*_lobbyRestPollTimer/, 'page teardown must clear REST recovery timers');
-assert.doesNotMatch(shell, /prepareOneTimeFirebaseMigration|deleteIndexedDb|FIREBASE_MIGRATION_VERSION/, 'lobby recovery must not depend on destructive one-time migration');
-assert.match(passive, /async function firebaseRestRequest\(path, options\)/, 'shared authenticated RTDB REST transport is required');
-assert.match(passive, /presence_rest_fallback_applied/, 'presence bootstrap must fall back to REST on every affected load');
-assert.match(online, /}, 60\);/, 'initial REST lobby snapshot must start immediately, not after a long delay');
-assert.match(online, /lobby_transport_refresh/, 'visible or reconnected tabs must receive a permanent transport health refresh');
 
 console.log('soufla, log, and mobile lobby recovery tests passed');

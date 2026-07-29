@@ -12,8 +12,6 @@ if (!shell.includes("waitForInitialAuthState")) throw new Error("auth persistenc
 if (!shell.includes("Auth.Persistence.SESSION")) throw new Error("anonymous auth must be tab/session scoped");
 if (!shell.includes("AUTH_TAB_KEY")) throw new Error("tab auth marker is missing");
 if (!shell.includes("resetAnonymous")) throw new Error("anonymous-session recovery is missing");
-if (!passive.includes("firebaseRestRequest") || !passive.includes("presence_rest_fallback_applied")) throw new Error("per-load REST presence fallback is missing");
-if (/prepareOneTimeFirebaseMigration|deleteIndexedDb|FIREBASE_MIGRATION_VERSION/.test(shell)) throw new Error("lobby recovery must not depend on a one-time destructive migration");
 if (!passive.includes("Never mark the new session busy")) throw new Error("stale active-game recovery is missing");
 if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
 if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("normal pagehide must detach all subscriptions locally");
@@ -39,6 +37,8 @@ if (!ui.includes("releaseResolvedOnlineUiHold")) throw new Error("active game ho
 if (!mobileCss.includes('.timer-row #btnEndKill')) throw new Error("primary mobile timer styling is missing");
 if (/Dhamet2 controlsfix|timer-row#btnEndKill/.test(mobileCss)) throw new Error("old backup-only control overrides remain");
 if (!headers.includes("connect-src 'self' https://www.gstatic.com")) throw new Error("gstatic CSP connect allowance missing");
+if (!headers.includes("script-src 'self' https://www.gstatic.com https://*.firebaseio.com https://*.firebasedatabase.app")) throw new Error("RTDB BrowserPoll script CSP allowance missing");
+if (!headers.includes("frame-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app")) throw new Error("RTDB BrowserPoll frame CSP allowance missing");
 if (headers.includes('cdn.jsdelivr.net')) throw new Error('obsolete Three.js CDN CSP allowance must not remain');
 
 
@@ -60,11 +60,11 @@ if (!/if \(localOnly\)[\s\S]*_presenceTicker[\s\S]*clearInterval/.test(online)) 
 if (!/_lobbyLoadTimer[\s\S]*clearTimeout/.test(passive)) {
   throw new Error("page teardown must clear the lobby loading watchdog");
 }
-if (!/_lobbyRestFallbackTimer[\s\S]*_lobbyRestPollTimer/.test(passive)) {
-  throw new Error("page teardown must clear lobby REST fallback timers");
-}
 if (!/function hasUnresolvedSoufla\(\)/.test(rulesParity) || /hasUnresolvedSoufla\s*=\s*function/.test(rulesParity)) {
   throw new Error("hasUnresolvedSoufla must be a strict-mode-safe declaration");
+}
+if (/readLobbyRest|firebaseRestRequest|_firebaseTransportDegraded|_startInviteRestPolling/.test(online + passive)) {
+  throw new Error("parallel RTDB REST transport must not exist");
 }
 
 console.log("runtime contract tests passed");
