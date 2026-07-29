@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260729-native-rtdb-transport1",
-  "source": "firebase-online-only-native-rtdb-transport-csp",
+  "version": "20260729-hidden-runtime-audit1",
+  "source": "firebase-online-only-native-rtdb-transport-hidden-runtime-audit",
   "uiReference": "ouglsoft-main",
-  "release": "20260729-native-rtdb-transport1"
+  "release": "20260729-hidden-runtime-audit1"
 }

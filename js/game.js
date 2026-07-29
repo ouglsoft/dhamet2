@@ -446,8 +446,7 @@ Game.normalizeAdvancedSettings = function () {
     moveMistakeRatePct: cfg.moveMistakeRatePct,
     evalNoise: cfg.evalNoise,
   };
-  const lim = __AI_SEARCH_LIMITS.minimax;
-  out.minimaxDepth = clampInt(out.minimaxDepth, lim.minTurnDepth, lim.maxTurnDepth, cfg.minimaxDepth);
+  out.minimaxDepth = clampInt(out.minimaxDepth, 1, 32, cfg.minimaxDepth);
   out.thinkTimeMs = clampInt(out.thinkTimeMs, 0, 20000, cfg.thinkTimeMs);
   out.timeBoostCriticalMs = clampInt(out.timeBoostCriticalMs, 0, 20000, cfg.timeBoostCriticalMs);
   out.moveChoiceTopN = clampInt(out.moveChoiceTopN, 1, 12, cfg.moveChoiceTopN);
@@ -1833,9 +1832,6 @@ function detectCriticalState(side) {
     if ((side === TOP && r >= 7) || (side === BOT && r <= 1)) return true;
   }
 
-  try {
-    if ((__aiCrownPriority(side) | 0) > 0) return true;
-  } catch {}
 
   const opp = -side;
   for (let from = 0; from < N_CELLS; from++) {

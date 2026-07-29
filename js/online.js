@@ -1012,10 +1012,6 @@
           } catch (e) {}
     
           try {
-            this._lastTrainLoggedMoveIndex = 0;
-          } catch (e) {}
-    
-          try {
             this._pendingSteps = [];
             this._cachedSouflaPlain = null;
             this._markLocalCommitSettled();
@@ -2431,7 +2427,6 @@
 
     _resetOnlineRuntimeState: function () {
           this._spectatorLeaving = false;
-          this._lastTrainLoggedMoveIndex = 0;
           this._localEndedOnline = false;
           this._selfConnected = true;
           this._oppOnline = true;
@@ -2649,7 +2644,8 @@
           } catch (e) {}
         },
 
-    _applyRemoteState: function (data) {
+    _applyRemoteState: function (data, applyOptions) {
+          const skipFx = !!(applyOptions && applyOptions.skipFx);
           try {
             this._isApplyingRemote = true;
     
@@ -2667,9 +2663,6 @@
             const snap = data && data.state ? data.state.snapshot : null;
             if (!snap) return;
     
-            try {
-              this._maybeRecordOpponentMoveForTraining(data);
-            } catch (e) {}
     
             restoreSnapshot(snap, { redraw: false, visual: false });
     
@@ -2780,7 +2773,7 @@
             } catch (e) {}
     
             try {
-              if (!__skipFx && data.state && Array.isArray(data.state.capturedOrder)) {
+              if (!skipFx && data.state && Array.isArray(data.state.capturedOrder)) {
                 try {
                   if (
                     typeof Visual !== "undefined" &&
@@ -5167,155 +5160,6 @@
             try { Logger.warn("shared_soufla_summary_failed", { err: String(e && (e.message || e)) }); } catch (_) {}
             return false;
           }
-        },
-
-    _maybeRecordOpponentMoveForTraining: function (data) {
-          try {
-            if (typeof TrainRecorder === "undefined" || !TrainRecorder) return;
-            if (typeof TrainRecorder.recordExternalDecision !== "function") return;
-            if (typeof TrainRecorder.captureStateForTraining !== "function") return;
-    
-            if (typeof Game === "undefined" || !Game) return;
-            if (typeof cloneBoard !== "function") return;
-            if (typeof applyMoveSim !== "function") return;
-            if (typeof isSquareCapturableBy !== "function") return;
-            if (typeof valueAt !== "function" || typeof pieceKind !== "function") return;
-            if (typeof rcStr !== "function") return;
-            if (typeof N_CELLS !== "number" || typeof ACTION_ENDCHAIN !== "number") return;
-            if (typeof MAN !== "number" || typeof KING !== "number") return;
-    
-            const lm = data && data.lastMove ? data.lastMove : null;
-            if (!lm || lm.kind !== "move") return;
-    
-            try {
-              if (data && data.soufla && data.soufla.pending) return;
-            } catch (e) {}
-    
-            const mi = Number(lm.moveIndex ?? data.moveIndex ?? 0) || 0;
-            if (!mi) return;
-    
-            const by = typeof lm.by === "number" ? lm.by | 0 : 0;
-            if (!by || (this.mySide != null && by === (this.mySide | 0))) return;
-            if (mi <= (this._lastTrainLoggedMoveIndex || 0)) return;
-    
-            const ply = (lm.ply != null ? Number(lm.ply) : Number(data.ply)) || 0;
-            const prePly = ply - 1;
-            if (prePly < 0) return;
-    
-            const states = data.states || null;
-            const preState = states && states[String(prePly)] ? states[String(prePly)] : null;
-            const preSnap = preState && preState.snapshot ? preState.snapshot : null;
-            if (!preSnap || !preSnap.board) return;
-    
-            const from0 = Number(lm.from);
-            if (!Number.isFinite(from0)) return;
-    
-            let path = [];
-            if (Array.isArray(lm.path) && lm.path.length) path = lm.path.slice();
-            else if (Number.isFinite(lm.to)) path = [Number(lm.to)];
-            if (!path.length) return;
-    
-            const simBoard = cloneBoard(preSnap.board);
-    
-            try {
-              if (TrainRecorder && typeof TrainRecorder.beginMoveBoundary === "function")
-                TrainRecorder.beginMoveBoundary({ type: "ext_move", moveIndex: mi, by });
-            } catch (e) {}
-    
-            const savedBoard = Game.board;
-            const savedPlayer = Game.player;
-            const savedInChain = Game.inChain;
-            const savedChainPos = Game.chainPos;
-    
-            let anyCap = false;
-    
-            try {
-              for (let i = 0; i < path.length; i++) {
-                const stepFrom = i === 0 ? from0 : Number(path[i - 1]);
-                const stepTo = Number(path[i]);
-                if (!Number.isFinite(stepFrom) || !Number.isFinite(stepTo)) continue;
-    
-                const preChainPosRaw = Number(preSnap.chainPos);
-                const preChainPos =
-                  Number.isFinite(preChainPosRaw) && preChainPosRaw >= 0 ? preChainPosRaw | 0 : null;
-    
-                Game.board = simBoard;
-                Game.player = by;
-                Game.inChain = i > 0 ? true : !!preSnap.inChain;
-                Game.chainPos = i > 0 ? stepFrom | 0 : preChainPos;
-    
-                const st = TrainRecorder.captureStateForTraining();
-                if (!st) break;
-    
-                const action = (stepFrom | 0) * N_CELLS + (stepTo | 0);
-    
-                const beforeV = valueAt(stepFrom | 0);
-                const beforeKind = pieceKind(beforeV);
-                const res = applyMoveSim(stepFrom | 0, stepTo | 0);
-                const cap = res && res.isCap ? 1 : 0;
-                if (cap) anyCap = true;
-    
-                const afterV = valueAt(stepTo | 0);
-                const afterKind = pieceKind(afterV);
-                const crown = beforeKind === MAN && afterKind === KING ? 1 : 0;
-    
-                let trap = 0;
-                try {
-                  trap = isSquareCapturableBy(-by, stepTo | 0) ? 1 : 0;
-                } catch (e) {}
-    
-                try {
-                  TrainRecorder.recordExternalDecision({
-                    state: st,
-                    action,
-                    actor: by,
-                    cap,
-                    crown,
-                    trap,
-                    fromStr: rcStr(stepFrom | 0),
-                    toStr: rcStr(stepTo | 0),
-                  });
-                } catch (e) {}
-              }
-    
-              if (anyCap) {
-                const lastTo = Number(path[path.length - 1]);
-                if (Number.isFinite(lastTo)) {
-                  Game.board = simBoard;
-                  Game.player = by;
-                  Game.inChain = true;
-                  Game.chainPos = lastTo | 0;
-    
-                  const endState = TrainRecorder.captureStateForTraining();
-                  if (endState) {
-                    let trapEnd = 0;
-                    try {
-                      trapEnd = isSquareCapturableBy(-by, lastTo | 0) ? 1 : 0;
-                    } catch (e) {}
-                    try {
-                      TrainRecorder.recordExternalDecision({
-                        state: endState,
-                        action: ACTION_ENDCHAIN,
-                        actor: by,
-                        cap: 0,
-                        crown: 0,
-                        trap: trapEnd,
-                        fromStr: rcStr(lastTo | 0),
-                        toStr: "END",
-                      });
-                    } catch (e) {}
-                  }
-                }
-              }
-            } finally {
-              Game.board = savedBoard;
-              Game.player = savedPlayer;
-              Game.inChain = savedInChain;
-              Game.chainPos = savedChainPos;
-            }
-    
-            this._lastTrainLoggedMoveIndex = mi;
-          } catch (e) {}
         },
 
     recordLocalStep: function (fromIdx, toIdx, isCapture, jumpedIdx) {

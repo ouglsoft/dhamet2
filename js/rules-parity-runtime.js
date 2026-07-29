@@ -211,7 +211,7 @@
     return !!(!Game._souflaApplying && (Game.awaitingPenalty || Game.souflaPending));
   }
 
-  expireUnclaimedSouflaOnMoveStart = function expireUnclaimedSouflaOnMoveStartParity() {
+  function expireUnclaimedSouflaOnMoveStart() {
     const pending = Game.availableSouflaForHuman;
     if (!pending || Game._souflaApplying) return false;
     if (Number(pending.penalizer) !== Number(Game.player)) return false;
@@ -281,7 +281,7 @@
     try { SessionGame.saveSoon(); } catch (_) {}
   };
 
-  serializeSouflaPending = function serializeSouflaPendingParity(pending) {
+  function serializeSouflaPending(pending) {
     if (!pending || typeof pending !== 'object') return null;
     const out = {};
     Object.keys(pending).forEach((key) => {
@@ -294,7 +294,7 @@
     return out;
   };
 
-  restoreSouflaPending = function restoreSouflaPendingParity(raw) {
+  function restoreSouflaPending(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const out = {};
     Object.keys(raw).forEach((key) => {
@@ -306,7 +306,7 @@
     return out;
   };
 
-  resetTransientGameState = function resetTransientGameStateParity(options) {
+  function resetTransientGameState(options) {
     const opts = options && typeof options === 'object' ? options : {};
     Game.awaitingPenalty = false;
     Game._souflaApplying = false;

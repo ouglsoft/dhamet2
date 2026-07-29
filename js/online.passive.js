@@ -1760,8 +1760,6 @@
 
     _isApplyingRemote: false,
 
-    _lastTrainLoggedMoveIndex: 0,
-
     _awaitingLocalCommit: false,
 
     _expectedMoveIndex: null,

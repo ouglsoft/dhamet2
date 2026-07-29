@@ -1164,7 +1164,6 @@ const Input = {
             body: `<div>${t("modals.forcedOpening.body")}</div>`,
             okLabel: t("actions.close"),
             okClassName: "primary",
-            onClick: () => UI.showSettingsModal(prefill),
           });
           return;
         }
@@ -1770,9 +1769,9 @@ const UI = {
       ? window.AI_LEVEL_ORDER
       : ["beginner", "easy", "medium", "hard", "strong", "expert"];
     const normalizeLevel = (value) => typeof normalizeAILevel === "function"
-      ? normalizeAILevel(value || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"))
-      : String(value || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
-    const selectedLevel = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
+      ? normalizeAILevel(value || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"))
+      : String(value || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
+    const selectedLevel = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
 
     const esc = (value) => String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -1888,7 +1887,7 @@ const UI = {
       };
 
       const starterBefore = Game.settings.starter;
-      const levelBefore = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
+      const levelBefore = normalizeLevel(adv.aiLevel || Game.pendingAILevel || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
       const themeBefore = Game.settings.theme === "dark" ? "dark" : "light";
       const boardBefore = (Game.settings.boardStyle || "2d") === "3d" ? "3d" : "2d";
       const coordsBefore = !!Game.settings.showCoords;
@@ -1897,11 +1896,11 @@ const UI = {
       let starterDeferred = false;
 
       if (!onlineNow()) {
-        const level = normalizeLevel(qs("#advAILevel", wrap)?.value || (window.DhametAIConfig && DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
+        const level = normalizeLevel(qs("#advAILevel", wrap)?.value || (window.DhametAIConfig && window.DhametAIConfig.DEFAULT_AI_LEVEL || "hard"));
         if (level !== levelBefore) {
           if (!Game.settings) Game.settings = {};
-          if (window.DhametAIConfig && typeof DhametAIConfig.createDefaultAdvancedSettings === "function") {
-            Game.settings.advanced = DhametAIConfig.createDefaultAdvancedSettings(level);
+          if (window.DhametAIConfig && typeof window.DhametAIConfig.createDefaultAdvancedSettings === "function") {
+            Game.settings.advanced = window.DhametAIConfig.createDefaultAdvancedSettings(level);
           } else {
             Game.settings.advanced = Object.assign({}, Game.settings.advanced || {}, { aiLevel: level });
           }
@@ -1946,7 +1945,7 @@ const UI = {
           try { SessionGame.clear(); } catch (_) {}
           setupInitialBoard();
           try {
-            if (window.DhametMatchCoordinator) DhametMatchCoordinator.resetPresentation({ draw: true });
+            if (window.DhametMatchCoordinator) window.DhametMatchCoordinator.resetPresentation({ draw: true });
             else Visual.draw();
             Turn.start();
             scheduleForcedOpeningAutoIfNeeded();
@@ -2074,7 +2073,6 @@ function confirmUndo() {
       title: t("modals.notice"),
       body: `<div>${t("ui.noUndo")}</div>`,
       okLabel: t("actions.close"),
-      onClick: () => UI.showSettingsModal(prefill),
     });
     return;
   }
