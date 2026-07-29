@@ -107,6 +107,7 @@
     playerAcceptsInvites,
     readMigrationVersion,
     readOnceWithOutcome,
+    readFirebaseRest,
     refPathString,
     requireAuthUid,
     runMigrationsOnline,
@@ -129,32 +130,8 @@
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
 
   async function readLobbyRest(path, query, timeoutMs) {
-    const user = auth && auth.currentUser ? auth.currentUser : null;
-    if (!user || !user.isAnonymous || !firebaseConfig || !firebaseConfig.databaseURL) return null;
-    const token = await S.settleWithin(user.getIdToken(false), 5000, null);
-    if (!token) return null;
-    const base = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
-    if (!base) return null;
-    const url = new URL(`${base}/${String(path || "").replace(/^\/+|\/+$/g, "")}.json`);
-    url.searchParams.set("auth", String(token));
-    Object.entries(query || {}).forEach(([key, value]) => {
-      if (value != null) url.searchParams.set(key, String(value));
-    });
-    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = setTimeout(() => { try { controller && controller.abort(); } catch (_) {} }, Math.max(1000, Number(timeoutMs || 6500)));
-    try {
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        cache: "no-store",
-        credentials: "omit",
-        signal: controller ? controller.signal : undefined,
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) throw new Error(`firebase-rest-${response.status}`);
-      return await response.json();
-    } finally {
-      clearTimeout(timer);
-    }
+    if (typeof readFirebaseRest !== "function") throw new Error("firebase-rest-helper-unavailable");
+    return await readFirebaseRest(path, query || {}, timeoutMs || 6500);
   }
 
   function deferredPromotionQueue(stateRecord) {
@@ -6797,7 +6774,7 @@
             this._lobbyRestFallbackTimer = setTimeout(() => {
               this._lobbyRestFallbackTimer = null;
               runRestFallback("initial");
-            }, 4500);
+            }, 60);
           }
         },
 
@@ -7024,18 +7001,35 @@
     } catch (_) {}
   }, { passive: true });
 
+  function refreshLobbyTransport(reason, force) {
+    try {
+      if (!document.getElementById("roomsList") || !document.getElementById("playersList")) return false;
+      const last = Number(Online._lobbyLastDataAt || 0);
+      const loading = !!document.querySelector("#roomsList .z-loading, #playersList .z-loading");
+      const failed = !!document.querySelector("#roomsList .z-load-error, #playersList .z-load-error");
+      const stale = last > 0 ? Date.now() - last > 90 * 1000 : loading;
+      if (!force && !stale && !failed) return false;
+      try { if (firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
+      setTimeout(function () {
+        try {
+          Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" });
+          try { Logger.info("lobby_transport_refresh", { reason: String(reason || "unknown") }); } catch (_) {}
+        } catch (_) {}
+      }, 80);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   document.addEventListener("visibilitychange", function () {
     try {
       if (document.visibilityState !== "visible") return;
-      if (!document.getElementById("roomsList") || !document.getElementById("playersList")) return;
-      const last = Number(Online._lobbyLastDataAt || 0);
-      const stale = last > 0 && Date.now() - last > 90 * 1000;
-      const failed = !!document.querySelector("#roomsList .z-load-error, #playersList .z-load-error");
-      if (!stale && !failed) return;
-      try { if (firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
-      setTimeout(function () {
-        try { Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" }); } catch (_) {}
-      }, 80);
+      refreshLobbyTransport("visibility", false);
     } catch (_) {}
+  }, { passive: true });
+
+  window.addEventListener("online", function () {
+    try { refreshLobbyTransport("browser-online", true); } catch (_) {}
   }, { passive: true });
 })();

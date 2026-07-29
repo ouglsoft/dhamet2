@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260728-message-lobby-fix1",
-  "source": "firebase-online-only-message-lobby-fix",
+  "version": "20260729-permanent-lobby-transport1",
+  "source": "firebase-online-only-permanent-lobby-transport",
   "uiReference": "ouglsoft-main",
-  "release": "20260728-message-lobby-fix1"
+  "release": "20260729-permanent-lobby-transport1"
 }

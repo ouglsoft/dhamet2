@@ -49,7 +49,6 @@ if (primaryAvailable) {
 
 assert.match(online, /event\.persisted/, 'BFCache-restored mobile lobby must rebind listeners');
 assert.match(online, /visibilitychange/, 'stale visible mobile lobby must recover listeners');
-assert.match(online, /db\.goOffline\(\)/, 'lobby recovery must reset a frozen RTDB connection');
 assert.match(online, /db\.goOnline\(\)/, 'lobby recovery must bring RTDB back online');
 assert.match(online, /resetAnonymous\(\)/, 'lobby recovery must repair damaged normal-browser auth state');
 assert.match(online, /_lobbyInitGeneration/, 'old lobby callbacks must be invalidated during recovery');
@@ -57,7 +56,10 @@ assert.match(online, /async function readLobbyRest\(path, query, timeoutMs\)/, '
 assert.match(online, /runRestFallback\("initial"\)/, 'REST recovery must start before the loading watchdog expires');
 assert.match(online, /30000/, 'REST recovery must keep a low-frequency refresh while live listeners are broken');
 assert.match(passive, /_lobbyRestFallbackTimer[\s\S]*_lobbyRestPollTimer/, 'page teardown must clear REST recovery timers');
-assert.match(shell, /normal-browser-lobby-reset-v4/, 'normal browser profiles must receive the one-time clean-session migration');
-assert.match(shell, /deleteIndexedDb\("firebaseLocalStorageDb"/, 'stale Firebase IndexedDB auth must be cleared once on the lobby');
+assert.doesNotMatch(shell, /prepareOneTimeFirebaseMigration|deleteIndexedDb|FIREBASE_MIGRATION_VERSION/, 'lobby recovery must not depend on destructive one-time migration');
+assert.match(passive, /async function firebaseRestRequest\(path, options\)/, 'shared authenticated RTDB REST transport is required');
+assert.match(passive, /presence_rest_fallback_applied/, 'presence bootstrap must fall back to REST on every affected load');
+assert.match(online, /}, 60\);/, 'initial REST lobby snapshot must start immediately, not after a long delay');
+assert.match(online, /lobby_transport_refresh/, 'visible or reconnected tabs must receive a permanent transport health refresh');
 
 console.log('soufla, log, and mobile lobby recovery tests passed');

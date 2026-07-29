@@ -7,8 +7,6 @@
 
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
   const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
-  const FIREBASE_MIGRATION_KEY = "dhamet2.firebase.migration.v1";
-  const FIREBASE_MIGRATION_VERSION = "2026-07-28-normal-browser-lobby-reset-v4";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
@@ -172,83 +170,6 @@
     } catch (_) {}
   }
 
-  function needsFirebaseMigration() {
-    try { return localStorage.getItem(FIREBASE_MIGRATION_KEY) !== FIREBASE_MIGRATION_VERSION; }
-    catch (_) { return true; }
-  }
-
-  function removeMatchingStorageKeys(storage, predicate) {
-    try {
-      const keys = [];
-      for (let i = 0; i < storage.length; i += 1) keys.push(storage.key(i));
-      keys.filter(Boolean).forEach((key) => {
-        try { if (predicate(String(key))) storage.removeItem(key); } catch (_) {}
-      });
-    } catch (_) {}
-  }
-
-  async function prepareOneTimeFirebaseMigration() {
-    if (!needsFirebaseMigration()) return false;
-
-    // Normal browser profiles can retain an obsolete anonymous-auth record or a
-    // failed RTDB transport marker while a private profile starts clean. On the
-    // lobby only, remove that stale client state once and create a fresh tab-scoped
-    // anonymous session. Active game pages are deliberately not disrupted.
-    const resetLobbyAuth = isLobbyPage();
-    try {
-      removeMatchingStorageKeys(sessionStorage, (key) =>
-        key === "firebase:previous_websocket_failure" ||
-        key.startsWith("dhamet2.presence.legacy.") ||
-        (resetLobbyAuth && (
-          key === AUTH_TAB_KEY ||
-          key === SESSION_KEY ||
-          key.startsWith("firebase:authUser:")
-        ))
-      );
-    } catch (_) {}
-    try {
-      removeMatchingStorageKeys(localStorage, (key) =>
-        key === "firebase:previous_websocket_failure" ||
-        key === "zamat.session.user.persist.v1" ||
-        key.startsWith("dhamet2.presence.legacy.") ||
-        (resetLobbyAuth && (key.startsWith("firebase:authUser:") || key.startsWith("firebase:host:")))
-      );
-    } catch (_) {}
-    if (resetLobbyAuth) {
-      try { await deleteIndexedDb("firebaseLocalStorageDb", 2500); } catch (_) {}
-    }
-    return true;
-  }
-
-  function deleteIndexedDb(name, timeoutMs) {
-    return new Promise((resolve) => {
-      if (!window.indexedDB || !name) { resolve(false); return; }
-      let settled = false;
-      const finish = (value) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(!!value);
-      };
-      const timer = setTimeout(() => finish(false), Math.max(500, Number(timeoutMs || 2500)));
-      try {
-        const req = indexedDB.deleteDatabase(String(name));
-        req.onsuccess = () => finish(true);
-        req.onerror = () => finish(false);
-        req.onblocked = () => finish(false);
-      } catch (_) { finish(false); }
-    });
-  }
-
-  function isLobbyPage() {
-    try { return /(?:^|\/)loby\.html$/i.test(String(location.pathname || "")); }
-    catch (_) { return false; }
-  }
-
-  function markFirebaseMigrationComplete() {
-    try { localStorage.setItem(FIREBASE_MIGRATION_KEY, FIREBASE_MIGRATION_VERSION); } catch (_) {}
-  }
-
   function initFirebase() {
     if (!firebaseConfigReady(window.firebaseConfig)) {
       throw new Error("firebase-config-required");
@@ -297,8 +218,6 @@
   async function ensureAnonymous() {
     if (ensureAnonymousPromise) return ensureAnonymousPromise;
     ensureAnonymousPromise = (async () => {
-      const migrationRequired = needsFirebaseMigration();
-      if (migrationRequired) await prepareOneTimeFirebaseMigration();
       if (!initFirebase()) throw new Error("firebase-unavailable");
       const auth = firebase.auth();
       // The emergency identity is tab-scoped. This prevents an old anonymous UID/token
@@ -326,7 +245,6 @@
       try { firebase.database().goOnline(); } catch (_) {}
       markTabAuth(user);
       writeSession(user);
-      if (migrationRequired) markFirebaseMigrationComplete();
       return user;
     })().finally(() => { ensureAnonymousPromise = null; });
     return ensureAnonymousPromise;

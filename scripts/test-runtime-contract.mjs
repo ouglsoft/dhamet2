@@ -12,6 +12,8 @@ if (!shell.includes("waitForInitialAuthState")) throw new Error("auth persistenc
 if (!shell.includes("Auth.Persistence.SESSION")) throw new Error("anonymous auth must be tab/session scoped");
 if (!shell.includes("AUTH_TAB_KEY")) throw new Error("tab auth marker is missing");
 if (!shell.includes("resetAnonymous")) throw new Error("anonymous-session recovery is missing");
+if (!passive.includes("firebaseRestRequest") || !passive.includes("presence_rest_fallback_applied")) throw new Error("per-load REST presence fallback is missing");
+if (/prepareOneTimeFirebaseMigration|deleteIndexedDb|FIREBASE_MIGRATION_VERSION/.test(shell)) throw new Error("lobby recovery must not depend on a one-time destructive migration");
 if (!passive.includes("Never mark the new session busy")) throw new Error("stale active-game recovery is missing");
 if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
 if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("normal pagehide must detach all subscriptions locally");

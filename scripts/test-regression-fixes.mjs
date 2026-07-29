@@ -119,20 +119,21 @@ assert.match(ui, /function setUndoMove\(fr, to, noDraw\)/);
 assert.match(ui, /setCapturedOrder\(list, noDraw\)/);
 assert.match(theme, /--piece-black-edge:\s*rgb\(154 52 18\)/);
 
-assert.match(shell, /FIREBASE_MIGRATION_VERSION/);
-assert.match(shell, /prepareOneTimeFirebaseMigration/);
-assert.match(shell, /function deleteIndexedDb\(name, timeoutMs\)/);
-assert.match(shell, /normal-browser-lobby-reset-v4/);
-assert.match(shell, /deleteIndexedDb\("firebaseLocalStorageDb", 2500\)/);
-assert.match(shell, /resetLobbyAuth && \([\s\S]*key === AUTH_TAB_KEY[\s\S]*key === SESSION_KEY/);
+assert.doesNotMatch(shell, /FIREBASE_MIGRATION_VERSION|prepareOneTimeFirebaseMigration|deleteIndexedDb|markFirebaseMigrationComplete/);
 assert.match(shell, /markerMatches/);
 assert.match(shell, /getIdToken\(true\)/);
 assert.match(shell, /auth\.signInAnonymously\(\)/);
-assert.ok(shell.indexOf('markFirebaseMigrationComplete();') > shell.indexOf('writeSession(user);'));
+assert.match(shell, /Auth\.Persistence\.SESSION/);
 assert.match(shell, /firebase\.database\(\)\.goOnline\(\)/);
 assert.doesNotMatch(shell, /localStorage\.clear\(|sessionStorage\.clear\(/);
 assert.doesNotMatch(read('js/game.js'), /localStorage\.getItem\("zamat\.session\.user\.persist\.v1"\)/);
-assert.match(shell, /key === "zamat\.session\.user\.persist\.v1"/);
+assert.match(passive, /async function firebaseRestRequest\(path, options\)/);
+assert.match(passive, /writeFirebaseRest\(`players\/\$\{encodeURIComponent\(this\.myUid\)\}`/);
+assert.match(passive, /presence_rest_fallback_applied/);
+assert.match(online, /readFirebaseRest/);
+assert.match(online, /runRestFallback\("initial"\)/);
+assert.match(online, /}, 60\);/);
+assert.match(online, /window\.addEventListener\("online"/);
 
 for (const file of ['mic-on.svg', 'mic-off.svg', 'volume-on.svg', 'volume-off.svg']) {
   assert.match(read(`assets/icons/${file}`), /<svg/);
@@ -150,7 +151,7 @@ assert.match(online, /lobby\.players\.callback/);
 assert.match(online, /lobby\.rooms\.callback/);
 assert.match(online, /playersLoaded = false;[\s\S]{0,180}showLobbyFailure\(\)/);
 assert.match(online, /roomsLoaded = false;[\s\S]{0,180}showLobbyFailure\(\)/);
-assert.match(shell, /2026-07-28-normal-browser-lobby-reset-v4/);
+assert.doesNotMatch(shell, /normal-browser-lobby-reset|prepareOneTimeFirebaseMigration|deleteIndexedDb/);
 assert.match(passive, /_teardownPageRuntime/);
 assert.match(passive, /_teardownOnlineSubscriptions\(\{ localOnly: true \}\)/);
 assert.doesNotMatch(passive, /addEventListener\("beforeunload", cleanup/);
