@@ -105,6 +105,7 @@
     openOnlineTextPrompt,
     plainToSoufla,
     playerAcceptsInvites,
+    resolvePublicPresenceState,
     readMigrationVersion,
     readOnceWithOutcome,
     refPathString,
@@ -126,6 +127,21 @@
   } = S;
 
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
+
+  function lobbyStatusInfo(player, activePlayerRooms, uid) {
+    const resolved = resolvePublicPresenceState(player, activePlayerRooms, uid);
+    const status = String(resolved.state || resolved.status || "available");
+    const key = status === "invitesDisabled"
+      ? "lobby.invitesDisabled"
+      : (status === "inPvP" ? "online.status.inPvP" : "online.status.available");
+    return {
+      status,
+      label: window.I18N.translateArgs(key),
+      acceptsInvites: resolved.acceptsInvites !== false,
+      inOnlineMatch: !!resolved.inOnlineMatch,
+      canInvite: status === "available",
+    };
+  }
 
   function deferredPromotionQueue(stateRecord) {
     const source = stateRecord || {};
@@ -1862,6 +1878,7 @@
         },
 
     endOnline: async function () {
+          this._suppressNextLocalEndPresentation = true;
           try {
             this._localEndedOnline = true;
           } catch (e) {}
@@ -1926,6 +1943,7 @@
           }
     
           if (!wrote) {
+            this._suppressNextLocalEndPresentation = false;
             try {
               showOnlineNotice(window.I18N.translateArgs("online.endFail"));
             } catch (e) {}
@@ -2134,6 +2152,8 @@
 
     _enterPostMatch: function (meta) {
           const info = meta && typeof meta === "object" ? meta : {};
+          const suppressLocalNotice = info.suppressLocalNotice === true || this._suppressNextLocalEndPresentation === true;
+          this._suppressNextLocalEndPresentation = false;
           const presentation = this._buildOnlineEndPresentation(info);
           const winner = presentation.winner;
           try { this._clearPostMatchSession(); } catch (e) {}
@@ -2164,6 +2184,7 @@
           try { if (typeof Input !== "undefined" && Input) Input.selected = null; } catch (e) {}
           try { if (typeof UI !== "undefined" && UI && typeof UI.updateStatus === "function") UI.updateStatus(); } catch (e) {}
           try { this.refreshPvpControls && this.refreshPvpControls(); } catch (e) {}
+          if (suppressLocalNotice) return true;
           try {
             if (typeof UI !== "undefined" && UI && typeof UI.showOnlineGameOverModal === "function") {
               const opened = UI.showOnlineGameOverModal(presentation);
@@ -5056,9 +5077,11 @@
     
             const logEl = document.getElementById("log");
             if (!logEl) return;
-    
-            const slice = arr.slice(-80).reverse();
-    
+
+            const previousTop = logEl.scrollTop || 0;
+            const followLatest = Math.max(0, logEl.scrollHeight - logEl.clientHeight - logEl.scrollTop) <= 48;
+            const slice = arr.slice(-80);
+
             logEl.innerHTML = "";
             slice.forEach((it) => {
               const row = document.createElement("div");
@@ -5094,6 +5117,9 @@
               row.appendChild(msgEl);
     
               logEl.appendChild(row);
+            });
+            requestAnimationFrame(() => {
+              logEl.scrollTop = followLatest ? logEl.scrollHeight : previousTop;
             });
           } catch (e) {}
         },
@@ -6235,32 +6261,21 @@
                   }
     
                   const nick = (p.nickname || "").trim() || defaultNick(uid);
-                  const st = p.status || "available";
-                  const role = (p.role || "").trim();
-                  const effectiveRole =
-                    role || (st === "inPvP" ? "player" : st === "spectating" ? "spectator" : "");
-    
-                  const stLabel =
-                    st === "available"
-                      ? window.I18N.translateArgs("online.status.available")
-                      : st === "inPvP" || st === "spectating"
-                        ? window.I18N.translateArgs("online.status.inPvP")
-                        : st;
-    
-                  const roomId = (p.roomId || "").trim();
-                  const roomListRoomId = this._lobbyActivePlayerRooms && this._lobbyActivePlayerRooms[uid]
-                    ? String(this._lobbyActivePlayerRooms[uid])
-                    : "";
-                  const inMatchAsPlayer =
-                    (effectiveRole === "player" && !!roomId) ||
-                    (st === "inPvP" && effectiveRole === "player") ||
-                    !!roomListRoomId;
-                  const acceptsInvites = playerAcceptsInvites(p);
-                  const canInvite = !inMatchAsPlayer && !isSelf && acceptsInvites;
-                  const displayStatus = inMatchAsPlayer ? "inPvP" : st;
-                  const displayStatusLabel = inMatchAsPlayer ? window.I18N.translateArgs("online.status.inPvP") : stLabel;
-    
-                  rows.push({ uid, nick, st: displayStatus, stLabel: displayStatusLabel, canInvite, acceptsInvites, icon: p.icon, registered: p.registered !== false, isSelf });
+                  const statusInfo = lobbyStatusInfo(p, this._lobbyActivePlayerRooms || {}, uid);
+                  const canInvite = !isSelf && statusInfo.canInvite;
+
+                  rows.push({
+                    uid,
+                    nick,
+                    st: statusInfo.status,
+                    stLabel: statusInfo.label,
+                    canInvite,
+                    acceptsInvites: statusInfo.acceptsInvites,
+                    inOnlineMatch: statusInfo.inOnlineMatch,
+                    icon: p.icon,
+                    registered: p.registered !== false,
+                    isSelf,
+                  });
                 }
               }
     

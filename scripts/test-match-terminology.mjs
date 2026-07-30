@@ -46,13 +46,13 @@ const translations = parseTranslations(i18nSource);
 const lobbyHtml = read("pages/loby.html");
 const gameHtml = read("pages/game.html");
 
-assert.equal(translations.ar.lobby.title, "المباريات الجارية واللاعبون المتصلون");
+assert.equal(translations.ar.lobby.title, "اللوبي");
 assert.equal(translations.ar.lobby.roomsTitle, "قائمة المباريات الجارية");
-assert.equal(translations.en.lobby.title, "Ongoing matches and connected players");
+assert.equal(translations.en.lobby.title, "Lobby");
 assert.equal(translations.en.lobby.roomsTitle, "List of ongoing matches");
-assert.equal(translations.fr.lobby.title, "Parties en cours et joueurs connectés");
+assert.equal(translations.fr.lobby.title, "Lobby");
 assert.equal(translations.fr.lobby.roomsTitle, "Liste des parties en cours");
-assert.match(lobbyHtml, /المباريات الجارية واللاعبون المتصلون/);
+assert.match(lobbyHtml, /data-i18n="lobby.title">اللوبي</);
 assert.match(lobbyHtml, /قائمة المباريات الجارية/);
 
 for (const [lang, fromName, matchName, expected] of [

@@ -1150,9 +1150,12 @@ body.z-game-page:not(.mode-pvp):not(.z-mobile-on) #btnUndo {
   color: rgb(var(--rgb-primary-200));
 }
 
-.lang-ar .log-item,
-.lang-ar .modal-body {
+.lang-ar .log-item {
   text-align: right;
+  direction: rtl;
+}
+
+.lang-ar .modal-body {
   direction: rtl;
 }
 
@@ -1283,6 +1286,8 @@ body.z-game-page:not(.mode-pvp):not(.z-mobile-on) #btnUndo {
   max-height: none;
   line-height: 1.6;
   font-size: var(--fs-body);
+  text-align: center;
+  direction: inherit;
 }
 
 .modal.z-apply-settings {

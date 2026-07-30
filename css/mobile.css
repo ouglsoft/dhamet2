@@ -899,29 +899,7 @@ body.z-mobile-on[data-mobile-page="lobby"] .z-mobile-lobby-headtexts .z-lobby-su
   text-align: center;
 }
 
-body.z-mobile-on[data-mobile-page="lobby"] .z-mobile-lobby-rank-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  min-width: 40px;
-  width: 40px;
-  height: 40px;
-  padding: 0 !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-}
 
-body.z-mobile-on[data-mobile-page="lobby"] .z-mobile-lobby-rank-ico {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background-color: currentColor;
-  -webkit-mask: url("../assets/icons/leaderboard.svg?v=20260725-uiparity1") center / contain no-repeat;
-  mask: url("../assets/icons/leaderboard.svg?v=20260725-uiparity1") center / contain no-repeat;
-}
 
 body.z-mobile-on[data-mobile-page="lobby"] .z-invite-receive-row {
   min-height: 36px;
@@ -1015,12 +993,6 @@ body.z-mobile-on[data-mobile-orientation="portrait"][data-mobile-page="lobby"] .
   padding-inline: 44px;
 }
 
-body.z-mobile-on[data-mobile-orientation="portrait"][data-mobile-page="lobby"] .z-mobile-lobby-rank-btn {
-  position: absolute;
-  inset-inline-end: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
 
 body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="lobby"] .z-mobile-lobby-headbar {
   justify-content: center;
@@ -1030,10 +1002,6 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="lobby"] 
   width: 100%;
 }
 
-body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="lobby"] .z-mobile-lobby-rank-btn {
-  align-self: center;
-  margin-top: 4px;
-}
 
 
 
@@ -2788,4 +2756,9 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="game"] .
 body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row.is-live {
   height: 60px;
   min-height: 60px;
+}
+
+/* Game-page return icon: the phone layout has one fixed physical direction in all languages. */
+body.z-mobile-on[data-mobile-page="game"] .directional-exit-icon {
+  transform: scaleX(-1) !important;
 }

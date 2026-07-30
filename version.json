@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260730-v27-from-v24-minimal-soufla-undo",
-  "source": "firebase-online-only-native-rtdb-transport-v27-from-v24-minimal-soufla-undo",
-  "uiReference": "approved-online-only-v21",
-  "release": "20260730-v27-from-v24-minimal-soufla-undo"
+  "version": "20260730-v28-targeted-ui-lobby-fixes",
+  "source": "firebase-online-only-native-rtdb-transport-v28-targeted-ui-lobby-fixes",
+  "uiReference": "approved-online-only-v28",
+  "release": "20260730-v28-targeted-ui-lobby-fixes"
 }

@@ -1173,7 +1173,30 @@
   }
 
   function playerAcceptsInvites(player) {
-    return !(player && player.acceptsInvites === false);
+    if (!player || typeof player !== "object") return true;
+    if (player.acceptsInvites === false) return false;
+    if (player.invitesDisabled === true) return false;
+    if (player.noInvites === true) return false;
+    return true;
+  }
+
+  function resolvePublicPresenceState(player, activePlayerRooms, uid) {
+    const p = player && typeof player === "object" ? player : {};
+    const id = String(uid || p.uid || "").trim();
+    const accepts = playerAcceptsInvites(p);
+    const roomId = String(p.roomId || p.gameId || "").trim();
+    const activeRoomId = activePlayerRooms && id ? String(activePlayerRooms[id] || "").trim() : "";
+    const inOnline = !!(activeRoomId && roomId && activeRoomId === roomId && (p.status === "inPvP" || p.role === "player"));
+    let state = "available";
+    if (!accepts) state = "invitesDisabled";
+    else if (inOnline) state = "inPvP";
+    return Object.freeze({
+      state,
+      status: state,
+      acceptsInvites: accepts,
+      inOnlineMatch: inOnline,
+      canInvite: state === "available",
+    });
   }
 
   function localAcceptsInvitesPreference() {
@@ -3731,6 +3754,7 @@
     isPresenceFresh: isPresenceFresh,
     normalizeRoomVisibility: normalizeRoomVisibility,
     playerAcceptsInvites: playerAcceptsInvites,
+    resolvePublicPresenceState: resolvePublicPresenceState,
     localAcceptsInvitesPreference: localAcceptsInvitesPreference,
     formatPresenceDisconnectElapsed: formatPresenceDisconnectElapsed,
     getNickFromSessionUser: getNickFromSessionUser,

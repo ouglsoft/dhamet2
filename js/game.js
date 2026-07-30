@@ -1810,8 +1810,12 @@ function resolveTurnActorLabel(side) {
           return el;
         };
 
-        let userBrowsingLog = false;
+        const LOG_BOTTOM_THRESHOLD = 48;
+        let followLatest = true;
         let programmaticLogScroll = false;
+
+        const distanceFromBottom = (log) => Math.max(0,
+          Number(log.scrollHeight || 0) - Number(log.clientHeight || 0) - Number(log.scrollTop || 0));
 
         const setLogScrollTop = (log, value) => {
           programmaticLogScroll = true;
@@ -1824,15 +1828,20 @@ function resolveTurnActorLabel(side) {
           if (!log) return;
 
           const prevTop = log.scrollTop || 0;
+          const wasNearBottom = distanceFromBottom(log) <= LOG_BOTTOM_THRESHOLD;
+          const shouldFollowLatest = followLatest || wasNearBottom || log.scrollHeight <= log.clientHeight + 1;
           log.innerHTML = "";
-          for (let i = events.length - 1; i >= 0; i--) {
+          for (let i = 0; i < events.length; i += 1) {
             log.appendChild(_makeEl(events[i]));
           }
 
           requestAnimationFrame(() => {
-            // Keep the newest events at the top only while the user is not
-            // browsing older entries. A re-render must preserve manual scroll.
-            setLogScrollTop(log, userBrowsingLog ? prevTop : 0);
+            if (shouldFollowLatest) {
+              followLatest = true;
+              setLogScrollTop(log, log.scrollHeight);
+            } else {
+              setLogScrollTop(log, prevTop);
+            }
           });
         };
 
@@ -1872,16 +1881,11 @@ function resolveTurnActorLabel(side) {
           const log = qs("#log");
           if (!log || log.__zScrollBound) return;
           log.__zScrollBound = true;
-          const beginBrowsing = () => { userBrowsingLog = true; };
-          const updateBrowsingPosition = () => {
+          const updateFollowLatest = () => {
             if (programmaticLogScroll) return;
-            userBrowsingLog = (log.scrollTop || 0) > 2;
+            followLatest = distanceFromBottom(log) <= LOG_BOTTOM_THRESHOLD;
           };
-          log.addEventListener("touchstart", beginBrowsing, { passive: true });
-          log.addEventListener("touchmove", beginBrowsing, { passive: true });
-          log.addEventListener("pointerdown", beginBrowsing, { passive: true });
-          log.addEventListener("wheel", beginBrowsing, { passive: true });
-          log.addEventListener("scroll", updateBrowsingPosition, { passive: true });
+          log.addEventListener("scroll", updateFollowLatest, { passive: true });
         });
 
         return { addEvent, addText, setEvents, retranslate, _events: events };
@@ -1909,8 +1913,9 @@ function resolveTurnActorLabel(side) {
           el.appendChild(timeEl);
           el.appendChild(document.createTextNode(" "));
           el.appendChild(msgEl);
-          log.prepend(el);
-          log.scrollTop = 0;
+          const shouldFollowLatest = Math.max(0, log.scrollHeight - log.clientHeight - log.scrollTop) <= 48;
+          log.appendChild(el);
+          if (shouldFollowLatest) requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
         }
       };
       const AppPref = {

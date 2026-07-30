@@ -380,14 +380,12 @@ function ensureOrientButton() {
     var center = qs('.z-lobby-head-center', head);
     var box = qs('.z-mobile-head-box', inner);
     var bottom = qs('.z-lobby-bottom', inner);
-    var lbBtn = qs('#btnShowLeaderboardLobby');
     var inviteControls = qs('#lobbyInviteControls');
     if (!inner || !head || !center) return;
     var title = box ? qs('.z-page-title', box) : null;
     var sub = box ? qs('.z-lobby-subtitle', box) : null;
     if (title && title.parentNode !== center) center.insertBefore(title, center.firstChild || null);
     if (sub && sub.parentNode !== center) center.appendChild(sub);
-    if (lbBtn && bottom && lbBtn.parentNode !== bottom) bottom.insertBefore(lbBtn, bottom.firstChild || null);
     if (inviteControls && bottom && inviteControls.parentNode !== bottom) {
       var back = qs('.z-lobby-back', bottom);
       bottom.insertBefore(inviteControls, back || null);
@@ -446,27 +444,10 @@ function ensureOrientButton() {
     if (title.parentNode !== texts) texts.appendChild(title);
     if (sub.parentNode !== texts) texts.appendChild(sub);
 
-    var lbBtn = qs('#btnShowLeaderboardLobby');
-    if (lbBtn) {
-      lbBtn.classList.add('z-mobile-lobby-rank-btn');
-      var label = window.I18N.text('dashboard.showLeaderboard', null, currentLang());
-      lbBtn.setAttribute('aria-label', label);
-      lbBtn.setAttribute('title', label);
-    var icon = qs('.z-mobile-lobby-rank-ico', lbBtn);
-if (!icon) {
-  icon = document.createElement('span');
-  icon.className = 'z-mobile-lobby-rank-ico';
-  icon.setAttribute('aria-hidden', 'true');
-  lbBtn.insertBefore(icon, lbBtn.firstChild);
-}
-    }
-
     if (isLandscape()) {
       if (texts.parentNode !== box) box.insertBefore(texts, box.firstChild || null);
-      if (lbBtn && lbBtn.parentNode !== box) box.appendChild(lbBtn);
     } else {
       if (texts.parentNode !== bar) bar.insertBefore(texts, bar.firstChild || null);
-      if (lbBtn && lbBtn.parentNode !== bar) bar.appendChild(lbBtn);
     }
     placeLobbyInviteControls(box);
   }
@@ -757,7 +738,13 @@ if (!icon) {
       var nextPresence = gamePresenceText(slot.presence);
       if (name && name.textContent !== nextName) name.textContent = nextName;
       if (presence && presence.textContent !== nextPresence) presence.textContent = nextPresence;
-      if (presence) presence.hidden = !nextPresence;
+      if (presence) {
+        presence.hidden = !nextPresence;
+        var onlineNow = !!(slot.presence && slot.presence.online === true);
+        var offlineNow = !!(slot.presence && slot.presence.online === false);
+        presence.classList.toggle('z-presence-online', onlineNow);
+        presence.classList.toggle('z-presence-offline', offlineNow);
+      }
       if (avatar) {
         var src = String(slot.avatar || '').trim();
         if (!src && side === 'top') src = baseHref() + '/assets/icons/users/autouser1.png';

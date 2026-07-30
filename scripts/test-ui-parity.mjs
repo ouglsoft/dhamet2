@@ -19,12 +19,12 @@ for (const required of [
 ]) assert.ok(exists(required), `Missing synchronized UI file: ${required}`);
 
 const lobby = read("pages/loby.html");
-assert.match(lobby, /المباريات الجارية واللاعبون المتصلون/);
+assert.match(lobby, /data-i18n="lobby.title">اللوبي</);
 assert.match(lobby, /شاهد المباريات الجارية أو اختر لاعبًا متصلًا وادعه إلى مباراة مباشرة/);
 assert.match(lobby, /id="lobbyInviteControls"/);
 assert.match(lobby, /id="btnLobbyManualRefresh"/);
-assert.match(lobby, /id="btnShowLeaderboardLobby"/);
-assert.match(lobby, /class="btn secondary z-dash-leaderboard-btn"/);
+assert.doesNotMatch(lobby, /id="btnShowLeaderboardLobby"/);
+assert.doesNotMatch(lobby, /z-dash-leaderboard-btn/);
 assert.match(lobby, /theme\.css/);
 assert.match(lobby, /visual-shell\.js/);
 assert.doesNotMatch(lobby, /نظام اللعب الاحتياطي|جلسات مجهولة|مباريات غير مصنفة|z-emergency-banner/);
@@ -52,10 +52,10 @@ const visualShell = read("js/visual-shell.js");
 assert.match(visualShell, /z-topbar/);
 assert.match(visualShell, /z-lang-select/);
 assert.match(visualShell, /btnLobbyManualRefresh/);
-assert.match(visualShell, /btnShowLeaderboardLobby/);
+assert.doesNotMatch(visualShell, /btnShowLeaderboardLobby/);
 
 const i18n = read("js/i18n.js");
-assert.match(i18n, /"title": "المباريات الجارية واللاعبون المتصلون"/);
+assert.match(i18n, /"title": "اللوبي"/);
 assert.match(i18n, /"syncIssueNotice": "لم تظهر آخر تغييرات المباراة/);
 assert.match(i18n, /"confirm": "هل تريد إنهاء المباراة الحالية؟"/);
 
