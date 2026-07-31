@@ -8,7 +8,7 @@
     "prepare:pages": "node deploy/prepare-pages.mjs",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.7.30-v28-targeted-ui-lobby-fixes",
+  "version": "2026.7.31-v29-mobile-head-scroll-fixes",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""

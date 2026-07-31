@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260730-v28-targeted-ui-lobby-fixes",
-  "source": "firebase-online-only-native-rtdb-transport-v28-targeted-ui-lobby-fixes",
+  "version": "20260731-v29-mobile-head-scroll-fixes",
+  "source": "firebase-online-only-native-rtdb-transport-v29-mobile-head-scroll-fixes",
   "uiReference": "approved-online-only-v28",
-  "release": "20260730-v28-targeted-ui-lobby-fixes"
+  "release": "20260731-v29-mobile-head-scroll-fixes"
 }

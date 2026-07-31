@@ -1253,6 +1253,44 @@ function endKillPressed() {
 const UI = {
   confirmMatchExit: confirmMatchExitAction,
   restoreCaptureContinuationVisualState,
+  getGameHeaderModel() {
+    const resolveSlot = (side) => {
+      try {
+        if (window.ZGamePlayers && typeof window.ZGamePlayers.resolveSlot === "function") {
+          const slot = window.ZGamePlayers.resolveSlot(side);
+          if (slot) return slot;
+        }
+      } catch (_) {}
+      return null;
+    };
+    const resolvePresence = (side) => {
+      try {
+        if (window.Online && Online.isActive && typeof Online._getGameSlotPresence === "function") {
+          return Online._getGameSlotPresence(side) || null;
+        }
+      } catch (_) {}
+      return null;
+    };
+    const topSlot = resolveSlot("top") || {};
+    const botSlot = resolveSlot("bot") || {};
+    const statusEl = qs("#statusTextMsg") || qs("#statusText");
+    return {
+      mode: document.body && document.body.classList.contains("z-spectator") ? "spectator" : "pvp",
+      activeSide: Game.player === BOT ? "bot" : "top",
+      status: statusEl ? String(statusEl.textContent || "").trim() : "",
+      uiBlocked: !!(document.documentElement && document.documentElement.classList && (document.documentElement.classList.contains("ui-hold") || document.documentElement.classList.contains("role-pending"))),
+      top: {
+        name: String(topSlot.name || Game.names.top || "").trim(),
+        avatar: String(topSlot.avatar || "").trim(),
+        presence: resolvePresence("top"),
+      },
+      bot: {
+        name: String(botSlot.name || Game.names.bot || "").trim(),
+        avatar: String(botSlot.avatar || "").trim(),
+        presence: resolvePresence("bot"),
+      },
+    };
+  },
   updateAll() {
     this.updateStatus();
     try { if (window.ZGamePlayers && typeof window.ZGamePlayers.refresh === "function") window.ZGamePlayers.refresh(); } catch (_) {}
