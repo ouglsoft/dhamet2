@@ -17,7 +17,11 @@ if (!passive.includes("_resolveActivePlayerMatch")) throw new Error("authoritati
 if (!passive.includes("_publishRoomListEntry(gid, game)")) throw new Error("active room-list repair is missing");
 if (!passive.includes("localPersistKey(PERSIST_GAME_ID_KEY, uid)")) throw new Error("cross-tab active-game persistence is missing");
 if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
-if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("normal pagehide must detach all subscriptions locally");
+const pagehideStart = passive.indexOf("    _teardownPageRuntime: function () {");
+const pagehideEnd = passive.indexOf("\n\n    _bindLifecycleCleanup: function () {", pagehideStart);
+const pagehideBlock = pagehideStart >= 0 && pagehideEnd > pagehideStart ? passive.slice(pagehideStart, pagehideEnd) : "";
+if (!pagehideBlock || /_teardownOnlineSubscriptions|\.off\s*\(|\.remove\s*\(/.test(pagehideBlock)) throw new Error("normal pagehide must stop timers without synchronously detaching Firebase");
+if (!pagehideBlock.includes("_stopPresenceHeartbeat") || !pagehideBlock.includes("_stopGamePresenceHeartbeat")) throw new Error("normal pagehide must stop local heartbeat timers");
 if (!/if \(event && event\.persisted\) return;/.test(passive)) throw new Error("BFCache pagehide must preserve Firebase listeners");
 if (!/pageshow[\s\S]*event && event\.persisted[\s\S]*firebase\.database\(\)\.goOnline/.test(passive)) throw new Error("BFCache resume must reconnect Firebase safely");
 if (/addEventListener\("beforeunload", cleanup/.test(passive)) throw new Error("Firebase cleanup must not run from beforeunload");

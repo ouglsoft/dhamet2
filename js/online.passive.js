@@ -2405,27 +2405,15 @@
         },
 
     _teardownPageRuntime: function () {
-          // Synchronous local teardown only. Firebase onDisconnect registrations
-          // remain responsible for server-side presence cleanup.
-          try { this._lobbyInitGeneration = Number(this._lobbyInitGeneration || 0) + 1; } catch (_) {}
-          try { if (this._teardownOnlineSubscriptions) this._teardownOnlineSubscriptions({ localOnly: true }); } catch (_) {}
+          // pagehide runs on the browser's tab-closing path. Do not synchronously
+          // detach the Firebase listener graph here; the document and its SDK
+          // context are being destroyed, while onDisconnect owns server cleanup.
+          // Explicit leave/logout paths still perform the complete teardown.
+          try { this._pageClosing = true; } catch (_) {}
           try { this._stopPresenceHeartbeat(); } catch (_) {}
-          try {
-            if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
-              this._presenceConnInfoRef.off("value", this._presenceConnInfoHandler);
-            }
-          } catch (_) {}
-          this._presenceConnInfoRef = null;
-          this._presenceConnInfoHandler = null;
-          try { if (this._inviteQuery) this._inviteQuery.off(); } catch (_) {}
-          this._inviteQuery = null;
-          try {
-            if (this._pendingGameWatchRef && this._pendingGameWatchCb) {
-              this._pendingGameWatchRef.off("value", this._pendingGameWatchCb);
-            }
-          } catch (_) {}
-          this._pendingGameWatchRef = null;
-          this._pendingGameWatchCb = null;
+          try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (_) {}
+          try { if (this._stopMoveCommitWatchdog) this._stopMoveCommitWatchdog(); } catch (_) {}
+          try { if (this._stopOpponentAbsenceWatcher) this._stopOpponentAbsenceWatcher(); } catch (_) {}
           try {
             if (this._purgeTimers) Object.keys(this._purgeTimers).forEach((key) => clearTimeout(this._purgeTimers[key]));
           } catch (_) {}

@@ -10,7 +10,7 @@ const passive = read("js/online.passive.js");
 const shell = read("js/emergency-shell.js");
 
 assert.match(mobile, /bar\.appendChild\(backBtn\);\s*bar\.appendChild\(langBtn\);/);
-assert.match(style, /html\[dir="ltr"\] \.directional-exit-icon\s*\{\s*transform: scaleX\(-1\)/);
+assert.match(style, /html\[dir="ltr"\] \.directional-exit-icon\s*\{\s*transform: none/);
 assert.match(logView, /function syncElement\(/);
 assert.match(game, /DhametGameLogView\.syncElement\(log, events/);
 assert.match(online, /DhametGameLogView\.syncElement\(/);

@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260731-v32-unified-session-active-match",
-  "source": "firebase-online-only-native-rtdb-transport-v32-browser-session-active-match",
-  "uiReference": "approved-online-only-v32-unified-session-active-match-ui",
-  "release": "20260731-v32-unified-session-active-match"
+  "version": "20260731-v33-direction-scroll-pagehide-close",
+  "source": "firebase-online-only-native-rtdb-transport-v33-pagehide-timer-only",
+  "uiReference": "approved-online-only-v33-direction-scroll-close-ui",
+  "release": "20260731-v33-direction-scroll-pagehide-close"
 }

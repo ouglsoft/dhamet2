@@ -144,7 +144,16 @@ assert.match(online, /lobby\.rooms\.callback/);
 assert.match(online, /playersLoaded = false;[\s\S]{0,180}showLobbyFailure\(\)/);
 assert.match(online, /roomsLoaded = false;[\s\S]{0,180}showLobbyFailure\(\)/);
 assert.match(passive, /_teardownPageRuntime/);
-assert.match(passive, /_teardownOnlineSubscriptions\(\{ localOnly: true \}\)/);
+{
+  const start = passive.indexOf("    _teardownPageRuntime: function () {");
+  const end = passive.indexOf("\n\n    _bindLifecycleCleanup: function () {", start);
+  const block = start >= 0 && end > start ? passive.slice(start, end) : "";
+  assert.ok(block, "pagehide runtime cleanup must exist");
+  assert.doesNotMatch(block, /_teardownOnlineSubscriptions|\.off\s*\(|\.remove\s*\(/,
+    "normal pagehide must not synchronously detach Firebase listeners");
+  assert.match(block, /_stopPresenceHeartbeat/);
+  assert.match(block, /_stopGamePresenceHeartbeat/);
+}
 assert.doesNotMatch(passive, /addEventListener\("beforeunload", cleanup/);
 assert.match(online, /_voiceLeave: function \(options\)/);
 assert.match(online, /if \(!localOnly\)[\s\S]{0,180}_voiceParticipantsRef/);
