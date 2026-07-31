@@ -154,7 +154,7 @@ const baseSnapshot = {
   availableSouflaForLocalPlayer: stalePending,
 };
 
-// Undo must clear any local Soufla fields stored in the restored historical snapshot.
+ 
 trace.length = 0;
 client._applyRemoteState({
   moveIndex: 10,
@@ -168,7 +168,7 @@ assert.equal(context.Game.souflaPending, null, 'undo must clear stale pending pe
 assert.equal(context.Game.awaitingPenalty, false, 'undo must not leave a stale penalty modal active');
 assert.deepEqual(trace.slice(0, 4), ['reset', 'restore', 'turn', 'ui']);
 
-// After undo, a newly detected missed capture must survive the restored snapshot.
+ 
 const missedCapture = {
   penalizer: -1,
   offender: 1,
@@ -191,7 +191,7 @@ assert.equal(context.Game.awaitingPenalty, false, 'receiving a claimable right m
 assert.equal(context.Game.souflaPending, null, 'the pending choice is opened only after pressing the Soufla button');
 assert.deepEqual(trace.slice(0, 5), ['reset', 'restore', 'install', 'turn', 'ui']);
 
-// The same guarantee applies to stopping a mandatory capture chain after one step.
+ 
 const cutChain = {
   penalizer: -1,
   offender: 1,
@@ -211,7 +211,7 @@ client._applyRemoteState({
 assert.equal(context.Game.availableSouflaForLocalPlayer?.reason, 'cut_chain');
 assert.equal(context.Game.availableSouflaForLocalPlayer?.longestGlobal, 3);
 
-// A right owned by the opponent or observed by a spectator must never be exposed locally.
+ 
 client.mySide = 1;
 client._applyRemoteState({
   moveIndex: 13,

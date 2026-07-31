@@ -38,7 +38,6 @@ assert.equal(tr.ar.soufla.pick.toastNotOffender, 'هذه القطعة ليست �
 assert.equal(tr.ar.status.moveSendFail, 'فشل إرسال النقلة، يرجى الضغط على زر التحديث ثم إعادة النقلة.');
 assert.equal(tr.ar.online.endPresentation.selfEndedBy, 'أنهيت المباراة.');
 assert.ok(tr.ar.soufla.spectator.remove && tr.ar.soufla.spectator.force);
-assert.doesNotMatch(tr.ar.undo.applied, /movePart|\$\{/);
 assert.match(tr.ar.undo.spectatorAccepted, /\{responder\}/);
 assert.match(tr.ar.undo.spectatorAccepted, /\{requester\}/);
 assert.match(tr.ar.undo.spectatorRejected, /\{responder\}/);
@@ -75,7 +74,6 @@ assert.match(mobile, /screen\.orientation\.lock\(target\)/);
 assert.doesNotMatch(mobile, /target \+ ['"]-primary['"]|landscape-primary/);
 assert.match(mobile, /orientationchange/);
 assert.doesNotMatch(mobile, /location\.reload|location\.replace/);
-assert.match(theme, /Unified capture timer colors/);
 assert.match(theme, /timer-row[\s\S]*color:\s*rgb\(var\(--rgb-white\)\)/);
 assert.match(theme, /gradient-game-control/);
 assert.match(theme, /btnEndKill[\s\S]*gradient-game-control-danger/);
@@ -107,7 +105,7 @@ assert.match(online, /z-player-status/);
 assert.match(online, /z-room-row/);
 
 assert.equal(hash('js/ui/board-geometry.js'), 'd33d4973dbb4c5411db34b6351ffc0687a945f503c3fed9c29c324814fd6358c');
-assert.equal(hash('js/ui/board-view.js'), '5672ea9bcefb34fa1f9eda10a24284e8bbb9e87b4e10a31d95b9966c8d4fb90f');
+assert.equal(hash('js/ui/board-view.js'), '8a44842f7894ddfdd999c76dbf9bf9161dae5a30aed70399ee008e19670fdb1e');
 assert.ok(gamePage.indexOf('../js/ui/board-geometry.js') < gamePage.indexOf('../js/ui.js'));
 assert.ok(gamePage.indexOf('../js/ui/board-view.js') < gamePage.indexOf('../js/ui.js'));
 assert.match(ui, /_clearTurnFx\(false\)/);

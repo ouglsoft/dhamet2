@@ -313,8 +313,8 @@ const Visual = (() => {
     opts = opts || {};
     const noDraw = !!opts.noDraw;
 
-    // Soufla replaces the ordinary turn trace; do not leave stale move,
-    // capture numbering, highlights, or an old undo marker underneath it.
+     
+     
     _clearTurnFx(false);
 
     const redPaths = payload.redPaths;
@@ -614,7 +614,7 @@ const Visual = (() => {
         drawCrownPulse(ctx, idx);
       }
 
-      // Mandatory-opening guidance is the highest-priority board effect.
+       
       if (Array.isArray(S.forcedOpeningArrows) && S.forcedOpeningArrows.length) {
         for (const openingArrow of S.forcedOpeningArrows) {
           drawArrow(ctx, openingArrow.from, openingArrow.to, themeColor("--mark-danger"));
@@ -870,7 +870,6 @@ const Input = {
 
       const info = expected.info;
       const fr0 = info.from;
-      const to1 = info.toFirst;
       const isChainOpening = info.isChain;
       const toFinal = info.toFinal;
 
@@ -1116,10 +1115,6 @@ function restoreCaptureContinuationVisualState() {
   return true;
 }
 
-function normalizeMobileControlIcons() {
-  // Intentionally empty: mobile controls use the same SVG files and CSS rules
-  // as desktop, matching the primary application.
-}
 
 function syncKillTimerVisualState() {
   try {
@@ -1129,7 +1124,6 @@ function syncKillTimerVisualState() {
     const active = btn.getAttribute("data-chain-active") === "true";
     row.classList.toggle("is-live", active);
     row.classList.toggle("is-disabled", !active);
-    normalizeMobileControlIcons();
   } catch (_) {}
 }
 
@@ -1144,7 +1138,6 @@ function syncEndKillAvailability(active) {
     btn.setAttribute("data-chain-active", state ? "true" : "false");
     btn.setAttribute("aria-disabled", state ? "false" : "true");
     syncKillTimerVisualState();
-    normalizeMobileControlIcons();
   } catch (_) {}
 }
 
@@ -1294,7 +1287,6 @@ const UI = {
   updateAll() {
     this.updateStatus();
     try { if (window.ZGamePlayers && typeof window.ZGamePlayers.refresh === "function") window.ZGamePlayers.refresh(); } catch (_) {}
-    try { normalizeMobileControlIcons(); } catch (_) {}
     Visual.draw();
 
   },
@@ -1649,7 +1641,7 @@ function bindUI() {
     killTimerTile.setAttribute("tabindex", "0");
     killTimerTile.setAttribute("aria-label", t("buttons.endKill"));
     killTimerTile.addEventListener("click", function (ev) {
-      // Reuse the exact end-capture action used by the nested button.
+       
       if (ev && ev.target && ev.target.closest && ev.target.closest("#btnEndKill")) return;
       if (ev) ev.preventDefault();
       endKillPressed();

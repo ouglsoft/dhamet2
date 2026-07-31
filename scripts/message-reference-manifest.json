@@ -4,9 +4,8 @@
     "en",
     "fr"
   ],
-  "onlineOnlyLeafCount": 286,
+  "onlineOnlyLeafCount": 256,
   "allowedExtraKeys": [
-    "errors.render3d.failed",
     "online.errors.joinFailed",
     "buttons.home",
     "online.inviteRejected"
@@ -14,14 +13,13 @@
   "necessaryChangedKeys": [
     "status.onlineInitHelp",
     "online.permissionDenied",
-    "online.authRestoreFailed",
     "online.errors.authRequired",
     "online.errors.inviteWriteDenied"
   ],
   "primaryModuleHashes": {
     "js/modal.js": "d69f88ecc60a3422d6e616c7cd3ab70b17c4a7b9c9de3aaeddd8850e998e75aa",
     "js/ui/dropdown-view.js": "a80dacc42f2c715d575097bd9f9ee5512f22a4a4b7c6cc84b2727131df68add7",
-    "js/ui/soufla-view.js": "cbccc67f5e11e0a192792284129db18c5463a43011e77e65da5f9bbab87e1a41"
+    "js/ui/soufla-view.js": "e3ccdeb922db720679c7de5e94c0d6b492b1869a5974a15692ab35936edc5a3b"
   },
   "bannedLegacyKeys": [
     "modals.gameOver.drawTitle",

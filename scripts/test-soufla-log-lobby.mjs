@@ -29,7 +29,7 @@ if (primaryAvailable) {
   assert.match(backupSoufla, /render|open|show/i, 'local soufla view must expose rendering behavior');
 }
 
-const startMarker = '/* Moved from pages/game.html to keep page markup declarative. */';
+const startMarker = 'const LogMgr = __IN_WORKER';
 const endMarker = 'window.DhametGameLogView.attach(LogMgr);';
 function logSegment(source) {
   const start = source.indexOf(startMarker);

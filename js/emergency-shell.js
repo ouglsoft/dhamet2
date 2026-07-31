@@ -253,9 +253,9 @@
     ensureAnonymousPromise = (async () => {
       if (!initFirebase()) throw new Error("firebase-unavailable");
       const auth = firebase.auth();
-      // Firebase LOCAL persistence shares one anonymous UID between tabs. A
-      // first-party session cookie scopes that UID to the current browser
-      // session, so a full browser restart receives a fresh guest identity.
+       
+       
+       
       const browserSessionId = ensureBrowserSessionId();
       try {
         await withTimeout(auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL), 4000, "auth-persistence-timeout");

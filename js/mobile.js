@@ -8,8 +8,8 @@
   var GAME_LAYOUT_OBSERVER = null;
   var GAME_BODY_OBSERVER = null;
   var GAME_LAYOUT_MUTATING = 0;
-  // True only after the game DOM has actually been moved into a mobile layout.
-  // Routine desktop state refreshes must not remount the sidebar controls.
+   
+   
   var GAME_LAYOUT_MOBILE_ACTIVE = false;
   var GAME_HOME_RECORDS = [];
   var LAST_GAME_MODE = null;
@@ -18,7 +18,7 @@
   var ORIENTATION_REQUEST_TIMER = 0;
   var ORIENTATION_PREF_KEY = 'zamat.mobile.orientation.v1';
 
-  /* Page detection */
+   
 
   function pathName() {
     return String(location.pathname || '').toLowerCase();
@@ -31,7 +31,7 @@
     return 'generic';
   }
 
-/* Shared helpers */
+ 
 
   function baseHref() {
     return pathName().indexOf('/pages/') !== -1 ? '..' : '.';
@@ -111,8 +111,8 @@
     expireOrientationRequest(target);
     try {
       if (window.screen && screen.orientation && screen.orientation.lock) {
-        // A generic landscape lock follows either physical landscape direction.
-        // A primary-only landscape lock would pin the interface to one side.
+         
+         
         await screen.orientation.lock(target);
         return true;
       }
@@ -157,7 +157,7 @@
     syncGameLayout();
   }
 
-  /* Shared mobile chrome */
+   
 
   function ensureLanguageMenu(menuClass) {
     var menu = document.createElement('div');
@@ -296,9 +296,9 @@
     ORIENTATION_REQUEST_TARGET = target;
     expireOrientationRequest(target);
 
-    // Orientation lock commonly requires fullscreen. Marking the requested
-    // target before entering fullscreen prevents the fullscreenchange layout
-    // pass from immediately exiting again while landscape lock is pending.
+     
+     
+     
     try {
       var el = document.documentElement;
       if (!document.fullscreenElement && el.requestFullscreen) {
@@ -310,7 +310,7 @@
 
     try {
       if (screen.orientation && screen.orientation.lock) {
-        // Keep fullscreen limited to landscape, but permit both landscape sides.
+         
         await screen.orientation.lock(target);
         return true;
       }
@@ -338,8 +338,8 @@
         reportOrientationFailure(error);
       }
     }
-    // Portrait must never remain fullscreen. A short delay lets the browser
-    // finish the orientation change before fullscreen exit releases the lock.
+     
+     
     setTimeout(function () {
       if (!isLandscape()) void exitMobileFullscreen();
       clearOrientationRequest('portrait');
@@ -372,7 +372,7 @@ function ensureOrientButton() {
     var height = viewportHeight();
     if (height > 0) document.body.style.setProperty('--m-vh', height + 'px');
   }
-  /* Shared page scaffolding */
+   
   function restoreLobbyHead() {
     if (pageType() !== 'lobby') return;
     var inner = qs('.z-lobby-inner');
@@ -451,8 +451,7 @@ function ensureOrientButton() {
     }
     placeLobbyInviteControls(box);
   }
-  var AUTH_CARD_RAF = 0;
-/* Game page */
+ 
 
 
   function gameMode() {
@@ -927,8 +926,8 @@ function ensureOrientButton() {
 
 
 
-  /* Dashboard page */
-  /* Text and i18n refresh */
+   
+   
   function refreshShellText() {
     qsa('.z-mobile-shell-menu [data-lang], .z-mobile-game-shell-menu [data-lang]').forEach(function (btn) {
       var lang = btn.getAttribute('data-lang');
@@ -980,15 +979,15 @@ function refreshMobileText() {
       return;
     }
 
-    // A fullscreenchange event fires before landscape lock has completed.
-    // Never exit during that pending request, otherwise the browser releases
-    // the lock and snaps back to portrait after a brief landscape flash.
+     
+     
+     
     if (orientation === 'portrait' && ORIENTATION_REQUEST_TARGET !== 'landscape') {
       void exitMobileFullscreen();
     }
   }
 
-  /* Mobile state lifecycle */
+   
 
   function applyState() {
     if (!document.body) return;

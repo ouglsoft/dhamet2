@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260731-v34-top-log-online-retry-invite-rejection",
-  "source": "firebase-online-only-native-rtdb-transport-v34-top-log-online-retry-invite-rejection",
-  "uiReference": "approved-online-only-v34-top-log-home-invite-rejection",
-  "release": "20260731-v34-top-log-online-retry-invite-rejection"
+  "version": "20260731-v35-i18n-dead-code-comment-cleanup",
+  "source": "firebase-online-only-native-rtdb-transport-v35-i18n-dead-code-comment-cleanup",
+  "uiReference": "approved-online-only-v35-i18n-dead-code-comment-cleanup",
+  "release": "20260731-v35-i18n-dead-code-comment-cleanup"
 }

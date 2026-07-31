@@ -16,14 +16,17 @@ if (!shell.includes("resetAnonymous")) throw new Error("anonymous-session recove
 if (!passive.includes("_resolveActivePlayerMatch")) throw new Error("authoritative active-game recovery is missing");
 if (!passive.includes("_publishRoomListEntry(gid, game)")) throw new Error("active room-list repair is missing");
 if (!passive.includes("localPersistKey(PERSIST_GAME_ID_KEY, uid)")) throw new Error("cross-tab active-game persistence is missing");
-if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
+if (!passive.includes("_teardownPageRuntime")) throw new Error("unload runtime teardown is missing");
 const pagehideStart = passive.indexOf("    _teardownPageRuntime: function () {");
 const pagehideEnd = passive.indexOf("\n\n    _bindLifecycleCleanup: function () {", pagehideStart);
 const pagehideBlock = pagehideStart >= 0 && pagehideEnd > pagehideStart ? passive.slice(pagehideStart, pagehideEnd) : "";
 if (!pagehideBlock || /_teardownOnlineSubscriptions|\.off\s*\(|\.remove\s*\(/.test(pagehideBlock)) throw new Error("normal pagehide must stop timers without synchronously detaching Firebase");
 if (!pagehideBlock.includes("_stopPresenceHeartbeat") || !pagehideBlock.includes("_stopGamePresenceHeartbeat")) throw new Error("normal pagehide must stop local heartbeat timers");
 if (!/if \(event && event\.persisted\) return;/.test(passive)) throw new Error("BFCache pagehide must preserve Firebase listeners");
-if (!/pageshow[\s\S]*event && event\.persisted[\s\S]*firebase\.database\(\)\.goOnline/.test(passive)) throw new Error("BFCache resume must reconnect Firebase safely");
+const resumeStart = passive.indexOf("            const resume = (event) => {");
+const resumeEnd = passive.indexOf("\n            };", resumeStart);
+const resumeBlock = resumeStart >= 0 && resumeEnd > resumeStart ? passive.slice(resumeStart, resumeEnd) : "";
+if (!resumeBlock.includes("event && event.persisted") || !resumeBlock.includes("firebase.database().goOnline()") || !passive.includes('addEventListener("pageshow", resume')) throw new Error("BFCache resume must reconnect Firebase safely");
 if (/addEventListener\("beforeunload", cleanup/.test(passive)) throw new Error("Firebase cleanup must not run from beforeunload");
 
 if (!game.includes('data-build-version="__DHAMET_BUILD__"')) throw new Error("stable build token is missing");
@@ -54,9 +57,9 @@ if (!ui.includes("Visual.setForcedOpeningArrows")) throw new Error("multiple for
 if (!ui.includes("Input.selected = toIdx")) throw new Error("capture-chain piece selection is not preserved");
 if (!ui.includes("restoreCaptureContinuationVisualState")) throw new Error("capture-chain visual restoration is missing");
 if (!ui.includes("savedSouflaApplying") || !ui.includes("Game._souflaApplying = false")) throw new Error("Soufla preview render guard is missing");
-if (!ui.includes("Intentionally empty: mobile controls use the same SVG files")) throw new Error("backup-only mobile icon styling remains");
+if (/normalizeMobileControlIcons/.test(ui)) throw new Error("dead backup-only mobile icon normalizer remains");
 if (!ui.includes("emitSignal: false")) throw new Error("manual sync must remain local");
-if (!passive.includes("No shared recoverySignal is written")) throw new Error("reconnect refresh must remain local");
+if (/recoverySignal\s*[:=]|["']recoverySignal["']\s*[:,)]/.test(passive)) throw new Error("reconnect refresh must remain local");
 const online = fs.readFileSync(new URL("../js/online.js", import.meta.url), "utf8");
 if (!online.includes("byUid !== String(this.myUid")) throw new Error("peer recovery signals are not isolated");
 if (!online.includes("restoreCaptureContinuationVisualState")) throw new Error("online capture continuation restore is missing");

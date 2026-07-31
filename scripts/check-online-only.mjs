@@ -56,8 +56,8 @@ const deployable = [
   ...runtimeFiles.map((rel) => path.join(root, rel)).filter(fs.existsSync),
 ];
 
-// These are feature-specific symbols, not the shared TOP/BOT board-side constants.
-// TOP and BOT must remain because the online rules engine uses them for the two sides.
+ 
+ 
 const forbiddenRuntimePatterns = [
   ["training recorder", /\bTrainRecorder\b/i],
   ["training database root", /trainGamesV3|Human-model/i],

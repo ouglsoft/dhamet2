@@ -30,7 +30,12 @@ assert.match(online, /readOnceWithOutcome\([\s\S]*verification\.state === "missi
   "an ambiguous Firebase response must be verified before showing send failure");
 assert.doesNotMatch(online, /deliverySnapshot/,
   "verification must not collapse Firebase read errors into a missing snapshot");
-assert.match(online, /Never resend the invite here/,
+const createGameStart = online.indexOf("    _createGame: async function (opponentUid) {");
+const createGameEnd = online.indexOf("    _joinGame: async function (gameId) {", createGameStart);
+const createGameBlock = createGameStart >= 0 && createGameEnd > createGameStart
+  ? online.slice(createGameStart, createGameEnd)
+  : "";
+assert.equal((createGameBlock.match(/await db\.ref\(\)\.update\(updates\);/g) || []).length, 1,
   "invite recovery must reconcile the original atomic write without a second send");
 
 

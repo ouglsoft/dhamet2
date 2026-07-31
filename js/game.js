@@ -418,8 +418,8 @@ function _forcedOpeningSnapshot(ply = Game.forcedPly) {
   if (Game.openingExchangeFourthChoice === 0 || Game.openingExchangeFourthChoice === 1) {
     opening.exchangeFourthChoice = Game.openingExchangeFourthChoice;
   } else if (Number(ply) === 5) {
-    // Compatibility for an older saved room that reached ply 5 without storing
-    // the selected exchange branch. New rooms always persist this value.
+     
+     
     opening.exchangeFourthChoice = 0;
   }
   return {
@@ -532,37 +532,6 @@ function logForcedOpeningTurn(mover, info) {
       ts: Date.now(),
     });
   } catch (_) {}
-}
-
-function applyForcedOpeningInfo(info) {
-  if (!info || !Array.isArray(info.path) || info.path.length < 2) return false;
-  if (!Turn.ctx) Turn.start();
-
-  let cur = info.from;
-  let anyCapture = false;
-
-  for (let i = 1; i < info.path.length; i++) {
-    const nxt = info.path[i];
-    const [isCap, jumped] = classifyCapture(cur, nxt);
-
-    if (isCap && jumped != null && !anyCapture) {
-      Turn.beginCapture(info.from);
-    }
-
-    applyMove(cur, nxt, isCap, isCap ? jumped : null);
-
-    if (isCap && jumped != null) {
-      anyCapture = true;
-      Turn.recordCapture();
-    }
-
-    cur = nxt;
-  }
-
-  Game.inChain = false;
-  Game.chainPos = null;
-  Game.lastMovedTo = cur;
-  return true;
 }
 
 function finishForcedOpeningAppliedTurn(mover, info) {
@@ -806,12 +775,6 @@ function rcStr(idx) {
   return `${r}.${c}`;
 }
 
-const TurnFX = {
-  capturedOrder: [],
-  reset() {
-    this.capturedOrder.length = 0;
-  },
-};
 Game.souflaSticky = {
   armed: false,
   clearOnSide: null,
@@ -820,22 +783,6 @@ Game.souflaSticky = {
 function armSouflaFXPersistence(clearOnSide) {
   Game.souflaSticky.armed = true;
   Game.souflaSticky.clearOnSide = clearOnSide != null ? clearOnSide : null;
-}
-
-function consumeTurnClearForMove() {
-  try {
-    if (typeof Visual !== "undefined" && Visual && typeof Visual.consumeTurnClear === "function") {
-      const sticky = Game.souflaSticky;
-      const preserve =
-        !!(sticky && sticky.armed && sticky.clearOnSide != null && Game.player !== sticky.clearOnSide);
-      if (preserve) Visual.consumeTurnClear({ preserveSoufla: true });
-      else Visual.consumeTurnClear();
-      if (sticky && sticky.armed && sticky.clearOnSide != null && Game.player === sticky.clearOnSide) {
-        sticky.armed = false;
-        sticky.clearOnSide = null;
-      }
-    }
-  } catch (_) {}
 }
 
 const Turn = {
@@ -1404,7 +1351,7 @@ function checkEndConditions() {
   try { UI.showGameOverModal?.(Game.winner); } catch (_) {}
 }
 
-/* Online-only side helpers. */
+ 
 
 function localPlayerSide() {
   if (window.Online && window.Online.isActive) return window.Online.mySide;
@@ -1434,7 +1381,7 @@ function resolveTurnActorLabel(side) {
   return "";
 }
 
-/* Moved from pages/game.html to keep page markup declarative. */
+ 
 
       const DhametDOMShared = window.DhametDOM || {};
       const qs = DhametDOMShared.qs || ((sel, root = document) => root.querySelector(sel));
@@ -1583,11 +1530,11 @@ function resolveTurnActorLabel(side) {
           };
           push(base);
 
-          // Arabic "player" prefix variants
+           
           if (/^لاعب\s+/u.test(base)) push(base.replace(/^لاعب\s+/u, "").trim());
           else push("لاعب " + base);
 
-          // English/French prefix variants (in case UI language differs from log language)
+           
           if (/^Player\s+/i.test(base)) push(base.replace(/^Player\s+/i, "").trim());
           else push("Player " + base);
 
@@ -1608,7 +1555,7 @@ function resolveTurnActorLabel(side) {
             }
           } catch (_) {}
 
-          // Also pick up names rendered in the UI (they may include a "you" tag)
+           
           try {
             const ids = ["pTopName", "pBotName", "pTopNameM", "pBotNameM"];
             for (const id of ids) {

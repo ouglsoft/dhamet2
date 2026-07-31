@@ -1,11 +1,11 @@
-/*
- * Dhamet shared GameRoom match-ending helpers v2.
- *
- * Administrative endings are rated only when the server-held position is both
- * advanced and clearly unfavorable to the departing/absent player. The
- * assessment is deliberately conservative and shallow: board counts and legal
- * mobility only, never AI search.
- */
+  
+                                                  
+  
+                                                                              
+                                                                       
+                                                                              
+                                  
+   
 (function (root) {
   'use strict';
 

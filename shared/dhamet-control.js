@@ -1,10 +1,10 @@
-/*
- * Dhamet shared GameRoom control helpers v2.
- *
- * Runtime-neutral helpers for official PvP control actions. This module only
- * normalizes intent payloads and derives rollback metadata from GameRecord data.
- * It contains no DOM, storage, WebSocket, Cloudflare, or UI behavior.
- */
+  
+                                             
+  
+                                                                             
+                                                                                 
+                                                                      
+   
 (function (root) {
   'use strict';
 

@@ -159,7 +159,7 @@ const client = {
   _isCurrentAuthPlayerInGame() { return true; },
 };
 
-// TOP declines its own right by moving, while the move creates a new right for BOT.
+ 
 context.nextSnapshot = snapshot(BOT, 1);
 client.sendMoveToFirebase(21, 31, BOT, 0);
 assert.equal(storedGame.ply, 1);
@@ -167,7 +167,7 @@ assert.equal(storedGame.soufla.pending.reason, 'right_at_ply_1');
 assert.equal(storedGame.states[0].snapshot.soufla.reason, 'right_at_ply_0');
 assert.equal(storedGame.states[1].snapshot.soufla.reason, 'right_at_ply_1');
 
-// BOT declines its right by moving; the new state has no right.
+ 
 client.myUid = 'bottom-player'; client.myNick = 'Bottom'; client.mySide = BOT;
 client._pendingSteps = [{ from: 22, to: 32, capture: false, jumped: null }];
 client._cachedSouflaPlain = null;
@@ -177,7 +177,7 @@ assert.equal(storedGame.ply, 2);
 assert.equal(storedGame.soufla, null);
 assert.equal(storedGame.states[2].snapshot.soufla ?? null, null);
 
-// Undo BOT's move: only the right attached to ply 1 returns.
+ 
 storedGame.undoRequest = {
   status: 'accepted', requesterUid: 'bottom-player', requesterNick: 'Bottom',
   responderUid: 'top-player', responderNick: 'Top', requestedAt: 1, respondedAt: 2, ply: 2,
@@ -189,7 +189,7 @@ assert.equal(storedGame.turn, BOT);
 assert.equal(storedGame.soufla.availableFor, BOT);
 assert.equal(storedGame.soufla.pending.reason, 'right_at_ply_1');
 
-// Undo TOP's preceding move: the right attached to ply 0 returns, not ply 1's right.
+ 
 storedGame.undoRequest = {
   status: 'accepted', requesterUid: 'top-player', requesterNick: 'Top',
   responderUid: 'bottom-player', responderNick: 'Bottom', requestedAt: 3, respondedAt: 4, ply: 1,

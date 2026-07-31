@@ -38,7 +38,7 @@ for (const page of [lobbyPage, gamePage]) {
   assert.match(page, /firebase-database-compat\.js/, "Realtime Database SDK must be loaded");
 }
 
-// One authoritative transport stack: Firebase SDK chooses WebSocket or BrowserPoll.
+ 
 for (const source of [online, passive]) {
   assert.doesNotMatch(source, /firebaseRestRequest|readLobbyRest|readFirebaseRest|_firebaseTransportDegraded|_startInviteRestPolling|lobby_rest_fallback_applied/,
     "parallel REST transport must not return");

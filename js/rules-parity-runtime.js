@@ -1,10 +1,10 @@
-/*
- * Dhamet2 rules parity runtime.
- *
- * Keeps the Firebase transport but makes the browser-side rule transitions use
- * the same shared state, Soufla, promotion, snapshot, and terminal-resolution
- * modules as the primary application.
- */
+  
+                                
+  
+                                                                               
+                                                                              
+                                      
+   
 (function (root) {
   'use strict';
 
@@ -205,8 +205,8 @@
   };
 
   function hasUnresolvedSoufla() {
-    // A visible but unopened right does not freeze the turn; an actively
-    // resolving or authoritative pending penalty does.
+     
+     
     return !!(!Game._souflaApplying && (Game.awaitingPenalty || Game.souflaPending));
   }
 
@@ -540,8 +540,8 @@
     Game.moveCount += 1;
     try { Visual.markTurnBoundary && Visual.markTurnBoundary(); } catch (_) {}
     Game.killTimer.hardStop();
-    // Terminal evaluation belongs to Turn.start(), after the arriving side's
-    // deferred promotions have become active.
+     
+     
     UI.updateStatus();
   };
 

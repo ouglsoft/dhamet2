@@ -1,6 +1,6 @@
-/* ========================================================================== MOBILE.CSS ========================================================================== */
+ 
 
-/* ========================================================================== MOBILE FOUNDATIONS & TYPOGRAPHY ========================================================================== */
+ 
 
 body.z-mobile-on {
   --m-safe-top: calc(env(safe-area-inset-top) + 8px);
@@ -156,7 +156,7 @@ body.z-mobile-on .z-row-title {
   font-weight: 800;
 }
 
-/* ========================================================================== MOBILE MODALS & OVERLAYS ========================================================================== */
+ 
 
 body.z-mobile-on .modal {
   max-height: min(78dvh, 520px) !important;
@@ -189,7 +189,7 @@ body.z-mobile-on .modal-backdrop {
   backdrop-filter: blur(6px);
 }
 
-/* ========================================================================== MOBILE SHARED SURFACES & CONTROLS ========================================================================== */
+ 
 
 body.z-mobile-on .z-mobile-footer,
 body.z-mobile-on .z-mobile-head-box,
@@ -245,8 +245,8 @@ body.z-mobile-on .z-mobile-auth-register {
   border-radius: 24px;
 }
 
-/* ========================================================================== MOBILE SHELL,
-NAVIGATION & FOOTER ========================================================================== */
+                                                                                           
+                                                                                                 
 
 .z-mobile-shell,
 .z-mobile-footer,
@@ -477,7 +477,7 @@ html.dark body.z-mobile-on[data-mobile-orientation="portrait"] .z-mobile-footer-
 
 
 
-/* ========================================================================== MOBILE PAGE SHELL SHARED RULES ========================================================================== */
+ 
 
 body.z-mobile-on[data-mobile-page="lobby"] {
   display: flex;
@@ -533,7 +533,7 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="lobby"]
   background: transparent !important;
 }
 
-/* ========================================================================== MOBILE AUTH PAGE ========================================================================== */
+ 
 
 body.z-mobile-on .z-mobile-auth-register-back {
   display: flex;
@@ -664,7 +664,7 @@ html[dir="rtl"]
 
 
 
-/* ========================================================================== MOBILE MODE PAGE ========================================================================== */
+ 
 
 
 
@@ -687,7 +687,7 @@ html[dir="rtl"]
 
 
 
-/* ========================================================================== MOBILE LOBBY PAGE ========================================================================== */
+ 
 
 body.z-mobile-on .z-lobby-inner,
 body.z-mobile-on .z-lobby-panel {
@@ -1005,7 +1005,7 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="lobby"] 
 
 
 
-/* ========================================================================== MOBILE DASHBOARD PAGE ========================================================================== */
+ 
 
 
 
@@ -1145,7 +1145,7 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="lobby"] 
 
 
 
-/* ========================================================================== MOBILE GAME PAGE ========================================================================== */
+ 
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-shell {
   display: flex;
@@ -2156,7 +2156,7 @@ body:not(.z-mobile-on) .z-lobby-bottom {
   flex: 0 0 auto;
 }
 
-/* Lobby invite receiving control: mobile placement and fallback if cached layout code has not moved it yet. */
+ 
 
 body.z-mobile-on[data-mobile-page="lobby"] .z-mobile-shell-spacer > .z-lobby-invite-controls.is-mobile-portrait,
 body.z-mobile-on[data-mobile-page="lobby"] .z-mobile-head-box > .z-lobby-invite-controls.is-mobile-landscape {
@@ -2450,7 +2450,7 @@ body.z-mobile-on[data-mobile-orientation="portrait"][data-mobile-page="game"] ca
   margin-inline: -4px !important;
 }
 
-/* Shared mobile orientation control */
+ 
 
 body.z-mobile-on .z-mobile-orient {
   width: var(--m-shell-size);
@@ -2499,7 +2499,7 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-drawer-handle {
   z-index: 1;
 }
 
-/* Mobile login artwork copy */
+ 
 
 
 
@@ -2519,11 +2519,11 @@ body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-drawer-handle {
 
 
 
-/* Mobile Soufla word control */
+ 
 
 
 
-/* Game-control icons: one shared visual treatment for local and online play. */
+ 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .btn .btn-ico,
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .soufla-row .btn .btn-ico {
   display: block;
@@ -2596,7 +2596,7 @@ html[dir="ltr"] body.z-mobile-on[data-mobile-orientation="landscape"][data-mobil
   font-size: 16px;
 }
 
-/* One mobile capture-timer tile for local and online play */
+ 
 
 body.z-mobile-on[data-mobile-page="game"] .z-mobile-game-controls-grid .timer-row {
   position: relative;

@@ -67,7 +67,7 @@ for (const [page, info] of Object.entries(signatures)) {
   const fragment = findFragment(html, info.selector);
   const canonical = canonicalize(fragment, { removeBoard3d: page === "game" });
   const actual = crypto.createHash("sha256").update(Buffer.from(JSON.stringify(canonical))).digest("hex");
-  // Stored signature was generated from the same canonical JSON representation.
+   
   if (actual !== info.jsonSha256) {
     throw new Error(`Visible ${page} DOM differs from approved online-only UI: expected ${info.jsonSha256}, actual ${actual}`);
   }

@@ -48,9 +48,9 @@ assert.doesNotMatch(ui, /!Game\.history\.length[\s\S]{0,350}showSettingsModal\(p
 assert.match(souflaView, /Rules:\s*deps\.Rules\s*\|\|\s*root\.DhametRules/);
 assert.match(souflaView, /const Rules = d\.Rules/);
 
-// Execute the parity runtime in strict mode with the bindings genuinely supplied
-// by game.js. A missing override target must throw here instead of being hidden by
-// source-pattern tests.
+ 
+ 
+ 
 const declaredFunctions = [...game.matchAll(/^function\s+([A-Za-z_$][\w$]*)\s*\(/gm)].map((m) => m[1]);
 const context = {
   console,

@@ -20,7 +20,6 @@ const requiredPassive = [
   'const UNDO_REQUEST_TTL_MS = 5 * 60 * 1000',
   'const PERSIST_GAME_TTL_MS = 1000 * 60 * 60 * 12',
   'Date.now() - ts > PERSIST_GAME_TTL_MS',
-  'No room-data deletion here.',
 ];
 for (const token of requiredPassive) {
   if (!passive.includes(token)) throw new Error(`Missing timer contract: ${token}`);
@@ -44,7 +43,7 @@ for (const token of ['schedule:', '7,22,37,52 * * * *', 'FIREBASE_SERVICE_ACCOUN
 for (const token of ['activeAbandoned: 30 * 60_000', 'ended: 60 * 60_000', 'rejected: 15 * 60_000', 'pending: 2 * 24 * 60 * 60_000', 'maxChatMessages: 200', 'undo: 5 * 60_000']) {
   if (!cleanup.includes(token)) throw new Error(`Secondary cleanup policy missing: ${token}`);
 }
-if (!/Unknown\/future states[\s\S]*LIMITS\.pending/.test(cleanup)) {
+if (!/else\s*\{\s*const base = latest\(game\.endedAt, game\.createdAt, activity\);\s*purge = !!\(base && NOW - base >= LIMITS\.pending\);/.test(cleanup)) {
   throw new Error('Unknown game states must use the conservative pending retention window');
 }
 if (/catch \(e\) \{[\s\S]{0,350}roomList[\s\S]{0,100}remove\(\)[\s\S]{0,100}return true/.test(passive)) {

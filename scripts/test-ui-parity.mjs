@@ -60,7 +60,7 @@ assert.match(i18n, /"syncIssueNotice": "لم تظهر آخر تغييرات ال
 assert.match(i18n, /"confirm": "هل تريد إنهاء المباراة الحالية؟"/);
 
 
-// Validate every local src/href reference in the two deployable pages.
+ 
 for (const pagePath of ["pages/loby.html", "pages/game.html"]) {
   const html = read(pagePath);
   const base = path.dirname(path.join(root, pagePath));
@@ -73,7 +73,7 @@ for (const pagePath of ["pages/loby.html", "pages/game.html"]) {
   }
 }
 
-// Validate local asset URLs used by the synchronized stylesheets.
+ 
 for (const cssPath of ["css/style.css", "css/pages.css", "css/mobile.css", "css/theme.css"]) {
   const css = read(cssPath);
   const base = path.dirname(path.join(root, cssPath));

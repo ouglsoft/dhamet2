@@ -301,8 +301,8 @@ async function main() {
         }
       }
     } else {
-      // Unknown/future states are not equivalent to rejection. Keep them for the
-      // conservative pending-game window before secondary cleanup removes them.
+       
+       
       const base = latest(game.endedAt, game.createdAt, activity);
       purge = !!(base && NOW - base >= LIMITS.pending);
     }

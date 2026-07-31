@@ -169,10 +169,10 @@
     const State = window.DhametState;
     let entries = [];
 
-    // The lobby creates the pending Firebase game before loading the gameplay
-    // engine. DhametState exists on game.html, but it is intentionally absent
-    // from loby.html. Keep the shared normalizer when available and use the
-    // same compact compatibility normalization in the lobby.
+     
+     
+     
+     
     if (State && typeof State.normalizeDeferredPromotions === "function") {
       entries = State.normalizeDeferredPromotions(source);
     } else if (Array.isArray(source.deferredPromotions)) {
@@ -654,8 +654,8 @@
             const ts = Number((sig && sig.ts) || 0) || 0;
             if (ts && nowTs() - ts > RECOVERY_SIGNAL_MAX_AGE_MS) return;
 
-            // A refresh or repair belongs only to the browser that requested it.
-            // Never reload or resync the opponent because a shared room field changed.
+             
+             
             const byUid = String((sig && sig.byUid) || "").trim();
             if (!byUid || byUid !== String(this.myUid || "")) return;
     
@@ -696,8 +696,8 @@
               const policy = MatchEnd && typeof MatchEnd.policyForEnd === "function"
                 ? MatchEnd.policyForEnd("opponent-absent", this.mySide, {
                     reason: "opponent_absent",
-                    // The exceptional counted result is limited to genuinely late,
-                    // low-material positions with a clear deterministic advantage.
+                     
+                     
                     policyProfile: "strict-low-material",
                   }, g)
                 : { ok: true, reason: "opponent_absent", resultReason: "opponent_absent", winner: null, countsAsResult: false, neutralEnd: true, rejectionReason: "policy_unavailable" };
@@ -1528,10 +1528,10 @@
           try {
             await db.ref().update(updates);
           } catch (err) {
-            // A transport interruption can happen after Firebase has committed the
-            // atomic update. Never resend the invite here. Verify the exact invite
-            // path once; show failure only when Firebase confirms it is absent or
-            // explicitly rejects the write.
+             
+             
+             
+             
             if (isPermissionDenied(err)) {
               handleDbError(err, window.I18N.translateArgs("online.inviteSendFail"), { ctx: "invite.send" });
               return;
@@ -1552,8 +1552,8 @@
                 code: String((err && err.code) || ""),
               });
             } catch (_) {}
-            // If the verification also timed out, keep one local watch for the
-            // already-created id. It will reconcile or expire without another send.
+                                                                               
+                                                                                    
           }
     
           try {
@@ -2698,9 +2698,9 @@
             availableFor === Number(this.mySide)
           );
 
-          // Firebase owns the official right to claim Soufla. A board snapshot
-          // may contain stale client-local Soufla fields, especially after undo,
-          // so install the official right only after restoring the snapshot.
+           
+           
+           
           const choiceOpen = !!(claimable && Game.awaitingPenalty && Game.souflaPending);
           Game.awaitingPenalty = choiceOpen;
           Game.souflaPending = choiceOpen ? pending : null;
@@ -3063,8 +3063,8 @@
                 this._markLocalCommitSettled();
               }
             } catch (e) {}
-            // Synchronization is intentionally local. Writing a recoverySignal
-            // here would make the opponent react to this browser's refresh.
+             
+             
             return true;
           } catch (e) {
             showOnlineNotice(window.I18N.translateArgs("online.syncFail"));
@@ -3365,8 +3365,8 @@
           this._selfOfflineSince = null;
           this._oppLeftModalShown = false;
           if (localOnly) {
-            // Do not create a new one-second presence ticker while the page is
-            // being hidden or closed. The visible UI remains untouched for BFCache.
+             
+             
             try { if (this._presenceTicker) clearInterval(this._presenceTicker); } catch (_) {}
             this._presenceTicker = null;
           } else {
@@ -3768,11 +3768,6 @@
                   return;
                 }
     
-                const otherReadTs =
-                  this._chat && typeof this._chat._otherLastReadTs === "number"
-                    ? this._chat._otherLastReadTs
-                    : 0;
-    
                 last.forEach((m) => {
                   const row = document.createElement("div");
                   const mine = m.fromUid === this.myUid;
@@ -3862,8 +3857,8 @@
                 if (!this._chatMessagesRef || !this.myUid) throw new Error("chat_ref_unavailable");
                 await this._chatMessagesRef.push(msg);
     
-                // Firebase has no per-request quota in this deployment path;
-                // keep the chat bounded immediately after each successful send.
+                 
+                 
                 this._chat.lastPruneAt = Date.now();
                 this._pruneChatMessages(200);
               } catch (e) {
@@ -5370,8 +5365,8 @@
           const officialSoufla = souflaPlain && souflaPlain.penalizer != null
             ? { availableFor: Number(souflaPlain.penalizer), pending: souflaPlain }
             : null;
-          // The historical board state owns only the Soufla right valid for that
-          // exact position. Do not rewrite older states or alter the move flow.
+           
+           
           if (statePayload && statePayload.snapshot) {
             statePayload.snapshot.soufla = officialSoufla ? officialSoufla.pending : null;
           }
@@ -5416,10 +5411,6 @@
               g.log = g.log || [];
     
               normalizeLogArrayForWrite(g.log);
-              const moverName =
-                (move.by === -1
-                  ? g.players && g.players.white && g.players.white.nickname
-                  : g.players && g.players.black && g.players.black.nickname) || "";
               g.log.push({
                 ts: nowTs(),
                 type: "turn",
@@ -5806,9 +5797,9 @@
                 moveIndex: g.moveIndex,
                 clientActionId,
               });
-              // Keep the Firebase record within the published RTDB schema. The
-              // side and move index are derived from the immutable players and
-              // current game record whenever the request is validated.
+               
+               
+               
               g.undoRequest = {
                 status: created.status,
                 acceptedAt: 0,
@@ -5866,12 +5857,12 @@
             return;
           }
 
-          // A spectator follows every match event, but never receives player
-          // controls or wording that makes the spectator a party to the request.
+           
+           
           if (this.isSpectator) {
             const state = String(ur.status || "").toLowerCase();
-            // Do not expose the pending request to spectators. They receive only
-            // the final accepted or rejected result.
+             
+             
             if (state === "rejected") {
               const noticeKey = [state, ur.requesterUid || "", ur.responderUid || "", ur.respondedAt || ur.requestedAt || ""].join("|");
               if (noticeKey && noticeKey !== this._lastSpectatorUndoNoticeKey) {
@@ -6025,8 +6016,8 @@
               g.turn = Number(previous.state.snapshot.player);
               g.soufla = officialSouflaFromHistoricalState(previous.state);
               g.undoRequest = null;
-              // Assigning null removes a possible winner child without adding
-              // fields that are outside the published Firebase game schema.
+               
+               
               g.winner = null;
               g.status = "active";
               g.lastMove = {
@@ -6097,8 +6088,8 @@
           this._lobbyLastAttemptAt = Date.now();
           const isCurrent = () => generation === Number(this._lobbyInitGeneration || 0);
 
-          // A restored mobile tab can retain dead Firebase listeners. Always detach the
-          // previous generation before binding a new one.
+           
+           
           try {
             if (this._lobbyPlayersRef && this._lobbyPlayersCb) this._lobbyPlayersRef.off("value", this._lobbyPlayersCb);
           } catch (_) {}
@@ -6179,8 +6170,8 @@
                 } catch (_) { tokenReady = false; }
               }
               resetPresenceBindings();
-              // Invalidate callbacks from the broken listener generation before the
-              // replacement generation is installed.
+               
+               
               this._lobbyInitGeneration = generation + 1;
               try {
                 Logger.info("lobby_session_recovered", { reason: String(reason || "unknown"), freshAuth: !!forceFreshAuth });
@@ -6212,8 +6203,8 @@
           };
     
           try {
-            // Start the watchdog before auth/presence recovery. Previously it started
-            // after reads that could hang, leaving the loading text forever.
+             
+             
             lobbyLoadTimer = setTimeout(lobbyLoadFailed, 12000);
             this._lobbyLoadTimer = lobbyLoadTimer;
           } catch (e) {}
@@ -6246,8 +6237,8 @@
             }
           } catch (e) {}
     
-          // Recover active-room state in the background. Player/room listeners must
-          // never wait for a stale private game id stored by a restored browser tab.
+           
+           
           try { S.settleWithin(this._syncLobbyAvailabilityFromActiveGame(), 6000, false); } catch (e) {}
     
           try {
@@ -6740,8 +6731,8 @@
     }
   });
 
-  // Mobile browsers frequently restore normal tabs from the back-forward cache while
-  // private tabs start clean. Rebind Firebase only in the restored/stale normal tab.
+   
+   
   window.addEventListener("pageshow", function (event) {
     try {
       if (!event || !event.persisted) return;

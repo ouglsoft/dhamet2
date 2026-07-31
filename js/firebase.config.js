@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  // Public Firebase Web configuration for the independent dhamet2 project.
-  // Security is enforced by Firebase Anonymous Authentication and RTDB rules.
+   
+   
   window.firebaseConfig = Object.freeze({
     apiKey: "AIzaSyCyNqikP0kIPOK6lOp6obmFLJliPQ-WheU",
     authDomain: "dhamet2.firebaseapp.com",

@@ -4,7 +4,6 @@
   }
 
   const Logger = (() => {
-    const LEVELS = { error: 0, warn: 1, info: 2, debug: 3 };
     const NAMES = ["error", "warn", "info", "debug"];
     let level = 1;
     let remoteUrl = "";
@@ -1055,7 +1054,7 @@
     }
   }
 
-  // Single display-name source for lobby, game messages, and Firebase callbacks.
+   
   function displayPlayerName(uid, nickname) {
     const id = String(uid || "").trim();
     const chosen = String(nickname || "").trim();
@@ -1142,8 +1141,8 @@
 
   runMigrationsOnline();
 
-  // Fast heartbeats are kept for smooth Firebase presence, while expiry and
-  // retention windows mirror the primary online application.
+   
+   
   const PRESENCE_STABLE_TTL_MS = 180 * 1000;
   const PRESENCE_LIST_TTL_MS = PRESENCE_STABLE_TTL_MS;
   const PRESENCE_ONLINE_TTL_MS = PRESENCE_STABLE_TTL_MS;
@@ -1325,8 +1324,8 @@
   async function ensureAuthReady() {
     if (!ensureFirebase()) return false;
     try {
-      // emergency-shell owns anonymous sign-in. Await its shared promise first so
-      // this module never starts a second anonymous sign-in with a different UID.
+       
+       
       try {
         if (window.DhametEmergencyReady && typeof window.DhametEmergencyReady.then === "function") {
           await settleWithin(window.DhametEmergencyReady, 9000, null);
@@ -1976,7 +1975,7 @@
               try {
                 sessionStorage.setItem("zamat.forceResyncOnLoad", "1");
               } catch (e) {}
-              // Reload only this browser. No shared recoverySignal is written.
+               
               setTimeout(() => {
                 try {
                   location.reload();
@@ -1985,7 +1984,7 @@
               return "reload";
             }
     
-            // A short reconnect performs a local read/apply only.
+             
             try {
               this.syncNow({ force: true, emitSignal: false, repairPresence: true });
             } catch (e) {}
@@ -2358,7 +2357,7 @@
               this._bindInvitePreferenceListener();
             } catch (e) {}
             try {
-              // Never block lobby rendering on recovery of an old active-room marker.
+               
               settleWithin(this._markBusyIfActivePlayerRoom("players.initPresence.activeRoom"), 6000, false);
             } catch (e) {}
     
@@ -2415,10 +2414,10 @@
         },
 
     _teardownPageRuntime: function () {
-          // pagehide runs on the browser's tab-closing path. Do not synchronously
-          // detach the Firebase listener graph here; the document and its SDK
-          // context are being destroyed, while onDisconnect owns server cleanup.
-          // Explicit leave/logout paths still perform the complete teardown.
+           
+           
+           
+           
           try { this._pageClosing = true; } catch (_) {}
           try { this._stopPresenceHeartbeat(); } catch (_) {}
           try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (_) {}
@@ -2448,11 +2447,11 @@
             this._lifecycleBound = true;
     
             const cleanup = (event) => {
-              // A BFCache page is frozen and later resumed; tearing down its Firebase
-              // listeners would leave it permanently stale when pageshow fires.
+               
+               
               if (event && event.persisted) return;
-              // Never start network writes, waits, or authentication work while the
-              // browser is closing this page. Only detach local work synchronously.
+               
+               
               try { this._teardownPageRuntime(); } catch (_) {}
             };
             const resume = (event) => {
@@ -2901,9 +2900,9 @@
                 }
     
                 try {
-                  // Local game flags can survive a restored tab or an anonymous-UID
-                  // rotation. Only an active room confirmed for the current UID may
-                  // suppress an incoming invite in the lobby.
+                   
+                   
+                   
                   const localGamePageActive = !!(isGamePage() && this.isActive && this.gameId);
                   let activeRoomId = "";
                   if (!localGamePageActive && typeof this._getActivePlayerRoomId === "function") {
@@ -2916,8 +2915,8 @@
                     return;
                   }
 
-                  // Clear stale lobby-only markers instead of silently deleting the
-                  // invitation that belongs to the current authenticated UID.
+                   
+                   
                   if (!isGamePage()) {
                     this.isActive = false;
                     this.isSpectator = false;
@@ -3130,17 +3129,6 @@
               if (shouldExpire) {
                 updates[`invites/${it.toUid}/${it.inviteKey}`] = null;
     
-                try {
-                  const gid = String(it.gameId);
-                  const s = await db2.ref("games").child(gid).child("status").once("value");
-                  const st = s && s.val ? s.val() : null;
-                  // Expiring/cancelling an invitation removes only the invitation.
-                  // The pending game record is retained for the two-day recovery and
-                  // secondary-cleanup window.
-                  if (st === "pending") {
-                    // No room-data deletion here.
-                  }
-                } catch (e) {}
                 continue;
               }
               kept.push(it);
@@ -3536,13 +3524,13 @@
               await this._publishRoomListEntry(gid, g);
               return false;
             }
-            // Hide a disconnected room from the lobby after the short stale
-            // window, but preserve the game itself for the 30-minute return window.
+             
+             
             await db.ref("roomList").child(gid).remove();
             return true;
           } catch (e) {
-            // A temporary read failure is not evidence that the room is stale.
-            // Leave the record intact and retry on the next client or scheduled sweep.
+             
+             
             Logger.warn("stale_room_sweep_failed", { gameId: gid, err: String(e && (e.message || e)) });
             return false;
           }

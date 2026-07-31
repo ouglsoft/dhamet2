@@ -2,9 +2,7 @@
   const translations = {
   "ar": {
     "pages": {
-      "cta": {
-        "playNow": "ابدأ اللعب الآن"
-      },
+      "cta": {},
       "nav": {
         "rules": "القواعد",
         "privacy": "الخصوصية",
@@ -27,11 +25,7 @@
         "btnRemove": "إزالة القطعة",
         "btnForcePath": "إجبارها على المسار ${n}"
       },
-      "applied": {
-        "force": "أُجبرت قطعة الخصم على تنفيذ مسار الأسر الصحيح.",
-        "remove": "أُزيلت قطعة الخصم التي تجاهلت الأسر.",
-        "self": "تم تطبيق السوفلة."
-      },
+      "applied": {},
       "sendFailed": "تعذر تطبيق السوفلة بسبب مشكلة في الاتصال. تحقق من الإنترنت ثم حاول مرة أخرى.",
       "summary": {
         "force": "اختار {actor} عقوبة السوفلة ضدك، وأجبرك على تنفيذ المسار المحدد على الرقعة باللون الأخضر.",
@@ -89,9 +83,7 @@
       "undo": "تراجع",
       "endMatch": "خروج"
     },
-    "dashboard": {
-      "showLeaderboard": "عرض الترتيب العام"
-    },
+    "dashboard": {},
     "settings": {
       "board2d": "ثنائي الأبعاد",
       "board3d": "ثلاثي الأبعاد",
@@ -107,12 +99,9 @@
     "modals": {
       "gameOver": {
         "title": "انتهت المباراة",
-        "winner": "تهانينا لـ{player}، لقد فاز بالمباراة!",
         "draw": "مباراة متكافئة، انتهت بالتعادل.",
         "reason": {
-          "noPieces": "نفدت قطع {player}.",
-          "noLegalMoves": "لا يملك {player} أي نقلة قانونية.",
-          "oneKingEach": "تعادل اللاعبان بعد بقاء ظائم واحد لكل منهما."
+          "noPieces": "نفدت قطع {player}."
         }
       },
       "endMatch": {
@@ -124,7 +113,6 @@
         "forcedOpeningWarning": "السوفلة غير متاحة أثناء الافتتاح الإجباري."
       },
       "apply": "تطبيق",
-      "yes": "نعم",
       "no": "لا",
       "forcedOpening": {
         "title": "الافتتاح الإجباري",
@@ -143,8 +131,7 @@
         "noChanges": "لم تغيّر أي إعداد.",
         "changedTitle": "التغييرات:",
         "applied": "تم حفظ الإعدادات."
-      },
-      "successTitle": "تم بنجاح"
+      }
     },
     "log": {
       "gameStarted": "بدأت المباراة.",
@@ -186,7 +173,6 @@
       "emptyPlayers": "لا يوجد لاعبون متصلون.",
       "loadingPlayers": "جاري تحميل قائمة اللاعبين المتصلين...",
       "loadingRooms": "جاري تحميل قائمة المباريات الجارية...",
-      "loadFailed": "تعذر تحميل اللوبي مؤقتًا. ستتم إعادة المحاولة تلقائيًا، ويمكنك الضغط على زر «تحديث» للمحاولة الآن.",
       "roomsTitle": "قائمة المباريات الجارية",
       "playersTitle": "قائمة اللاعبين المتصلين",
       "subtitle": "شاهد المباريات الجارية أو اختر لاعبًا متصلًا وادعه إلى مباراة مباشرة.",
@@ -194,7 +180,6 @@
       "inviteDisabled": "لا يمكن دعوته الآن",
       "invitesDisabled": "لا يقبل الدعوات",
       "returnToMatch": "العودة إلى المباراة",
-      "reconnectingRoom": "اللاعبان يعيدان الاتصال",
       "privateRoom": "مباراة خاصة",
       "roomDefault": "مباراة",
       "roomLabel": "المباراة",
@@ -205,9 +190,7 @@
       "forcedChainStepByStep": "هذه سلسلة أسر إجبارية. نفّذها خطوةً خطوة.",
       "onlineInitFail": "تعذر فتح اللعب عبر الإنترنت الآن. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.",
       "reconnecting": "جارٍ استعادة الاتصال…",
-      "loadingMatch": "جارٍ فتح المباراة…",
       "onlineInitHelp": "تحقق من اتصال الإنترنت، ثم حدّث الصفحة لإعادة إنشاء جلسة اللعب المؤقتة.",
-      "loading": "جارٍ التحميل…",
       "wait": "الدور على اللاعب الآخر. انتظر قليلًا.",
       "turn": "الدور الآن على:",
       "forcedChainIncomplete": "ما زال هناك أسر متاح. أكمل السلسلة ثم اضغط مؤقت إنهاء الأسر.",
@@ -223,14 +206,8 @@
     "aria": {
       "board": "لوحة اللعب",
       "activityLog": "سجل النشاط",
-      "controls": "عناصر التحكم",
       "mobileStats": "إحصاءات الهاتف",
       "pvpActions": "إجراءات اللعب ضد لاعب",
-      "stats": "الإحصاءات",
-      "matchDetails": "تفاصيل المباراة",
-      "editAccount": "تعديل الحساب",
-      "authOverview": "نظرة عامة على ظامت",
-      "authStart": "ابدأ لعب ظامت",
       "drawer": "الدرج",
       "orientationToggle": "تبديل اتجاه العرض",
       "drawerToggle": "تبديل الدرج",
@@ -246,7 +223,6 @@
     "meta_keywords": "ظامت, زامت, لعبة موريتانية, داما, لعب عبر الإنترنت, ألعاب استراتيجية",
     "online": {
       "permissionDenied": "تعذر تنفيذ الإجراء بسبب انقطاع جلسة اللعب المؤقتة. حدّث الصفحة ثم حاول مرة أخرى.",
-      "authRestoreFailed": "تعذر استعادة جلسة اللعب المؤقتة. حدّث الصفحة ثم حاول مرة أخرى.",
       "presence": {
         "online": "متصل",
         "disconnected": "انقطع الاتصال"
@@ -340,8 +316,7 @@
     },
     "chain": {
       "notice": {
-        "body": "اضغط على مؤقت إنهاء الأسر لإنهاء دورك.\nملاحظة: إذا كان هناك أسر متتابع متاح، أكمل السلسلة أولًا.",
-        "inactive": "يعمل مؤقت إنهاء الأسر فقط أثناء وجود أسر جارٍ، وهو الذي ينهي دور اللاعب."
+        "body": "اضغط على مؤقت إنهاء الأسر لإنهاء دورك.\nملاحظة: إذا كان هناك أسر متتابع متاح، أكمل السلسلة أولًا."
       }
     },
     "actions": {
@@ -359,8 +334,7 @@
     "meta_description": "نسخة ويب للعب ظامت الموريتانية عبر الإنترنت بثلاث لغات.",
     "topbar": {
       "login": "تسجيل الدخول",
-      "logout": "تسجيل الخروج",
-      "account": "الحساب"
+      "logout": "تسجيل الخروج"
     },
     "game": {
       "title": "لعبة ظامت الموريتانية"
@@ -369,12 +343,10 @@
     "schema_game_name": "ظامت الموريتانية",
     "schema_game_type": "Game",
     "undo": {
-      "applied": "تم التراجع عن النقلة الأخيرة.",
       "failed": "تعذر التراجع عن النقلة.",
       "notCommitted": "لم يتم التراجع لأن المباراة تقدمت قبل اكتمال الطلب. اضغط «تحديث» ثم حاول مرة أخرى.",
       "rejected": "رفض اللاعب الآخر طلب التراجع.",
       "rejectedTitle": "رُفض طلب التراجع",
-      "spectatorRequested": "طلب {player} التراجع عن النقلة الأخيرة.",
       "spectatorAccepted": "وافق {responder} على تراجع {requester} عن النقلة الأخيرة المحددة بالسهم الأصفر المعكوس.",
       "spectatorRejected": "رفض {responder} طلب {requester} التراجع عن النقلة الأخيرة.",
       "requesterAccepted": "وافق {responder} على التراجع عن النقلة الأخيرة المحددة بالسهم الأصفر المعكوس.",
@@ -389,22 +361,13 @@
       }
     },
     "errors": {
-      "nick": {
-        "required": "الاسم المستعار مطلوب.",
-        "tooShort": "الاسم المستعار قصير جدًا.",
-        "tooLong": "الاسم المستعار طويل جدًا.",
-        "invalid": "اسم مستعار غير صالح."
-      },
-      "render3d": {
-        "failed": "تعذر تشغيل العرض ثلاثي الأبعاد. سيتم استخدام الشكل ثنائي الأبعاد."
-      }
+      "nick": {},
+      "render3d": {}
     }
   },
   "en": {
     "pages": {
-      "cta": {
-        "playNow": "Start playing now"
-      },
+      "cta": {},
       "nav": {
         "rules": "Rules",
         "privacy": "Privacy",
@@ -427,11 +390,7 @@
         "btnRemove": "Remove piece",
         "btnForcePath": "Force path ${n}"
       },
-      "applied": {
-        "force": "The opponent’s piece was forced to follow the valid capture path.",
-        "remove": "The opponent’s piece that skipped the capture was removed.",
-        "self": "Soufla applied."
-      },
+      "applied": {},
       "sendFailed": "Soufla could not be applied because of a connection problem. Check your internet connection and try again.",
       "summary": {
         "force": "{actor} chose a Soufla penalty against you and forced you to follow the path marked in green on the board.",
@@ -453,7 +412,7 @@
     "pvp": {
       "voice": {
         "micOn": "Mute mic",
-        "spkOn": "Mute",
+        "spkOn": "Mute sound",
         "failed": "Connection failed",
         "failedTitle": "Voice could not start",
         "failure": {
@@ -467,7 +426,7 @@
         },
         "micOff": "Turn on microphone",
         "spkOff": "Turn on sound",
-        "mic": "Mic",
+        "mic": "Microphone",
         "speaker": "Sound"
       },
       "chat": {
@@ -475,7 +434,7 @@
         "failed": "The message could not be sent. Try again.",
         "placeholder": "Type a message…",
         "rateLimit": "Wait one second before sending another message.",
-        "title": "Chat",
+        "title": "Text chat",
         "tooLong": "Shorten the message to 200 characters or fewer."
       },
       "leave": "Leave match"
@@ -489,9 +448,7 @@
       "undo": "Undo",
       "endMatch": "Exit"
     },
-    "dashboard": {
-      "showLeaderboard": "Show leaderboard"
-    },
+    "dashboard": {},
     "settings": {
       "board2d": "2D",
       "board3d": "3D",
@@ -507,12 +464,9 @@
     "modals": {
       "gameOver": {
         "title": "Match over",
-        "winner": "Congratulations to {player}, who won the match!",
         "draw": "A closely fought match—it ended in a draw.",
         "reason": {
-          "noPieces": "{player} has no pieces left.",
-          "noLegalMoves": "{player} has no legal move left.",
-          "oneKingEach": "The match is a draw with one king left for each player."
+          "noPieces": "{player} has no pieces left."
         }
       },
       "endMatch": {
@@ -524,7 +478,6 @@
         "forcedOpeningWarning": "Soufla is unavailable during the forced opening."
       },
       "apply": "Apply",
-      "yes": "Yes",
       "no": "No",
       "forcedOpening": {
         "title": "Forced opening",
@@ -543,8 +496,7 @@
         "noChanges": "No settings were changed.",
         "changedTitle": "Changes:",
         "applied": "Settings saved."
-      },
-      "successTitle": "Done"
+      }
     },
     "log": {
       "gameStarted": "The match started.",
@@ -574,9 +526,9 @@
       "gameWinnerSelf": "Congratulations, you won the match!",
       "gameLoserSelf": "Better luck next time—you lost the match.",
       "gameDraw": "A closely fought match—it ended in a draw.",
-      "turnMoveFmt": "${side}: Move ${from}-${to}.",
-      "turnMoveSelf": "You: moved from ${from} to ${to}.",
-      "turnCaptureFmt": "${side}: Capture ${from}-${to} (${n}).",
+      "turnMoveFmt": "${side}: moved the piece from ${from} to ${to}.",
+      "turnMoveSelf": "You: moved the piece from ${from} to ${to}.",
+      "turnCaptureFmt": "${side}: captured from ${from} to ${to} (${n}).",
       "turnCaptureSelf": "You: captured from ${from} to ${to} (${n})."
     },
     "lobby": {
@@ -586,7 +538,6 @@
       "emptyPlayers": "No players online.",
       "loadingPlayers": "Loading online players...",
       "loadingRooms": "Loading ongoing matches...",
-      "loadFailed": "The lobby could not be loaded temporarily. It will retry automatically, or press Refresh to try now.",
       "roomsTitle": "List of ongoing matches",
       "playersTitle": "Connected players list",
       "subtitle": "Choose a match to watch, or invite a player to start one.",
@@ -594,7 +545,6 @@
       "inviteDisabled": "Can't invite right now",
       "invitesDisabled": "Not accepting invites",
       "returnToMatch": "Return to match",
-      "reconnectingRoom": "Players are reconnecting",
       "privateRoom": "Private match",
       "roomDefault": "Match",
       "roomLabel": "Match",
@@ -605,9 +555,7 @@
       "forcedChainStepByStep": "This is a forced capture chain. Complete it one step at a time.",
       "onlineInitFail": "Online play could not be opened right now. Check your internet connection and try again.",
       "reconnecting": "Restoring the connection…",
-      "loadingMatch": "Opening the match…",
       "onlineInitHelp": "Check your internet connection, then refresh the page to recreate the temporary play session.",
-      "loading": "Loading…",
       "wait": "It is the other player’s turn. Please wait.",
       "turn": "Turn:",
       "forcedChainIncomplete": "Another capture is available. Finish the chain, then press the end-capture timer.",
@@ -623,14 +571,8 @@
     "aria": {
       "board": "Game board",
       "activityLog": "Activity log",
-      "controls": "Controls",
       "mobileStats": "Mobile stats",
       "pvpActions": "PvP actions",
-      "stats": "Stats",
-      "matchDetails": "Match details",
-      "editAccount": "Edit account",
-      "authOverview": "Dhamet overview",
-      "authStart": "Start playing Dhamet",
       "drawer": "Drawer",
       "orientationToggle": "Toggle display orientation",
       "drawerToggle": "Toggle drawer",
@@ -646,7 +588,6 @@
     "meta_keywords": "zamat, zamet, mauritanian game, board game, checkers, draughts, online multiplayer",
     "online": {
       "permissionDenied": "The temporary play session was interrupted. Refresh the page and try again.",
-      "authRestoreFailed": "The temporary play session could not be restored. Refresh the page and try again.",
       "presence": {
         "online": "Online",
         "disconnected": "Disconnected"
@@ -706,7 +647,7 @@
         "private": "Private match (spectators cannot watch)"
       },
       "invites": {
-        "receiveLabel": "Invite receiving:",
+        "receiveLabel": "Receive invitations:",
         "enabled": "Enabled",
         "disabled": "Disabled",
         "receivingEnabled": "Invite receiving enabled.",
@@ -718,7 +659,7 @@
       },
       "status": {
         "available": "Available",
-        "inPvP": "In online match"
+        "inPvP": "In an online match"
       },
       "syncFail": "The match could not be refreshed. Check your connection and try again.",
       "syncIssueNotice": "The latest match changes are not showing. Press Refresh to load them again.",
@@ -740,8 +681,7 @@
     },
     "chain": {
       "notice": {
-        "body": "Press the end-capture timer to finish your turn.\nNote: If another capture is available, complete the chain first.",
-        "inactive": "The end-capture timer works only while a capture chain is active, and it is what ends the player’s turn."
+        "body": "Press the end-capture timer to finish your turn.\nNote: If another capture is available, complete the chain first."
       }
     },
     "actions": {
@@ -759,7 +699,6 @@
     "meta_description": "A web version of the Mauritanian game Zamat for online play in Arabic, English, and French.",
     "topbar": {
       "logout": "Sign out",
-      "account": "Account",
       "login": "Log in"
     },
     "game": {
@@ -769,18 +708,16 @@
     "schema_game_genre": "Strategy game",
     "schema_game_type": "Game",
     "undo": {
-      "applied": "The last move was undone.",
       "failed": "The move could not be undone.",
       "notCommitted": "The move was not undone because the match continued before the request finished. Press Refresh and try again.",
       "rejected": "The other player declined the undo request.",
       "rejectedTitle": "Undo request declined",
-      "spectatorRequested": "{player} requested to undo the last move.",
       "spectatorAccepted": "{responder} accepted {requester}’s request to undo the last move marked by the reversed yellow arrow.",
       "spectatorRejected": "{responder} declined {requester}’s request to undo the last move.",
       "requesterAccepted": "{responder} accepted undoing the last move marked by the reversed yellow arrow.",
       "requesterRejected": "{responder} declined undoing the last move.",
       "request": {
-        "body": "{name} wants to undo the last move. Allow it?",
+        "body": "{name} wants to undo the last move. Do you agree?",
         "title": "Undo request"
       },
       "requestFailed": "The undo request could not be sent. Check your connection and try again.",
@@ -789,22 +726,13 @@
       }
     },
     "errors": {
-      "nick": {
-        "required": "Nickname is required.",
-        "tooShort": "Nickname is too short.",
-        "tooLong": "Nickname is too long.",
-        "invalid": "Invalid nickname."
-      },
-      "render3d": {
-        "failed": "Failed to start the 3D view. Falling back to 2D."
-      }
+      "nick": {},
+      "render3d": {}
     }
   },
   "fr": {
     "pages": {
-      "cta": {
-        "playNow": "Commencer à jouer"
-      },
+      "cta": {},
       "nav": {
         "rules": "Règles",
         "privacy": "Confidentialité",
@@ -812,7 +740,7 @@
         "contact": "Contact"
       },
       "navShort": {
-        "privacy": "Confid.",
+        "privacy": "Confidentialité",
         "terms": "Conditions",
         "contact": "Contact"
       },
@@ -827,11 +755,7 @@
         "btnRemove": "Retirer la pièce",
         "btnForcePath": "Imposer le chemin ${n}"
       },
-      "applied": {
-        "force": "La pièce adverse a été forcée à suivre le chemin de prise valide.",
-        "remove": "La pièce adverse qui a ignoré la prise a été retirée.",
-        "self": "Soufla appliquée."
-      },
+      "applied": {},
       "sendFailed": "La Soufla n’a pas pu être appliquée à cause d’un problème de connexion. Vérifiez votre accès à Internet puis réessayez.",
       "summary": {
         "force": "{actor} a choisi une sanction de Soufla contre vous et vous a imposé le chemin indiqué en vert sur le plateau.",
@@ -867,7 +791,7 @@
         },
         "micOff": "Activer le micro",
         "spkOff": "Activer le son",
-        "mic": "Micro",
+        "mic": "Microphone",
         "speaker": "Son"
       },
       "chat": {
@@ -875,7 +799,7 @@
         "failed": "Le message n’a pas pu être envoyé. Réessayez.",
         "placeholder": "Écrivez un message…",
         "rateLimit": "Attendez une seconde avant d’envoyer un autre message.",
-        "title": "Chat",
+        "title": "Discussion écrite",
         "tooLong": "Réduisez le message à 200 caractères ou moins."
       },
       "leave": "Quitter la partie"
@@ -889,9 +813,7 @@
       "undo": "Annuler",
       "endMatch": "Quitter"
     },
-    "dashboard": {
-      "showLeaderboard": "Afficher le classement"
-    },
+    "dashboard": {},
     "settings": {
       "board2d": "2D",
       "board3d": "3D",
@@ -907,12 +829,9 @@
     "modals": {
       "gameOver": {
         "title": "Partie terminée",
-        "winner": "Félicitations à {player}, qui remporte la partie !",
         "draw": "Une partie équilibrée, terminée par un match nul.",
         "reason": {
-          "noPieces": "{player} n’a plus de pièces.",
-          "noLegalMoves": "{player} n’a plus de coup légal.",
-          "oneKingEach": "La partie est nulle avec un roi restant pour chaque joueur."
+          "noPieces": "{player} n’a plus de pièces."
         }
       },
       "endMatch": {
@@ -924,7 +843,6 @@
         "forcedOpeningWarning": "La Soufla n’est pas disponible pendant l’ouverture obligatoire."
       },
       "apply": "Appliquer",
-      "yes": "Oui",
       "no": "Non",
       "forcedOpening": {
         "title": "Ouverture obligatoire",
@@ -943,8 +861,7 @@
         "noChanges": "Aucun paramètre n’a été modifié.",
         "changedTitle": "Modifications :",
         "applied": "Paramètres enregistrés."
-      },
-      "successTitle": "Terminé"
+      }
     },
     "log": {
       "gameStarted": "La partie a commencé.",
@@ -974,10 +891,10 @@
       "gameWinnerSelf": "Félicitations, vous avez gagné la partie !",
       "gameLoserSelf": "Courage, vous avez perdu la partie.",
       "gameDraw": "Une partie équilibrée, terminée par un match nul.",
-      "turnMoveFmt": "${side} : Déplacement ${from}-${to}.",
-      "turnMoveSelf": "Vous : déplacement de ${from} à ${to}.",
-      "turnCaptureFmt": "${side} : Prise ${from}-${to} (${n}).",
-      "turnCaptureSelf": "Vous : prise de ${from} à ${to} (${n})."
+      "turnMoveFmt": "${side} : a déplacé la pièce de ${from} à ${to}.",
+      "turnMoveSelf": "Vous : avez déplacé la pièce de ${from} à ${to}.",
+      "turnCaptureFmt": "${side} : a capturé de ${from} à ${to} (${n}).",
+      "turnCaptureSelf": "Vous : avez capturé de ${from} à ${to} (${n})."
     },
     "lobby": {
       "backToMode": "Retour au choix du mode",
@@ -986,7 +903,6 @@
       "emptyPlayers": "Aucun joueur en ligne.",
       "loadingPlayers": "Chargement des joueurs en ligne...",
       "loadingRooms": "Chargement des parties en cours...",
-      "loadFailed": "Le lobby est temporairement indisponible. Une nouvelle tentative sera effectuée automatiquement, ou appuyez sur Actualiser pour réessayer maintenant.",
       "roomsTitle": "Liste des parties en cours",
       "playersTitle": "Liste des joueurs connectés",
       "subtitle": "Choisissez une partie à regarder, ou invitez un joueur à en démarrer une.",
@@ -994,7 +910,6 @@
       "inviteDisabled": "Invitation impossible pour le moment",
       "invitesDisabled": "N’accepte pas les invitations",
       "returnToMatch": "Revenir à la partie",
-      "reconnectingRoom": "Les joueurs se reconnectent",
       "privateRoom": "Partie privée",
       "roomDefault": "Partie",
       "roomLabel": "Partie",
@@ -1005,9 +920,7 @@
       "forcedChainStepByStep": "Cette chaîne de prises est obligatoire. Effectuez-la étape par étape.",
       "onlineInitFail": "Le jeu en ligne ne peut pas être ouvert pour le moment. Vérifiez votre connexion Internet et réessayez.",
       "reconnecting": "Rétablissement de la connexion…",
-      "loadingMatch": "Ouverture de la partie…",
       "onlineInitHelp": "Vérifiez la connexion Internet, puis actualisez la page pour recréer la session de jeu temporaire.",
-      "loading": "Chargement…",
       "wait": "C’est au tour de l’autre joueur. Veuillez patienter.",
       "turn": "Au tour de :",
       "forcedChainIncomplete": "Une autre prise est disponible. Terminez la chaîne, puis appuyez sur le minuteur de fin de prise.",
@@ -1023,14 +936,8 @@
     "aria": {
       "board": "Plateau de jeu",
       "activityLog": "Journal d’activité",
-      "controls": "Commandes",
-      "mobileStats": "Statistiques mobile",
+      "mobileStats": "Statistiques mobiles",
       "pvpActions": "Actions PvP",
-      "stats": "Statistiques",
-      "matchDetails": "Détails du match",
-      "editAccount": "Modifier le compte",
-      "authOverview": "Vue d’ensemble de Dhamet",
-      "authStart": "Commencer à jouer à Dhamet",
       "drawer": "Tiroir",
       "orientationToggle": "Changer l’orientation de l’affichage",
       "drawerToggle": "Ouvrir/Fermer le tiroir",
@@ -1046,7 +953,6 @@
     "meta_keywords": "zamat, zamet, jeu mauritanien, jeu de plateau, dames, multijoueur en ligne",
     "online": {
       "permissionDenied": "La session de jeu temporaire a été interrompue. Actualisez la page puis réessayez.",
-      "authRestoreFailed": "Impossible de restaurer la session de jeu temporaire. Actualisez la page puis réessayez.",
       "presence": {
         "online": "En ligne",
         "disconnected": "Connexion coupée"
@@ -1106,7 +1012,7 @@
         "private": "Partie privée (les spectateurs ne peuvent pas la regarder)"
       },
       "invites": {
-        "receiveLabel": "Réception des invitations :",
+        "receiveLabel": "Recevoir les invitations :",
         "enabled": "Activée",
         "disabled": "Désactivée",
         "receivingEnabled": "Réception des invitations activée.",
@@ -1140,8 +1046,7 @@
     },
     "chain": {
       "notice": {
-        "body": "Appuyez sur le minuteur de fin de prise pour terminer votre tour.\nRemarque : si une autre prise est disponible, terminez d’abord la chaîne.",
-        "inactive": "Le minuteur de fin de prise fonctionne uniquement lorsqu’une prise est en cours, et c’est lui qui termine le tour du joueur."
+        "body": "Appuyez sur le minuteur de fin de prise pour terminer votre tour.\nRemarque : si une autre prise est disponible, terminez d’abord la chaîne."
       }
     },
     "actions": {
@@ -1159,7 +1064,6 @@
     "meta_description": "Une version web du jeu mauritanien Zamat pour jouer en ligne en arabe, anglais et français.",
     "topbar": {
       "logout": "Déconnexion",
-      "account": "Compte",
       "login": "Connexion"
     },
     "game": {
@@ -1169,12 +1073,10 @@
     "schema_game_genre": "Jeu de stratégie",
     "schema_game_type": "Game",
     "undo": {
-      "applied": "Le dernier coup a été annulé.",
       "failed": "Le coup n’a pas pu être annulé.",
       "notCommitted": "Le coup n’a pas été annulé, car la partie a continué avant la fin de la demande. Appuyez sur Actualiser puis réessayez.",
       "rejected": "L’autre joueur a refusé la demande d’annulation.",
       "rejectedTitle": "Demande d’annulation refusée",
-      "spectatorRequested": "{player} a demandé l’annulation du dernier coup.",
       "spectatorAccepted": "{responder} a accepté la demande de {requester} d’annuler le dernier coup indiqué par la flèche jaune inversée.",
       "spectatorRejected": "{responder} a refusé la demande de {requester} d’annuler le dernier coup.",
       "requesterAccepted": "{responder} a accepté d’annuler le dernier coup indiqué par la flèche jaune inversée.",
@@ -1189,15 +1091,8 @@
       }
     },
     "errors": {
-      "nick": {
-        "required": "Le pseudo est requis.",
-        "tooShort": "Le pseudo est trop court.",
-        "tooLong": "Le pseudo est trop long.",
-        "invalid": "Pseudo invalide."
-      },
-      "render3d": {
-        "failed": "Impossible de lancer la vue 3D. Retour au mode 2D."
-      }
+      "nick": {},
+      "render3d": {}
     }
   }
 };
@@ -1387,11 +1282,11 @@ function deepGet(obj, key) {
       scheduled = false;
       applyDir();
 
-      /*
-       * Keep DOM translations synchronized when i18n.js loads after the shell,
-       * when the language is changed, or when caching changes script execution
-       * order.
-       */
+        
+                                                                               
+                                                                               
+               
+         
       try {
         applyI18nDom(document, currentLang());
       } catch (_) {}
