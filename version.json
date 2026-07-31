@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260731-v30-unified-back-scroll-root-fix",
-  "source": "firebase-online-only-native-rtdb-transport-v30-unified-back-scroll-root-fix",
-  "uiReference": "approved-online-only-v28",
-  "release": "20260731-v30-unified-back-scroll-root-fix"
+  "version": "20260731-v31-v30-recovery-unified-back-log-scroll",
+  "source": "firebase-online-only-native-rtdb-transport-v31-v30-recovery-unified-back-log-scroll",
+  "uiReference": "approved-online-only-v31-v30-recovery-unified-back-log-scroll",
+  "release": "20260731-v31-v30-recovery-unified-back-log-scroll"
 }

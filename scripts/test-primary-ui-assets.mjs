@@ -10,4 +10,4 @@ for (const [file, expected] of Object.entries({ ...manifest.css, ...manifest.ico
   if (actual !== expected) throw new Error(`Approved online-only UI asset differs: ${file}\nexpected ${expected}\nactual   ${actual}`);
 }
 
-console.log("approved online-only UI CSS and icon assets match the V20 reference");
+console.log("approved online-only UI CSS and icon assets match the approved V31 reference");
