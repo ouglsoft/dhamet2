@@ -81,6 +81,7 @@
       "leave": "مغادرة المباراة"
     },
     "buttons": {
+      "home": "الرئيسية",
       "soufla": "سوفلة",
       "settings": "الإعدادات",
       "sync": "تحديث",
@@ -202,7 +203,7 @@
     },
     "status": {
       "forcedChainStepByStep": "هذه سلسلة أسر إجبارية. نفّذها خطوةً خطوة.",
-      "onlineInitFail": "تعذر فتح اللعب عبر الإنترنت الآن.",
+      "onlineInitFail": "تعذر فتح اللعب عبر الإنترنت الآن. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.",
       "reconnecting": "جارٍ استعادة الاتصال…",
       "loadingMatch": "جارٍ فتح المباراة…",
       "onlineInitHelp": "تحقق من اتصال الإنترنت، ثم حدّث الصفحة لإعادة إنشاء جلسة اللعب المؤقتة.",
@@ -283,6 +284,7 @@
         "joinFailed": "تعذر الانضمام إلى المباراة عبر الإنترنت. حدّث الصفحة وتأكد من اتصالك، ثم حاول مرة أخرى."
       },
       "inviteInvalidated": "لم تعد الدعوة صالحة؛ ربما دخل اللاعب مباراة أخرى أو انقطع اتصاله.",
+      "inviteRejected": "رفض اللاعب الآخر دعوتك.",
       "inviteSendFail": "تعذر إرسال الدعوة. حاول مرة أخرى.",
       "resultNotCounted": {
         "early": "لم يُحدَّد فائز لأن المباراة انتهت في وقت مبكر جدًا.",
@@ -479,6 +481,7 @@
       "leave": "Leave match"
     },
     "buttons": {
+      "home": "Home",
       "soufla": "Soufla",
       "settings": "Settings",
       "sync": "Refresh",
@@ -600,7 +603,7 @@
     },
     "status": {
       "forcedChainStepByStep": "This is a forced capture chain. Complete it one step at a time.",
-      "onlineInitFail": "Online play could not be opened right now.",
+      "onlineInitFail": "Online play could not be opened right now. Check your internet connection and try again.",
       "reconnecting": "Restoring the connection…",
       "loadingMatch": "Opening the match…",
       "onlineInitHelp": "Check your internet connection, then refresh the page to recreate the temporary play session.",
@@ -681,6 +684,7 @@
         "joinFailed": "Couldn't join the online match. Refresh the page, check your connection, and try again."
       },
       "inviteInvalidated": "The invite is no longer valid. The player may have joined another match or gone offline.",
+      "inviteRejected": "The other player declined your invitation.",
       "inviteSendFail": "The invite could not be sent. Try again.",
       "resultNotCounted": {
         "early": "No winner was declared because the match ended too early.",
@@ -877,6 +881,7 @@
       "leave": "Quitter la partie"
     },
     "buttons": {
+      "home": "Accueil",
       "soufla": "Soufla",
       "settings": "Paramètres",
       "sync": "Actualiser",
@@ -998,7 +1003,7 @@
     },
     "status": {
       "forcedChainStepByStep": "Cette chaîne de prises est obligatoire. Effectuez-la étape par étape.",
-      "onlineInitFail": "Le jeu en ligne ne peut pas être ouvert pour le moment.",
+      "onlineInitFail": "Le jeu en ligne ne peut pas être ouvert pour le moment. Vérifiez votre connexion Internet et réessayez.",
       "reconnecting": "Rétablissement de la connexion…",
       "loadingMatch": "Ouverture de la partie…",
       "onlineInitHelp": "Vérifiez la connexion Internet, puis actualisez la page pour recréer la session de jeu temporaire.",
@@ -1079,6 +1084,7 @@
         "joinFailed": "Impossible de rejoindre la partie en ligne. Actualisez la page, vérifiez votre connexion, puis réessayez."
       },
       "inviteInvalidated": "L’invitation n’est plus valable. Le joueur a peut-être rejoint une autre partie ou s’est déconnecté.",
+      "inviteRejected": "L’autre joueur a refusé votre invitation.",
       "inviteSendFail": "L’invitation n’a pas pu être envoyée. Réessayez.",
       "resultNotCounted": {
         "early": "Aucun gagnant n’a été déclaré, car la partie s’est terminée trop tôt.",

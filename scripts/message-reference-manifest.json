@@ -4,10 +4,12 @@
     "en",
     "fr"
   ],
-  "onlineOnlyLeafCount": 284,
+  "onlineOnlyLeafCount": 286,
   "allowedExtraKeys": [
     "errors.render3d.failed",
-    "online.errors.joinFailed"
+    "online.errors.joinFailed",
+    "buttons.home",
+    "online.inviteRejected"
   ],
   "necessaryChangedKeys": [
     "status.onlineInitHelp",
@@ -30,7 +32,6 @@
     "pvp.chat.open",
     "pvp.chat.send",
     "pvp.voice.failedBody",
-    "online.inviteRejected",
     "online.pvpEndTitle",
     "online.matchEndedReason.absent",
     "online.status.vsComputer",
@@ -50,5 +51,5 @@
     "status.draw",
     "status.lose"
   ],
-  "reference": "approved-online-only-v20"
+  "reference": "approved-online-only-v34"
 }

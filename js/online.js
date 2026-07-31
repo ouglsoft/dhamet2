@@ -126,6 +126,27 @@
     writeMigrationVersion
   } = S;
 
+
+  function waitForOnlineRetry(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, Math.max(0, Number(ms || 0) || 0)); });
+  }
+
+  async function initPresenceWithRetry(owner, options) {
+    let ok = false;
+    try { ok = !!(await owner.initPresence(options)); } catch (_) { ok = false; }
+    if (ok) return true;
+    await waitForOnlineRetry(350);
+    try { return !!(await owner.initPresence(options)); } catch (_) { return false; }
+  }
+
+  async function resolveActiveMatchWithRetry(owner) {
+    let resolved = null;
+    try { resolved = await owner._resolveActivePlayerMatch(); } catch (_) { resolved = null; }
+    if (resolved && resolved.state !== "unknown") return resolved;
+    await waitForOnlineRetry(350);
+    try { return await owner._resolveActivePlayerMatch(); } catch (_) { return resolved || { state: "unknown", gameId: "" }; }
+  }
+
   window.__ZAMAT_ONLINE_FULL_LOADED__ = true;
 
   function lobbyStatusInfo(player, activePlayerRooms, uid) {
@@ -1103,7 +1124,7 @@
         },
 
     startOnline: async function () {
-          const ok = await this.initPresence();
+          const ok = await initPresenceWithRetry(this);
           if (!ok) {
             showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
             return;
@@ -1368,14 +1389,14 @@
         },
 
     _createGame: async function (opponentUid) {
-          const ok = await this.initPresence();
+          const ok = await initPresenceWithRetry(this);
           if (!ok) {
             showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
             return;
           }
     
           try {
-            const activeMatch = await this._resolveActivePlayerMatch();
+            const activeMatch = await resolveActiveMatchWithRetry(this);
             if (!activeMatch || activeMatch.state === "unknown") {
               showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
               return;
@@ -5089,7 +5110,7 @@
     
             const logEl = document.getElementById("log");
             if (!logEl || !window.DhametGameLogView || typeof window.DhametGameLogView.syncElement !== "function") return;
-            const slice = arr.slice(-80);
+            const slice = arr.slice(-80).reverse();
             window.DhametGameLogView.syncElement(
               logEl,
               slice,
@@ -6107,7 +6128,7 @@
           const showLobbyFailure = () => {
             if (!isCurrent()) return;
             clearLoadTimer();
-            const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
+            const msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر فتح اللعب عبر الإنترنت الآن. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.");
             if (!playersLoaded && playersEl) playersEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
             if (!roomsLoaded && roomsEl) roomsEl.innerHTML = `<div class="z-empty z-load-error">${escapeHtml(msg)}</div>`;
           };
@@ -6579,7 +6600,7 @@
         },
 
     _enterGameFromId: async function (gameId, forceSpectator) {
-          const ok = await this.initPresence();
+          const ok = await initPresenceWithRetry(this);
           if (!ok) {
             showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
             return;
@@ -6709,7 +6730,7 @@
 
     if (document.getElementById("roomsList") && document.getElementById("playersList")) {
       Online.initLobbyPage({ roomsListId: "roomsList", playersListId: "playersList" }).catch(function () {
-        var msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تشغيل اللعب عبر الإنترنت الآن.");
+        var msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر فتح اللعب عبر الإنترنت الآن. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.");
         var playersEl = document.getElementById("playersList");
         var roomsEl = document.getElementById("roomsList");
         if (playersEl) playersEl.innerHTML = '<div class="z-empty">' + msg + '</div>';

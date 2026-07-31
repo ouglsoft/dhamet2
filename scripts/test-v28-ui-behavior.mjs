@@ -26,7 +26,7 @@ assert.match(read("js/ui.js"), /getGameHeaderModel\(\)/);
 assert.match(online, /Mobile\.syncGameHeadNow/);
 const logView = read("js/ui/game-log-view.js");
 assert.match(game, /LOG_BOTTOM_THRESHOLD = 48/);
-assert.match(game, /DhametGameLogView\.syncElement\(log, events/);
+assert.match(game, /const newestFirst = events\.map\([\s\S]*?\.reverse\(\);[\s\S]*?DhametGameLogView\.syncElement\(\s*log,\s*newestFirst/);
 assert.match(online, /DhametGameLogView\.syncElement\(/);
 assert.match(logView, /function syncElement\(/);
 assert.match(logView, /distanceFromBottom\(element\) <= threshold/);

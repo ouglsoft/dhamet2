@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260731-v33-direction-scroll-pagehide-close",
-  "source": "firebase-online-only-native-rtdb-transport-v33-pagehide-timer-only",
-  "uiReference": "approved-online-only-v33-direction-scroll-close-ui",
-  "release": "20260731-v33-direction-scroll-pagehide-close"
+  "version": "20260731-v34-top-log-online-retry-invite-rejection",
+  "source": "firebase-online-only-native-rtdb-transport-v34-top-log-online-retry-invite-rejection",
+  "uiReference": "approved-online-only-v34-top-log-home-invite-rejection",
+  "release": "20260731-v34-top-log-online-retry-invite-rejection"
 }

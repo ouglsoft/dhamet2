@@ -754,6 +754,16 @@
     }
   }
 
+  function hasExplicitInviteRejection(game) {
+    try {
+      const raw = game && game.log;
+      const rows = Array.isArray(raw) ? raw : (raw && typeof raw === "object" ? Object.values(raw) : []);
+      return rows.some(function (row) { return row && String(row.type || "") === "invite_rejected"; });
+    } catch (_) {
+      return false;
+    }
+  }
+
   function normalizeLogArrayForWrite(arr) {
     try {
       if (!Array.isArray(arr)) return [];
@@ -2780,6 +2790,14 @@
             }
     
             if (st === "rejected" || st === "ended") {
+              if (st === "rejected" && hasExplicitInviteRejection(g)) {
+                try {
+                  if (this._lastRejectedInviteNoticeId !== gameId) {
+                    this._lastRejectedInviteNoticeId = gameId;
+                    showOnlineNotice(window.I18N.translateArgs("online.inviteRejected"));
+                  }
+                } catch (e) {}
+              }
               try {
                 this._clearPendingInviteWatcher();
               } catch (e) {}
@@ -3287,7 +3305,19 @@
                     return;
                   }
     
-                  if (st === "rejected" || st === "ended") {
+                  if (st === "rejected") {
+                    if (hasExplicitInviteRejection(g)) {
+                      try {
+                        if (this._lastRejectedInviteNoticeId !== gid) {
+                          this._lastRejectedInviteNoticeId = gid;
+                          showOnlineNotice(window.I18N.translateArgs("online.inviteRejected"));
+                        }
+                      } catch (e) {}
+                    }
+                    try {
+                      this._untrackOutgoingInviteByGame(gid);
+                    } catch (e) {}
+                  } else if (st === "ended") {
                     try {
                       this._untrackOutgoingInviteByGame(gid);
                     } catch (e) {}
@@ -3879,7 +3909,7 @@
             location.href = "./loby.html";
             return;
           }
-          var msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر تهيئة اللعب عبر الإنترنت.");
+          var msg = window.I18N.translateArgs("status.onlineInitFail", "تعذر فتح اللعب عبر الإنترنت الآن. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.");
           var extra = window.I18N.translateArgs("status.onlineInitHelp", "يرجى تسجيل الدخول أو تفعيل المصادقة المجهولة (Anonymous) في Firebase.");
           if (window.Modal && typeof Modal.open === "function") {
             Modal.alert({

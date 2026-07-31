@@ -110,7 +110,7 @@ for (const token of [
 if (!online.includes('name: `<span class="z-player-name">${escapeHtml(name)}</span>`')) throw new Error("Undo requester name is not escaped like the primary app");
 if (!passive.includes('const safeName = `<span class="z-player-name">${escapeHtml(name)}</span>`')) throw new Error("Invite sender name is not escaped like the primary app");
 if (!passive.includes('roomName: escapeHtml(roomName)')) throw new Error("Invite room name is not escaped like the primary app");
-if (passive.includes('translateArgs("online.inviteRejected")')) throw new Error("Outgoing invite rejection notice must remain silent like the primary app");
+if (!passive.includes('translateArgs("online.inviteRejected")')) throw new Error("Outgoing invite rejection must notify the sender");
 if (!online.includes('type !== "invite_sent"') || !online.includes('type !== "invite_accepted"') || !online.includes('type !== "invite_rejected"')) {
   throw new Error("Invite lifecycle records are not hidden from the visible game log");
 }
