@@ -6,7 +6,8 @@
   try { console.info("Dhamet2 build", BUILD_VERSION); } catch (_) {}
 
   const SESSION_KEY = "dhamet2.anonymous.session.v1";
-  const AUTH_TAB_KEY = "dhamet2.auth.tab.v3";
+  const AUTH_BROWSER_KEY = "dhamet2.auth.browser.v4";
+  const BROWSER_SESSION_COOKIE = "dhamet2_browser_session";
   const LANG_KEY = "zamat.lang";
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
@@ -156,17 +157,49 @@
       );
     });
   }
-  function readTabAuthMarker() {
+  function randomSessionId() {
     try {
-      const raw = sessionStorage.getItem(AUTH_TAB_KEY);
+      if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function") {
+        const bytes = new Uint8Array(18);
+        globalThis.crypto.getRandomValues(bytes);
+        return Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+      }
+    } catch (_) {}
+    return String(Date.now()) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  }
+  function readCookie(name) {
+    try {
+      const prefix = encodeURIComponent(name) + "=";
+      const rows = String(document.cookie || "").split(/;\s*/);
+      for (const row of rows) if (row.indexOf(prefix) === 0) return decodeURIComponent(row.slice(prefix.length));
+    } catch (_) {}
+    return "";
+  }
+  function ensureBrowserSessionId() {
+    let id = readCookie(BROWSER_SESSION_COOKIE);
+    if (id) return id;
+    id = randomSessionId();
+    try {
+      const secure = location && location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = encodeURIComponent(BROWSER_SESSION_COOKIE) + "=" + encodeURIComponent(id) + "; Path=/; SameSite=Lax" + secure;
+    } catch (_) {}
+    return id;
+  }
+  function readBrowserAuthMarker() {
+    try {
+      const raw = localStorage.getItem(AUTH_BROWSER_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (_) {
       return null;
     }
   }
-  function markTabAuth(user) {
+  function markBrowserAuth(user, browserSessionId) {
     try {
-      sessionStorage.setItem(AUTH_TAB_KEY, JSON.stringify({ uid: String((user && user.uid) || ""), ts: Date.now() }));
+      localStorage.setItem(AUTH_BROWSER_KEY, JSON.stringify({
+        sessionId: String(browserSessionId || ""),
+        uid: String((user && user.uid) || ""),
+        ts: Date.now(),
+      }));
     } catch (_) {}
   }
 
@@ -205,13 +238,13 @@
     });
   }
 
-  async function signInFreshAnonymous(auth) {
+  async function signInFreshAnonymous(auth, browserSessionId) {
     try { await withTimeout(auth.signOut(), 4000, "anonymous-signout-timeout"); } catch (_) {}
     const result = await withTimeout(auth.signInAnonymously(), 9000, "anonymous-signin-timeout");
     const user = result && result.user ? result.user : auth.currentUser;
     if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
     try { await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout"); } catch (_) {}
-    markTabAuth(user);
+    markBrowserAuth(user, browserSessionId);
     return user;
   }
 
@@ -220,16 +253,21 @@
     ensureAnonymousPromise = (async () => {
       if (!initFirebase()) throw new Error("firebase-unavailable");
       const auth = firebase.auth();
-      // The emergency identity is tab-scoped. This prevents an old anonymous UID/token
-      // from surviving browser restarts while still preserving the UID across lobby/game
-      // navigation and reloads inside the same tab.
+      // Firebase LOCAL persistence shares one anonymous UID between tabs. A
+      // first-party session cookie scopes that UID to the current browser
+      // session, so a full browser restart receives a fresh guest identity.
+      const browserSessionId = ensureBrowserSessionId();
       try {
-        await withTimeout(auth.setPersistence(firebase.auth.Auth.Persistence.SESSION), 4000, "auth-persistence-timeout");
+        await withTimeout(auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL), 4000, "auth-persistence-timeout");
       } catch (_) {}
 
       let user = await waitForInitialAuthState(auth, 4000);
-      const marker = readTabAuthMarker();
-      const markerMatches = !!(marker && marker.uid && user && String(marker.uid) === String(user.uid));
+      const marker = readBrowserAuthMarker();
+      const markerMatches = !!(
+        marker && marker.sessionId && marker.uid && user &&
+        String(marker.sessionId) === String(browserSessionId) &&
+        String(marker.uid) === String(user.uid)
+      );
       let tokenHealthy = false;
       if (user && user.isAnonymous && markerMatches) {
         try {
@@ -239,11 +277,11 @@
           tokenHealthy = false;
         }
       }
-      if (!tokenHealthy) user = await signInFreshAnonymous(auth);
+      if (!tokenHealthy) user = await signInFreshAnonymous(auth, browserSessionId);
       if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
 
       try { firebase.database().goOnline(); } catch (_) {}
-      markTabAuth(user);
+      markBrowserAuth(user, browserSessionId);
       writeSession(user);
       return user;
     })().finally(() => { ensureAnonymousPromise = null; });
@@ -254,9 +292,11 @@
     if (!initFirebase()) throw new Error("firebase-unavailable");
     const auth = firebase.auth();
     ensureAnonymousPromise = null;
-    const user = await signInFreshAnonymous(auth);
+    const browserSessionId = ensureBrowserSessionId();
+    try { await withTimeout(auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL), 4000, "auth-persistence-timeout"); } catch (_) {}
+    const user = await signInFreshAnonymous(auth, browserSessionId);
     try { firebase.database().goOnline(); } catch (_) {}
-    markTabAuth(user);
+    markBrowserAuth(user, browserSessionId);
     writeSession(user);
     return user;
   }

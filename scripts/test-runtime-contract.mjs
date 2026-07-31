@@ -9,10 +9,13 @@ const mobileCss = fs.readFileSync(new URL("../css/mobile.css", import.meta.url),
 const rulesParity = fs.readFileSync(new URL("../js/rules-parity-runtime.js", import.meta.url), "utf8");
 
 if (!shell.includes("waitForInitialAuthState")) throw new Error("auth persistence restoration is not awaited");
-if (!shell.includes("Auth.Persistence.SESSION")) throw new Error("anonymous auth must be tab/session scoped");
-if (!shell.includes("AUTH_TAB_KEY")) throw new Error("tab auth marker is missing");
+if (!shell.includes("Auth.Persistence.LOCAL")) throw new Error("anonymous auth must be shared across tabs");
+if (!shell.includes("BROWSER_SESSION_COOKIE") || !shell.includes("AUTH_BROWSER_KEY")) throw new Error("browser-session identity boundary is missing");
+if (!shell.includes("ensureBrowserSessionId")) throw new Error("browser-session cookie restoration is missing");
 if (!shell.includes("resetAnonymous")) throw new Error("anonymous-session recovery is missing");
-if (!passive.includes("Never mark the new session busy")) throw new Error("stale active-game recovery is missing");
+if (!passive.includes("_resolveActivePlayerMatch")) throw new Error("authoritative active-game recovery is missing");
+if (!passive.includes("_publishRoomListEntry(gid, game)")) throw new Error("active room-list repair is missing");
+if (!passive.includes("localPersistKey(PERSIST_GAME_ID_KEY, uid)")) throw new Error("cross-tab active-game persistence is missing");
 if (!passive.includes("_teardownPageRuntime") || !passive.includes("Never start network writes, waits, or authentication work")) throw new Error("unload freeze prevention is missing");
 if (!passive.includes("_teardownOnlineSubscriptions({ localOnly: true })")) throw new Error("normal pagehide must detach all subscriptions locally");
 if (!/if \(event && event\.persisted\) return;/.test(passive)) throw new Error("BFCache pagehide must preserve Firebase listeners");

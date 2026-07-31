@@ -18,7 +18,8 @@ const requiredPassive = [
   'const ROOM_PENDING_PURGE_DELAY_MS = 2 * 24 * 60 * 60 * 1000',
   'const INVITE_TTL_MS = 60 * 1000',
   'const UNDO_REQUEST_TTL_MS = 5 * 60 * 1000',
-  'Date.now() - ts > 12 * 60 * 60 * 1000',
+  'const PERSIST_GAME_TTL_MS = 1000 * 60 * 60 * 12',
+  'Date.now() - ts > PERSIST_GAME_TTL_MS',
   'No room-data deletion here.',
 ];
 for (const token of requiredPassive) {

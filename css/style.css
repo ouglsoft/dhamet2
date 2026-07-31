@@ -1104,7 +1104,10 @@ body.z-game-page:not(.mode-pvp):not(.z-mobile-on) #btnUndo {
   overscroll-behavior-x: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  overflow-anchor: none;
+  overflow-anchor: auto;
+  scrollbar-gutter: stable;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   background: var(--panel);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
@@ -1113,6 +1116,7 @@ body.z-game-page:not(.mode-pvp):not(.z-mobile-on) #btnUndo {
 }
 
 .log-item {
+  flex: 0 0 auto;
   padding: 6px 8px;
   line-height: 1.4;
   display: flex;

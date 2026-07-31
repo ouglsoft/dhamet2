@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
+const mobile = read("js/mobile.js");
+const style = read("css/style.css");
+const logView = read("js/ui/game-log-view.js");
+const game = read("js/game.js");
+const online = read("js/online.js");
+const passive = read("js/online.passive.js");
+const shell = read("js/emergency-shell.js");
+
+assert.match(mobile, /bar\.appendChild\(backBtn\);\s*bar\.appendChild\(langBtn\);/);
+assert.match(style, /html\[dir="ltr"\] \.directional-exit-icon\s*\{\s*transform: scaleX\(-1\)/);
+assert.match(logView, /function syncElement\(/);
+assert.match(game, /DhametGameLogView\.syncElement\(log, events/);
+assert.match(online, /DhametGameLogView\.syncElement\(/);
+assert.doesNotMatch(game + online, /manualScrollActive|LOG_SCROLL_IDLE_MS|pendingRender|beginManualScroll/);
+assert.match(style, /\.log-item \{\s*flex: 0 0 auto;/);
+
+assert.match(shell, /Auth\.Persistence\.LOCAL/);
+assert.match(shell, /BROWSER_SESSION_COOKIE/);
+assert.match(shell, /document\.cookie = [\s\S]*SameSite=Lax/);
+assert.match(shell, /String\(marker\.sessionId\) === String\(browserSessionId\)/);
+assert.doesNotMatch(shell, /Auth\.Persistence\.SESSION|AUTH_TAB_KEY|tab-scoped/);
+assert.match(passive, /localPersistKey\(PERSIST_GAME_ID_KEY, uid\)/);
+assert.match(passive, /_resolvePlayerActiveMatch:[\s\S]*db\.ref\("games"\)\.child\(gid\)\.once\("value"\)/);
+assert.match(passive, /_resolvePlayerActiveMatch:[\s\S]*_publishRoomListEntry\(gid, game\)/);
+assert.match(passive, /_clearStaleActiveMatchState:[\s\S]*status: "available"[\s\S]*roomId: null/);
+assert.match(online, /_createGame:[\s\S]*const activeMatch = await this\._resolveActivePlayerMatch\(\)/);
+assert.match(online, /_returnToActiveMatch:[\s\S]*this\._resolveActivePlayerMatch\(\)/);
+assert.match(online, /const opponentMatch = await this\._resolvePlayerActiveMatch\(opponentUid/);
+console.log("V32 unified UI, browser-session identity and active-match tests passed");

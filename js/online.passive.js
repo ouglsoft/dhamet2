@@ -967,6 +967,15 @@
 
   const PERSIST_GAME_ID_KEY = "zamat.activeGameId";
   const PERSIST_GAME_TS_KEY = "zamat.activeGameTs";
+  const PERSIST_GAME_TTL_MS = 1000 * 60 * 60 * 12;
+
+  function currentPersistUid(ctx) {
+    try { return String((ctx && ctx.myUid) || (auth && auth.currentUser && auth.currentUser.uid) || "").trim(); } catch (e) { return ""; }
+  }
+  function localPersistKey(base, uid) {
+    const cleanUid = String(uid || "").replace(/[^A-Za-z0-9._:@-]/g, "").slice(0, 120);
+    return cleanUid ? base + "." + cleanUid : "";
+  }
 
   function ssGet(k) {
     try {
@@ -1982,32 +1991,49 @@
           try {
             const gid = String(this.gameId || this._presenceRoomId || "").trim();
             if (!gid) return;
+            const ts = String(Date.now());
+            const uid = currentPersistUid(this);
             ssSet(PERSIST_GAME_ID_KEY, gid);
-            ssSet(PERSIST_GAME_TS_KEY, String(Date.now()));
+            ssSet(PERSIST_GAME_TS_KEY, ts);
+            const idKey = localPersistKey(PERSIST_GAME_ID_KEY, uid);
+            const tsKey = localPersistKey(PERSIST_GAME_TS_KEY, uid);
+            if (idKey && tsKey) { lsSet(idKey, gid); lsSet(tsKey, ts); }
           } catch (e) {}
         },
 
     _clearPersistedActiveGame: function () {
+          const uid = currentPersistUid(this);
+          try { ssRemove(PERSIST_GAME_ID_KEY); } catch (e) {}
+          try { ssRemove(PERSIST_GAME_TS_KEY); } catch (e) {}
           try {
-            ssRemove(PERSIST_GAME_ID_KEY);
-          } catch (e) {}
-          try {
-            ssRemove(PERSIST_GAME_TS_KEY);
+            const idKey = localPersistKey(PERSIST_GAME_ID_KEY, uid);
+            const tsKey = localPersistKey(PERSIST_GAME_TS_KEY, uid);
+            if (idKey) localStorage.removeItem(idKey);
+            if (tsKey) localStorage.removeItem(tsKey);
+            localStorage.removeItem(PERSIST_GAME_ID_KEY);
+            localStorage.removeItem(PERSIST_GAME_TS_KEY);
           } catch (e) {}
         },
 
     _getPersistedActiveGameId: function () {
           try {
-            const gid = String(ssGet(PERSIST_GAME_ID_KEY) || "").trim();
-            if (!gid) return "";
-            const ts = parseInt(ssGet(PERSIST_GAME_TS_KEY) || "0", 10) || 0;
-            // Restored browser/mobile tabs can preserve sessionStorage for days. A stale
-            // private game id must never block the lobby startup.
-            if (!ts || Date.now() - ts > 12 * 60 * 60 * 1000) {
-              this._clearPersistedActiveGame();
+            const fromSession = String(ssGet(PERSIST_GAME_ID_KEY) || "").trim();
+            if (fromSession) return fromSession;
+            const uid = currentPersistUid(this);
+            const idKey = localPersistKey(PERSIST_GAME_ID_KEY, uid);
+            const tsKey = localPersistKey(PERSIST_GAME_TS_KEY, uid);
+            if (!idKey || !tsKey) return "";
+            const fromLocal = String(lsGet(idKey) || "").trim();
+            if (!fromLocal) return "";
+            const ts = Number(lsGet(tsKey) || 0) || 0;
+            if (!ts || Date.now() - ts > PERSIST_GAME_TTL_MS) {
+              try { localStorage.removeItem(idKey); } catch (e) {}
+              try { localStorage.removeItem(tsKey); } catch (e) {}
               return "";
             }
-            return gid;
+            ssSet(PERSIST_GAME_ID_KEY, fromLocal);
+            ssSet(PERSIST_GAME_TS_KEY, String(ts));
+            return fromLocal;
           } catch (e) {
             return "";
           }
@@ -2045,62 +2071,94 @@
           }
         },
 
-    _getActivePlayerRoomId: async function () {
-          const ok = await settleWithin(ensureAuthReady(), 9000, false);
-          const uid = this.myUid || (auth && auth.currentUser && auth.currentUser.uid) || "";
-          if (!ok || !uid || !db || !db.ref) return "";
-    
-          let gid = String(this.gameId || this._presenceRoomId || this._getPersistedActiveGameId() || "").trim();
-    
-          if (gid) {
-            try {
-              const snap = await settleWithin(db.ref("games").child(gid).once("value"), 6000, null);
-              if (!snap) {
-                this._clearPersistedActiveGame();
-                gid = "";
-              }
-              const g = snap && snap.val ? snap.val() : null;
-              if (g && g.status === "active" && g.players) {
-                const wuid = g.players.white && g.players.white.uid ? String(g.players.white.uid) : "";
-                const buid = g.players.black && g.players.black.uid ? String(g.players.black.uid) : "";
-                if (uid === wuid || uid === buid) {
-                  this.myUid = uid;
-                  this._presenceStatus = "inPvP";
-                  this._presenceRole = "player";
-                  this._presenceRoomId = gid;
-                  try { this._persistActiveGame(); } catch (e) {}
-                  return gid;
-                }
-              }
-              this._clearPersistedActiveGame();
-              gid = "";
-            } catch (e) {
-              Logger.warn("active_room_check_failed", { gameId: gid, err: String(e && (e.message || e)) });
-              if (isPermissionDenied(e)) {
-                // A normal browser may retain a private game id from an older anonymous UID.
-                // Never mark the new session busy when that stale game belongs to another UID.
-                this._clearPersistedActiveGame();
-                gid = "";
-              } else {
-                // On a transient network failure, keep the active-game guard conservative.
-                this.myUid = uid;
-                this._presenceStatus = "inPvP";
-                this._presenceRole = "player";
-                this._presenceRoomId = gid;
-                return gid;
-              }
+    _resolvePlayerActiveMatch: async function (playerUid, candidateIds) {
+          const uid = String(playerUid || "").trim();
+          if (!uid || !db || !db.ref) return { state: "unknown", gameId: "" };
+          const candidates = [];
+          const addCandidate = (value) => {
+            const gid = String(value || "").trim();
+            if (gid && !candidates.includes(gid)) candidates.push(gid);
+          };
+          (Array.isArray(candidateIds) ? candidateIds : [candidateIds]).forEach(addCandidate);
+          const listed = await this._findActivePlayerRoomInRoomList(uid);
+          addCandidate(listed);
+
+          for (const gid of candidates) {
+            let snap = null;
+            try { snap = await settleWithin(db.ref("games").child(gid).once("value"), 6000, null); }
+            catch (e) {
+              Logger.warn("player_active_match_resolve_failed", { playerUid: uid, gameId: gid, err: String(e && (e.message || e)) });
+              return { state: "unknown", gameId: gid };
             }
+            if (!snap) return { state: "unknown", gameId: gid };
+            const game = snap && snap.val ? snap.val() : null;
+            const whiteUid = String(game && game.players && game.players.white && game.players.white.uid || "");
+            const blackUid = String(game && game.players && game.players.black && game.players.black.uid || "");
+            if (game && game.status === "active" && (uid === whiteUid || uid === blackUid)) {
+              try { await this._publishRoomListEntry(gid, game); } catch (e) {}
+              return { state: "active", gameId: gid, game };
+            }
+            try { await this._removeRoomListEntry(gid); } catch (e) {}
           }
-    
-          gid = await this._findActivePlayerRoomInRoomList(uid);
-          if (!gid) return "";
-    
-          this.myUid = uid;
-          this._presenceStatus = "inPvP";
-          this._presenceRole = "player";
-          this._presenceRoomId = gid;
-          try { this._persistActiveGame(); } catch (e) {}
-          return gid;
+          return { state: "none", gameId: "" };
+        },
+
+    _clearStaleActiveMatchState: async function (staleGameId) {
+          const stale = String(staleGameId || "").trim();
+          try { this._clearPersistedActiveGame(); } catch (e) {}
+          if (!stale || String(this.gameId || "") === stale || String(this._presenceRoomId || "") === stale) {
+            this.isActive = false;
+            this.isSpectator = false;
+            this.gameId = null;
+            this.gameRef = null;
+            this.mySide = null;
+            this._presenceStatus = "available";
+            this._presenceRole = "lobby";
+            this._presenceRoomId = null;
+          }
+          try {
+            if (this.statusRef && this.myUid) {
+              await safePlayerWrite(this.statusRef, this.myUid, {
+                status: "available",
+                role: "lobby",
+                roomId: null,
+                nickname: this.myNick || getSavedNickOrDefault(this.myUid),
+                icon: this.myIcon || getSavedIconOrDefault(),
+                acceptsInvites: this._lastAcceptsInvites === false ? false : localAcceptsInvitesPreference(),
+                updatedAt: nowTs(),
+              }, "players.clearStaleActiveMatch");
+            }
+          } catch (e) {}
+          return true;
+        },
+
+    _resolveActivePlayerMatch: async function () {
+          const ok = await settleWithin(ensureAuthReady(), 9000, false);
+          const uid = String(this.myUid || (auth && auth.currentUser && auth.currentUser.uid) || "").trim();
+          if (!ok || !uid || !db || !db.ref) return { state: "unknown", gameId: "" };
+          const resolved = await this._resolvePlayerActiveMatch(uid, [
+            this.gameId,
+            this._presenceRoomId,
+            this._getPersistedActiveGameId(),
+          ]);
+          if (resolved.state === "active") {
+            this.myUid = uid;
+            this.gameId = resolved.gameId;
+            this._presenceStatus = "inPvP";
+            this._presenceRole = "player";
+            this._presenceRoomId = resolved.gameId;
+            try { this._persistActiveGame(); } catch (e) {}
+            return resolved;
+          }
+          if (resolved.state === "none") await this._clearStaleActiveMatchState(
+            String(this.gameId || this._presenceRoomId || this._getPersistedActiveGameId() || ""),
+          );
+          return resolved;
+        },
+
+    _getActivePlayerRoomId: async function () {
+          const resolved = await this._resolveActivePlayerMatch();
+          return resolved && resolved.state === "active" ? String(resolved.gameId || "") : "";
         },
 
     _markPlayerBusyWithRoom: async function (gameId, ctx) {
@@ -3338,10 +3396,8 @@
             const updatedAt = Number((p && p.updatedAt) || 0) || 0;
             if (!isPresenceFresh(updatedAt, PRESENCE_LIST_TTL_MS)) return true;
             if (!playerAcceptsInvites(p)) return true;
-            const status = String((p && p.status) || "");
-            const role = String((p && p.role) || "");
-            const roomId = String((p && p.roomId) || "").trim();
-            return !!((status === "inPvP" || role === "player") && roomId);
+            const resolved = await this._resolvePlayerActiveMatch(uid, [p && p.roomId]);
+            return !resolved || resolved.state !== "none";
           } catch (e) {
             return true;
           }

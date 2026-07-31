@@ -1251,8 +1251,14 @@
         },
 
     _returnToActiveMatch: async function (gameId) {
-          const gid = String(gameId || this.gameId || this._presenceRoomId || "").trim();
-          if (!gid) return false;
+          const resolved = typeof this._resolveActivePlayerMatch === "function"
+            ? await this._resolveActivePlayerMatch()
+            : { state: "unknown", gameId: String(gameId || "") };
+          if (!resolved || resolved.state !== "active" || !resolved.gameId) {
+            if (resolved && resolved.state === "none") showOnlineNotice(window.I18N.translateArgs("online.roomUnavailable"));
+            return false;
+          }
+          const gid = String(resolved.gameId);
           try {
             const inPages = (location.pathname || "").includes("/pages/");
             location.href = (inPages ? "game.html" : "pages/game.html") + "?gid=" + encodeURIComponent(gid);
@@ -1369,12 +1375,19 @@
           }
     
           try {
-            const activeRoomId = await this._getActivePlayerRoomId();
-            if (activeRoomId) {
-              const shouldContinue = await this._confirmLeaveActiveMatchBeforeInvite(activeRoomId);
+            const activeMatch = await this._resolveActivePlayerMatch();
+            if (!activeMatch || activeMatch.state === "unknown") {
+              showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
+              return;
+            }
+            if (activeMatch.state === "active" && activeMatch.gameId) {
+              const shouldContinue = await this._confirmLeaveActiveMatchBeforeInvite(activeMatch.gameId);
               if (!shouldContinue) return;
             }
-          } catch (e) {}
+          } catch (e) {
+            showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
+            return;
+          }
     
           try {
             this._clearPendingInviteWatcher && this._clearPendingInviteWatcher();
@@ -1408,12 +1421,8 @@
               showOnlineNotice(window.I18N.translateArgs("online.invites.notAccepting"));
               return;
             }
-            if ((opponentStatus === "inPvP" || opponentRole === "player") && opponentRoomId) {
-              showOnlineNotice(window.I18N.translateArgs("online.inviteInvalidated"));
-              return;
-            }
-            const opponentActiveRoom = await this._findActivePlayerRoomInRoomList(opponentUid);
-            if (opponentActiveRoom) {
+            const opponentMatch = await this._resolvePlayerActiveMatch(opponentUid, [opponentRoomId]);
+            if (!opponentMatch || opponentMatch.state !== "none") {
               showOnlineNotice(window.I18N.translateArgs("online.inviteInvalidated"));
               return;
             }
@@ -5079,51 +5088,41 @@
             }
     
             const logEl = document.getElementById("log");
-            if (!logEl) return;
-
-            const previousTop = logEl.scrollTop || 0;
-            const followLatest = Math.max(0, logEl.scrollHeight - logEl.clientHeight - logEl.scrollTop) <= 48;
+            if (!logEl || !window.DhametGameLogView || typeof window.DhametGameLogView.syncElement !== "function") return;
             const slice = arr.slice(-80);
-
-            logEl.innerHTML = "";
-            slice.forEach((it) => {
-              const row = document.createElement("div");
-              row.className = "log-item";
-    
-              const timeEl = document.createElement("span");
-              timeEl.className = "time";
-              const ts = it && typeof it.ts === "number" ? it.ts : null;
-              timeEl.textContent =
-                ts != null ? new Date(ts).toLocaleTimeString("en-GB", { hour12: false }) : "";
-    
-              const msgEl = document.createElement("span");
-              msgEl.className = "msg";
-              const rawText = it && typeof it.text === "string" ? it.text : "";
-              const dec = decodeSharedLogText(rawText);
-              if (dec && dec.kind === "i18n") {
-                msgEl.textContent = window.I18N.translateArgs(
-                  dec.key,
-                  dec.vars && typeof dec.vars === "object" ? dec.vars : {},
-                );
-              } else if (dec && dec.kind === "actor_i18n") {
-                const actorEl = document.createElement("span");
-                actorEl.className = "actor-word";
-                actorEl.textContent = dec.actor ? String(dec.actor) : window.I18N.translateArgs("players.player");
-                msgEl.appendChild(actorEl);
-                msgEl.appendChild(document.createTextNode(`: ${window.I18N.translateArgs(dec.key, dec.vars && typeof dec.vars === "object" ? dec.vars : {})}`));
-              } else {
-                msgEl.textContent = rawText ? String(rawText) : "";
-              }
-    
-              row.appendChild(timeEl);
-              row.appendChild(document.createTextNode(" "));
-              row.appendChild(msgEl);
-    
-              logEl.appendChild(row);
-            });
-            requestAnimationFrame(() => {
-              logEl.scrollTop = followLatest ? logEl.scrollHeight : previousTop;
-            });
+            window.DhametGameLogView.syncElement(
+              logEl,
+              slice,
+              (it) => {
+                const row = document.createElement("div");
+                row.className = "log-item";
+                const timeEl = document.createElement("span");
+                timeEl.className = "time";
+                const ts = it && typeof it.ts === "number" ? it.ts : null;
+                timeEl.textContent = ts != null ? new Date(ts).toLocaleTimeString("en-GB", { hour12: false }) : "";
+                const msgEl = document.createElement("span");
+                msgEl.className = "msg";
+                const rawText = it && typeof it.text === "string" ? it.text : "";
+                const dec = decodeSharedLogText(rawText);
+                if (dec && dec.kind === "i18n") {
+                  msgEl.textContent = window.I18N.translateArgs(dec.key, dec.vars && typeof dec.vars === "object" ? dec.vars : {});
+                } else if (dec && dec.kind === "actor_i18n") {
+                  const actorEl = document.createElement("span");
+                  actorEl.className = "actor-word";
+                  actorEl.textContent = dec.actor ? String(dec.actor) : window.I18N.translateArgs("players.player");
+                  msgEl.appendChild(actorEl);
+                  msgEl.appendChild(document.createTextNode(`: ${window.I18N.translateArgs(dec.key, dec.vars && typeof dec.vars === "object" ? dec.vars : {})}`));
+                } else {
+                  msgEl.textContent = rawText ? String(rawText) : "";
+                }
+                row.appendChild(timeEl);
+                row.appendChild(document.createTextNode(" "));
+                row.appendChild(msgEl);
+                return row;
+              },
+              (it, index) => `fallback:${String((it && it.ts) || "")}:${String((it && it.text) || "")}:${index}`,
+              { bottomThreshold: 48 },
+            );
           } catch (e) {}
         },
 

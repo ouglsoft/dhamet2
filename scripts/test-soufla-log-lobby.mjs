@@ -41,7 +41,7 @@ if (primaryAvailable) {
   assert.equal(logSegment(game), logSegment(primaryGame), 'log messages and scrolling logic must match primary app exactly');
 } else {
   const localLog = logSegment(game);
-  assert.match(localLog, /scrollTop|scrollHeight/, 'local log segment must preserve automatic scrolling');
+  assert.match(localLog, /DhametGameLogView\.syncElement/, 'local log segment must use the shared native-scroll reconciler');
   assert.match(localLog, /attach\(LogMgr\)/, 'local log segment must attach the shared log view');
 }
 

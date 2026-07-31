@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260731-v31-v30-recovery-unified-back-log-scroll",
-  "source": "firebase-online-only-native-rtdb-transport-v31-v30-recovery-unified-back-log-scroll",
-  "uiReference": "approved-online-only-v31-v30-recovery-unified-back-log-scroll",
-  "release": "20260731-v31-v30-recovery-unified-back-log-scroll"
+  "version": "20260731-v32-unified-session-active-match",
+  "source": "firebase-online-only-native-rtdb-transport-v32-browser-session-active-match",
+  "uiReference": "approved-online-only-v32-unified-session-active-match-ui",
+  "release": "20260731-v32-unified-session-active-match"
 }
