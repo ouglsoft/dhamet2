@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v44-readme-orientation",
+  "version": "20260801-v45-production-routing",
   "source": "firebase-online-only-native-rtdb-transport",
   "uiReference": "approved-online-only-interface",
-  "release": "20260801-v44-readme-orientation"
+  "release": "20260801-v45-production-routing"
 }

@@ -5,9 +5,10 @@
     "build": "node deploy/prepare-pages.mjs",
     "prepare:pages": "node deploy/prepare-pages.mjs",
     "deploy:firebase-rules": "firebase deploy --only database --project dhamet2 --non-interactive",
-    "deploy:pages": "node deploy/deploy-pages.mjs"
+    "deploy:pages": "node deploy/deploy-pages.mjs",
+    "test:routing": "node --test tests/access-gate.test.mjs"
   },
-  "version": "2026.8.1-v44-readme-orientation",
+  "version": "2026.8.1-v45-production-routing",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""
