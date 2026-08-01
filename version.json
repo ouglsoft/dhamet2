@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v40-mobile-lobby-back-layout",
-  "source": "firebase-online-only-native-rtdb-transport-v40-mobile-lobby-back-layout",
-  "uiReference": "approved-online-only-v40-mobile-lobby-back-layout",
-  "release": "20260801-v40-mobile-lobby-back-layout"
+  "version": "20260801-v41-workflow-actions-cleanup",
+  "source": "firebase-online-only-native-rtdb-transport-v41-workflow-actions-cleanup",
+  "uiReference": "approved-online-only-v41-workflow-actions-cleanup",
+  "release": "20260801-v41-workflow-actions-cleanup"
 }
