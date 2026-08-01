@@ -2,7 +2,7 @@ name: Dhamet2 Firebase Secondary Cleanup
 
 on:
   schedule:
-    - cron: "7,22,37,52 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
