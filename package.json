@@ -7,7 +7,7 @@
     "deploy:firebase-rules": "firebase deploy --only database --project dhamet2 --non-interactive",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.8.1-v43-game-theme-language-readme-icons",
+  "version": "2026.8.1-v44-readme-orientation",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""

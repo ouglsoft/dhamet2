@@ -1,63 +1,64 @@
-# ظّامت — التطبيق الاحتياطي للعب عبر الإنترنت
+# Dhamet Online
 
-نسخة مستقلة وخفيفة تضمن استمرار اللعب عبر الإنترنت عند تعذر استخدام خدمة ظّامت الأصلية. تعتمد على Firebase Realtime Database، ولا تنشئ حسابات رسمية ولا تضيف نتائج أو إحصاءات إلى التطبيق الأصلي.
+Dhamet Online provides browser-based multiplayer matches for the Mauritanian strategy game. Players use a session nickname to enter the lobby, exchange invitations, play synchronized matches, and watch available games.
 
-## الوظائف الرئيسية
+## Features
 
-- اختيار اسم مؤقت للاعب خلال جلسة المتصفح.
-- عرض اللاعبين المتصلين وإرسال دعوات اللعب واستقبالها.
-- إنشاء مباراة عبر الإنترنت والانضمام إليها.
-- مزامنة الحركات والأدوار وحالة المباراة بين اللاعبين.
-- مشاهدة المباريات المتاحة وفق حدود التطبيق.
-- دعم العربية والإنجليزية والفرنسية.
-- دعم الهواتف والحواسيب وتبديل اتجاه شاشة اللعب على الأجهزة المتوافقة.
+- Create a session nickname for online play.
+- View connected players and active matches.
+- Send, receive, accept, and decline match invitations.
+- Create and join synchronized multiplayer matches.
+- Reconnect to an active match from the same browser session.
+- Watch available matches as a spectator.
+- Apply mandatory opening moves, captures, capture chains, Soufla, promotion, wins, and draws.
+- Use Arabic, English, and French interfaces.
+- Use responsive layouts for desktop and mobile browsers.
+- Change the board orientation on supported mobile devices.
 
-## حدود الاستخدام
+## Architecture
 
-- لا تُنقل هوية اللاعب أو حالة المباراة من التطبيق الأصلي.
-- لا تُحفظ نتائج المباريات ضمن النتائج أو الإحصاءات الرسمية.
-- لا يستبدل التطبيق الاحتياطي حسابات التطبيق الأصلي أو خدماته الرسمية.
-- يقتصر الهدف على إتاحة اللعب عبر الإنترنت عند تعذر الخدمة الأصلية.
+- Cloudflare Pages serves the website and game interface.
+- Firebase Authentication provides anonymous browser identities.
+- Firebase Realtime Database synchronizes players, invitations, matches, presence, and connection capacity.
+- `database.rules.json` defines Realtime Database access rules.
+- A scheduled GitHub Actions workflow removes expired Firebase data.
 
-## البنية التقنية
+## Requirements
 
-- واجهة الويب: Cloudflare Pages.
-- الهوية المؤقتة والبيانات المتزامنة: Firebase Authentication وFirebase Realtime Database.
-- قواعد الوصول: `database.rules.json`.
-- تنظيف البيانات المنتهية: مهمة GitHub Actions مخصّصة لـ Firebase.
+- Node.js 22 or a compatible release
+- A Firebase project with Anonymous Authentication and Realtime Database enabled
+- A Cloudflare Pages project
 
-## التشغيل والبناء
-
-يتطلب المشروع Node.js 22 أو إصدارًا متوافقًا معه.
+## Build
 
 ```bash
 npm ci
 npm run prepare:pages
 ```
 
-ينشئ أمر التحضير نسخة النشر ويستبدل رموز رقم البناء في الملفات العامة.
+The prepared Pages output is written to `_site`.
 
-## النشر
+## Deployment
 
-تنشر قواعد Firebase قبل نشر واجهة Pages:
+Deploy the Firebase Realtime Database rules and the Pages project:
 
 ```bash
 npm run deploy:firebase-rules
 npm run deploy:pages
 ```
 
-يحتاج نشر Pages إلى `CLOUDFLARE_API_TOKEN` و`CLOUDFLARE_ACCOUNT_ID` ومتغير `CLOUDFLARE_PAGES_PROJECT_NAME`. ويحتاج نشر قواعد قاعدة البيانات إلى حساب خدمة Firebase مخوّل للمشروع. يجب حفظ بيانات الاعتماد في أسرار بيئة النشر وعدم إضافتها إلى المستودع.
+Set `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_PAGES_PROJECT_NAME` in the deployment environment. Provide an authorized Firebase service account to the rule-deployment workflow.
 
-## بنية المستودع
+## Project Structure
 
-- `pages/`: صفحات اللوبي والمباراة.
-- `js/`: منطق الواجهة والاتصال واللعبة والترجمة.
-- `css/`: تنسيق الواجهة والهواتف وصفحة اللعب.
-- `assets/`: الأيقونات والموارد المرئية.
-- `database.rules.json`: قواعد Firebase Realtime Database.
-- `deploy/`: تجهيز نسخة Pages ونشرها.
-- `.github/workflows/`: نشر Pages وقواعد Firebase وتنظيف البيانات المنتهية.
+- `pages/`: lobby and match pages
+- `js/`: game, synchronization, session, interface, and translation logic
+- `css/`: shared, responsive, and game-page styles
+- `assets/`: icons and visual assets
+- `database.rules.json`: Firebase Realtime Database rules
+- `deploy/`: Pages build and deployment scripts
+- `.github/workflows/`: Pages deployment, Firebase rule deployment, and expired-data cleanup
 
-## الخصوصية والبيانات
+## Security
 
-الاسم في هذه النسخة مؤقت وغير مرتبط بحساب رسمي. لا تُحفظ مفاتيح Firebase الإدارية أو بيانات حساب الخدمة داخل ملفات التطبيق أو سجل Git.
+Store Firebase administrative credentials and Cloudflare access tokens in deployment secrets, not in source files or published assets. Review `database.rules.json` before deploying changes to the Realtime Database structure.
