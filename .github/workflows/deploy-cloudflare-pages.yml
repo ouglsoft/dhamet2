@@ -36,5 +36,13 @@ jobs:
       - name: Install project dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Test, build, and deploy Pages
+      - name: Authenticate Firebase deployment
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Deploy Firebase database rules
+        run: npm run deploy:firebase-rules
+
+      - name: Build and deploy Pages
         run: npm run deploy:pages
