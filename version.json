@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v41-workflow-actions-cleanup",
-  "source": "firebase-online-only-native-rtdb-transport-v41-workflow-actions-cleanup",
-  "uiReference": "approved-online-only-v41-workflow-actions-cleanup",
-  "release": "20260801-v41-workflow-actions-cleanup"
+  "version": "20260801-v42-icons",
+  "source": "firebase-online-only-native-rtdb-transport-v42-icons",
+  "uiReference": "approved-online-only-v42-icons",
+  "release": "20260801-v42-icons"
 }

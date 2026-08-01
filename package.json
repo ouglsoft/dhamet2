@@ -7,7 +7,7 @@
     "deploy:firebase-rules": "firebase deploy --only database --project dhamet2 --non-interactive",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.8.1-v41-workflow-actions-cleanup",
+  "version": "2026.8.1-v42-icons",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""

@@ -2481,8 +2481,8 @@ body.z-mobile-on .z-mobile-orient .z-mobile-orient-ico {
   height: 24px;
   display: block;
   background-color: currentColor;
-  -webkit-mask: url("../assets/icons/orientation-toggle.svg?v=20260725-uiparity1") center / contain no-repeat;
-  mask: url("../assets/icons/orientation-toggle.svg?v=20260725-uiparity1") center / contain no-repeat;
+  -webkit-mask: url("../assets/icons/orientation-toggle.svg?v=__DHAMET_BUILD__") center / contain no-repeat;
+  mask: url("../assets/icons/orientation-toggle.svg?v=__DHAMET_BUILD__") center / contain no-repeat;
 }
 
 html.dark body.z-mobile-on .z-mobile-orient {
