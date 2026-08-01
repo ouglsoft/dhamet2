@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v39-session-opening-colors",
-  "source": "firebase-online-only-native-rtdb-transport-v39-session-opening-colors",
-  "uiReference": "approved-online-only-v39-session-opening-colors",
-  "release": "20260801-v39-session-opening-colors"
+  "version": "20260801-v40-mobile-lobby-back-layout",
+  "source": "firebase-online-only-native-rtdb-transport-v40-mobile-lobby-back-layout",
+  "uiReference": "approved-online-only-v40-mobile-lobby-back-layout",
+  "release": "20260801-v40-mobile-lobby-back-layout"
 }

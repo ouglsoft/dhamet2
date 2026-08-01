@@ -350,6 +350,10 @@ body.z-mobile-on .z-mobile-shell-btn img {
   display: block;
 }
 
+body.z-mobile-on .z-mobile-shell-btn.is-back img {
+  width: 22px;
+  height: 22px;
+}
 
 body.z-mobile-on .z-mobile-shell-menu {
   position: fixed;
@@ -2473,8 +2477,8 @@ body.z-mobile-on .z-mobile-orient {
 }
 
 body.z-mobile-on .z-mobile-orient .z-mobile-orient-ico {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: block;
   background-color: currentColor;
   -webkit-mask: url("../assets/icons/orientation-toggle.svg?v=20260725-uiparity1") center / contain no-repeat;
@@ -2700,4 +2704,3 @@ body.z-mobile-on[data-mobile-orientation="landscape"][data-mobile-page="game"] .
   height: 60px;
   min-height: 60px;
 }
-

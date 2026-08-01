@@ -7,7 +7,7 @@
     "deploy:firebase-rules": "firebase deploy --only database --project dhamet2 --non-interactive",
     "deploy:pages": "node deploy/deploy-pages.mjs"
   },
-  "version": "2026.8.1-v39-session-opening-colors",
+  "version": "2026.8.1-v40-mobile-lobby-back-layout",
   "type": "module",
   "cloudflare": {
     "pagesProjectName": ""
