@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v36-player-entry-identity-guard",
-  "source": "firebase-online-only-native-rtdb-transport-v36-player-entry-identity-guard",
-  "uiReference": "approved-online-only-v36-player-entry-identity-guard",
-  "release": "20260801-v36-player-entry-identity-guard"
+  "version": "20260801-v37-safe-anonymous-recovery",
+  "source": "firebase-online-only-native-rtdb-transport-v37-safe-anonymous-recovery",
+  "uiReference": "approved-online-only-v37-safe-anonymous-recovery",
+  "release": "20260801-v37-safe-anonymous-recovery"
 }

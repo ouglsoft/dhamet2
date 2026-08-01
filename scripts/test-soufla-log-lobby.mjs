@@ -49,7 +49,7 @@ assert.match(online, /event\.persisted/, 'BFCache-restored mobile lobby must reb
 assert.match(online, /visibilitychange/, 'stale visible mobile lobby must recover listeners');
 assert.match(online, /db\.goOffline\(\)/, 'lobby recovery must reset a frozen RTDB connection');
 assert.match(online, /db\.goOnline\(\)/, 'lobby recovery must bring RTDB back online');
-assert.match(online, /resetAnonymous\(\)/, 'lobby recovery must repair damaged normal-browser auth state');
+assert.match(online, /getIdToken\(true\)[\s\S]*resetAnonymous\(tokenError\)/, 'lobby recovery must preserve the current UID before replacing an invalid session');
 assert.match(online, /_lobbyInitGeneration/, 'old lobby callbacks must be invalidated during recovery');
 
 console.log('soufla, log, and mobile lobby recovery tests passed');

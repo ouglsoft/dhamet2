@@ -6158,14 +6158,18 @@
 
               let user = auth && auth.currentUser ? auth.currentUser : null;
               let tokenReady = false;
-              if (!forceFreshAuth && user && user.isAnonymous) {
+              let tokenError = null;
+              if (user && user.isAnonymous) {
                 try {
                   tokenReady = !!(await S.settleWithin(user.getIdToken(true), 6000, false));
-                } catch (_) { tokenReady = false; }
+                } catch (error) {
+                  tokenReady = false;
+                  tokenError = error;
+                }
               }
               if (!tokenReady && window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
                 try {
-                  user = await S.settleWithin(window.DhametEmergency.resetAnonymous(), 10000, null);
+                  user = await S.settleWithin(window.DhametEmergency.resetAnonymous(tokenError), 10000, null);
                   tokenReady = !!(user && user.isAnonymous);
                 } catch (_) { tokenReady = false; }
               }

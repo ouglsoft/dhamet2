@@ -12,6 +12,11 @@
   const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
   const DEFAULT_ICON = "assets/icons/users/autouser1.png";
+  const ACTIVE_GAME_ID_KEY = "zamat.activeGameId";
+  const ACTIVE_GAME_TS_KEY = "zamat.activeGameTs";
+  const ACTIVE_GAME_TTL_MS = 1000 * 60 * 60 * 12;
+  const OUTGOING_INVITES_KEY = "zamat.online.outInvites.v1";
+  const INVITE_TTL_MS = 60 * 1000;
 
   function pagePrefix() {
     try { return String(location.pathname || "").includes("/pages/") ? "../" : ""; }
@@ -203,6 +208,123 @@
     } catch (_) {}
   }
 
+  function authErrorValue(error) {
+    try {
+      return String((error && (error.code || error.message)) || error || "").toLowerCase();
+    } catch (_) {
+      return "";
+    }
+  }
+  function isDefinitiveAuthFailure(error) {
+    const value = authErrorValue(error);
+    return [
+      "auth/user-disabled",
+      "auth/user-not-found",
+      "auth/user-token-expired",
+      "auth/invalid-user-token",
+      "auth/invalid-refresh-token",
+      "user_not_found",
+      "user_disabled",
+      "token_expired",
+      "invalid_refresh_token",
+      "invalid_user_token",
+    ].some((code) => value.includes(code));
+  }
+  function activeGameKey(uid) {
+    const clean = String(uid || "").replace(/[^A-Za-z0-9._:@-]/g, "").slice(0, 120);
+    return clean ? ACTIVE_GAME_ID_KEY + "." + clean : "";
+  }
+  function activeGameTsKey(uid) {
+    const clean = String(uid || "").replace(/[^A-Za-z0-9._:@-]/g, "").slice(0, 120);
+    return clean ? ACTIVE_GAME_TS_KEY + "." + clean : "";
+  }
+  function hasLocalActiveAssociation(uid) {
+    try {
+      const online = window.Online;
+      if (online && (
+        online.isActive || online.gameId || online._presenceStatus === "inPvP" ||
+        online._presenceRole === "player" || Number(online._pendingIncomingInviteUntil || 0) > Date.now()
+      )) return true;
+    } catch (_) {}
+    try {
+      const gid = String(sessionStorage.getItem(ACTIVE_GAME_ID_KEY) || "").trim();
+      const ts = Number(sessionStorage.getItem(ACTIVE_GAME_TS_KEY) || 0) || 0;
+      if (gid && (!ts || Date.now() - ts <= ACTIVE_GAME_TTL_MS)) return true;
+    } catch (_) {}
+    try {
+      const gidKey = activeGameKey(uid);
+      const tsKey = activeGameTsKey(uid);
+      const gid = gidKey ? String(localStorage.getItem(gidKey) || "").trim() : "";
+      const ts = tsKey ? Number(localStorage.getItem(tsKey) || 0) || 0 : 0;
+      if (gid && ts && Date.now() - ts <= ACTIVE_GAME_TTL_MS) return true;
+    } catch (_) {}
+    try {
+      const rows = JSON.parse(localStorage.getItem(OUTGOING_INVITES_KEY) || "[]");
+      if (Array.isArray(rows) && rows.some((row) => {
+        if (!row || !row.gameId) return false;
+        const createdAt = Number(row.createdAt || 0) || Date.now();
+        const expiresAt = Number(row.expiresAt || 0) || createdAt + INVITE_TTL_MS;
+        return expiresAt > Date.now();
+      })) return true;
+    } catch (_) {}
+    return false;
+  }
+  function clearLocalAssociationState(uid) {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(ACTIVE_GAME_ID_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(ACTIVE_GAME_TS_KEY); } catch (_) {}
+    try {
+      const gidKey = activeGameKey(uid);
+      const tsKey = activeGameTsKey(uid);
+      if (gidKey) localStorage.removeItem(gidKey);
+      if (tsKey) localStorage.removeItem(tsKey);
+      localStorage.removeItem(ACTIVE_GAME_ID_KEY);
+      localStorage.removeItem(ACTIVE_GAME_TS_KEY);
+      localStorage.removeItem(OUTGOING_INVITES_KEY);
+    } catch (_) {}
+    try {
+      if (window.Online) window.Online._pendingIncomingInviteUntil = 0;
+    } catch (_) {}
+  }
+  function emitIdentityReplacement(oldUid, newUid, hadAssociation) {
+    try {
+      window.dispatchEvent(new CustomEvent("dhamet:anonymous-identity-replaced", {
+        detail: {
+          oldUid: String(oldUid || ""),
+          newUid: String(newUid || ""),
+          hadAssociation: !!hadAssociation,
+        },
+      }));
+    } catch (_) {}
+    if (!hadAssociation) return;
+    try {
+      const path = String(location.pathname || "");
+      if (/\/game\.html$/i.test(path)) {
+        setTimeout(() => {
+          try { location.replace("loby.html"); } catch (_) {}
+        }, 0);
+      }
+    } catch (_) {}
+  }
+  async function probeAnonymousUser(user) {
+    if (!user || !user.isAnonymous) return { state: "invalid", error: new Error("anonymous-user-missing") };
+    try {
+      await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout");
+      return { state: "valid", error: null };
+    } catch (error) {
+      if (isDefinitiveAuthFailure(error)) return { state: "invalid", error };
+      if (typeof user.reload === "function") {
+        try {
+          await withTimeout(user.reload(), 7000, "anonymous-reload-timeout");
+          return { state: "temporary", error };
+        } catch (reloadError) {
+          if (isDefinitiveAuthFailure(reloadError)) return { state: "invalid", error: reloadError };
+        }
+      }
+      return { state: "temporary", error };
+    }
+  }
+
   function initFirebase() {
     if (!firebaseConfigReady(window.firebaseConfig)) {
       throw new Error("firebase-config-required");
@@ -247,6 +369,14 @@
     markBrowserAuth(user, browserSessionId);
     return user;
   }
+  async function replaceAnonymousIdentity(auth, browserSessionId, previousUser) {
+    const oldUid = String((previousUser && previousUser.uid) || "");
+    const hadAssociation = hasLocalActiveAssociation(oldUid);
+    clearLocalAssociationState(oldUid);
+    const user = await signInFreshAnonymous(auth, browserSessionId);
+    emitIdentityReplacement(oldUid, user && user.uid, hadAssociation);
+    return user;
+  }
 
   async function ensureAnonymous() {
     if (ensureAnonymousPromise) return ensureAnonymousPromise;
@@ -268,16 +398,12 @@
         String(marker.sessionId) === String(browserSessionId) &&
         String(marker.uid) === String(user.uid)
       );
-      let tokenHealthy = false;
       if (user && user.isAnonymous && markerMatches) {
-        try {
-          await withTimeout(user.getIdToken(true), 7000, "anonymous-token-timeout");
-          tokenHealthy = true;
-        } catch (_) {
-          tokenHealthy = false;
-        }
+        const probe = await probeAnonymousUser(user);
+        if (probe.state === "invalid") user = await replaceAnonymousIdentity(auth, browserSessionId, user);
+      } else {
+        user = await replaceAnonymousIdentity(auth, browserSessionId, user);
       }
-      if (!tokenHealthy) user = await signInFreshAnonymous(auth, browserSessionId);
       if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
 
       try { firebase.database().goOnline(); } catch (_) {}
@@ -288,13 +414,22 @@
     return ensureAnonymousPromise;
   }
 
-  async function resetAnonymous() {
+  async function resetAnonymous(triggerError) {
     if (!initFirebase()) throw new Error("firebase-unavailable");
     const auth = firebase.auth();
     ensureAnonymousPromise = null;
     const browserSessionId = ensureBrowserSessionId();
     try { await withTimeout(auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL), 4000, "auth-persistence-timeout"); } catch (_) {}
-    const user = await signInFreshAnonymous(auth, browserSessionId);
+    let user = auth.currentUser;
+    if (user && user.isAnonymous) {
+      const probe = await probeAnonymousUser(user);
+      if (probe.state === "invalid" || (isDefinitiveAuthFailure(triggerError) && probe.state !== "valid")) {
+        user = await replaceAnonymousIdentity(auth, browserSessionId, user);
+      }
+    } else {
+      user = await replaceAnonymousIdentity(auth, browserSessionId, user);
+    }
+    if (!user || !user.isAnonymous) throw new Error("anonymous-auth-failed");
     try { firebase.database().goOnline(); } catch (_) {}
     markBrowserAuth(user, browserSessionId);
     writeSession(user);
@@ -331,8 +466,8 @@
     getFooterText,
     createStartPlayButton: () => null
   });
-  window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, resetAnonymous, readSession, writeSession, firebaseConfigReady });
-  window.DhametEmergency = Object.freeze({ ensureAnonymous, resetAnonymous, readSession, randomNick });
+  window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, resetAnonymous, readSession, writeSession, firebaseConfigReady, isDefinitiveAuthFailure, hasLocalActiveAssociation });
+  window.DhametEmergency = Object.freeze({ ensureAnonymous, resetAnonymous, readSession, randomNick, isDefinitiveAuthFailure, hasLocalActiveAssociation });
 
   document.documentElement.classList.add("auth-pending");
   const ready = ensureAnonymous()

@@ -1339,10 +1339,10 @@
             if (!tokenReady) throw new Error("auth-token-timeout");
             window.__dhamet2AuthTokenFreshAt = Date.now();
           }
-        } catch (_) {
+        } catch (error) {
           try {
             if (window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
-              await settleWithin(window.DhametEmergency.resetAnonymous(), 9000, null);
+              await settleWithin(window.DhametEmergency.resetAnonymous(error), 9000, null);
             }
           } catch (_) {}
         }
@@ -2891,6 +2891,14 @@
                 const expiresAt =
                   Number(inv.expiresAt || 0) ||
                   (createdAt ? createdAt + INVITE_TTL_MS : now + INVITE_TTL_MS);
+                this._pendingIncomingInviteUntil = Math.max(Number(this._pendingIncomingInviteUntil || 0), expiresAt);
+                try {
+                  setTimeout(() => {
+                    try {
+                      if (Number(this._pendingIncomingInviteUntil || 0) <= nowTs()) this._pendingIncomingInviteUntil = 0;
+                    } catch (e) {}
+                  }, Math.max(0, expiresAt - now) + 50);
+                } catch (e) {}
     
                 if (now >= expiresAt) {
                   try {
@@ -2966,6 +2974,7 @@
             if (!canModal) {
               const msg = plainText(body);
               const ok = window.confirm(String(title || "") + "\n\n" + String(msg || ""));
+              this._pendingIncomingInviteUntil = 0;
               if (ok) {
                 await this._acceptInviteLobby(inv, snap.ref);
               } else {
@@ -2984,6 +2993,7 @@
                   className: "z-invite-choice z-invite-accept",
                   onClick: async () => {
                     Modal.close();
+                    this._pendingIncomingInviteUntil = 0;
     
                     try {
                       const uid =
@@ -3028,6 +3038,7 @@
                   className: "z-invite-choice z-invite-reject",
                   onClick: async () => {
                     Modal.close();
+                    this._pendingIncomingInviteUntil = 0;
                     await this._rejectInviteRoom(inv, snap.ref);
                   },
                 },
@@ -3052,7 +3063,7 @@
             this._inviteQuery = null;
             try {
               if (isPermissionDenied(err) && window.DhametEmergency && typeof window.DhametEmergency.resetAnonymous === "function") {
-                await window.DhametEmergency.resetAnonymous();
+                await window.DhametEmergency.resetAnonymous(err);
               }
             } catch (e) {}
             try { setTimeout(() => this.initInvitesPassive(), 500); } catch (e) {}
