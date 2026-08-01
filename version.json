@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v37-safe-anonymous-recovery",
-  "source": "firebase-online-only-native-rtdb-transport-v37-safe-anonymous-recovery",
-  "uiReference": "approved-online-only-v37-safe-anonymous-recovery",
-  "release": "20260801-v37-safe-anonymous-recovery"
+  "version": "20260801-v38-capacity-claims-rules-control",
+  "source": "firebase-online-only-native-rtdb-transport-v38-capacity-claims-rules-control",
+  "uiReference": "approved-online-only-v38-capacity-claims-rules-control",
+  "release": "20260801-v38-capacity-claims-rules-control"
 }

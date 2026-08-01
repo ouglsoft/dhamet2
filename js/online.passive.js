@@ -1167,6 +1167,7 @@
 
   const INVITE_TTL_MS = 60 * 1000;
   const INVITE_CLEANUP_INTERVAL_MS = 5 * 1000;
+  const MATCH_CLAIM_TTL_MS = 2 * 60 * 1000;
   const OPPONENT_ABSENCE_MS = 2 * 60 * 1000;
   const OPPONENT_ABSENCE_CHECK_MS = 5 * 1000;
   const MOVE_SYNC_STALL_MS = 20 * 1000;
@@ -1174,6 +1175,20 @@
   const MOVE_SYNC_WATCHDOG_MS = 2 * 1000;
   const RECOVERY_SIGNAL_MAX_AGE_MS = 2 * 60 * 1000;
   const MAX_SIMULTANEOUS_CONNECTIONS = 100;
+  const CONNECTION_LEASE_MS = 10 * 60 * 1000;
+  const CONNECTION_HEARTBEAT_MS = 4 * 60 * 1000;
+
+  function newConnectionId() {
+    try {
+      if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+        const values = new Uint32Array(4);
+        window.crypto.getRandomValues(values);
+        return Array.from(values, (value) => value.toString(36)).join("");
+      }
+    } catch (e) {}
+    return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 18)}`;
+  }
+
   function isPresenceFresh(ts, ttlMs) {
     try {
       const lastSeen = Number(ts || 0) || 0;
@@ -1754,6 +1769,48 @@
     };
   }
 
+  async function releaseMatchClaims(claim) {
+    if (!claim || !claim.gameId || !Array.isArray(claim.uids) || !db || !db.ref) return;
+    await Promise.all(claim.uids.map(async (uid) => {
+      const ref = db.ref("matchClaims").child(uid);
+      try {
+        await ref.transaction((current) => {
+          if (!current || String(current.gameId || "") !== String(claim.gameId)) return;
+          return null;
+        });
+      } catch (e) {}
+    }));
+  }
+
+  async function acquireMatchClaims(gameId, firstUid, secondUid) {
+    const gid = String(gameId || "").trim();
+    const uids = Array.from(new Set([firstUid, secondUid].map((uid) => String(uid || "").trim()).filter(Boolean))).sort();
+    if (!gid || uids.length !== 2 || !db || !db.ref) return { ok: false, gameId: gid, uids: [] };
+    const acquired = [];
+    for (const uid of uids) {
+      const peerUid = uids[0] === uid ? uids[1] : uids[0];
+      const ref = db.ref("matchClaims").child(uid);
+      let result = null;
+      try {
+        result = await ref.transaction((current) => {
+          const at = nowTs();
+          const active = current && Number(current.expiresAt || 0) > at;
+          if (active && String(current.gameId || "") !== gid) return;
+          return { gameId: gid, peerUid, claimedAt: at, expiresAt: at + MATCH_CLAIM_TTL_MS };
+        });
+      } catch (e) {
+        result = null;
+      }
+      const value = result && result.snapshot && typeof result.snapshot.val === "function" ? result.snapshot.val() : null;
+      if (!result || !result.committed || !value || String(value.gameId || "") !== gid) {
+        await releaseMatchClaims({ gameId: gid, uids: acquired });
+        return { ok: false, gameId: gid, uids: acquired };
+      }
+      acquired.push(uid);
+    }
+    return { ok: true, gameId: gid, uids: acquired };
+  }
+
   const Online = {
     isActive: false,
 
@@ -1782,6 +1839,16 @@
     _lastAcceptsInvites: true,
 
     _lastRoomActivityTouchAt: 0,
+
+    _capacityConnectionId: "",
+
+    _capacityRef: null,
+
+    _capacityHeartbeatTimer: null,
+
+    _capacityDenied: false,
+
+    _capacityDeniedAt: 0,
 
     _lobbyActivePlayerRooms: null,
 
@@ -2206,6 +2273,95 @@
           return false;
         },
 
+    _registerCapacityConnection: async function () {
+          if (this._capacityRef && !this._capacityDenied) return true;
+          if (this._capacityDenied) {
+            if (nowTs() - Number(this._capacityDeniedAt || 0) < 30 * 1000) return false;
+            try { firebase.database().goOnline(); } catch (e) {}
+            this._capacityDenied = false;
+          }
+          const uid = requireAuthUid();
+          if (!uid || !db || !db.ref) return false;
+
+          const rootRef = db.ref("capacityConnections");
+          const currentTime = nowTs();
+          const activeQuery = rootRef.orderByChild("expiresAt").startAt(currentTime);
+          const activeSnapshot = await settleWithin(activeQuery.once("value"), 8000, null);
+          if (!activeSnapshot) return false;
+
+          let activeCount = 0;
+          try {
+            activeCount = typeof activeSnapshot.numChildren === "function"
+              ? activeSnapshot.numChildren()
+              : Object.keys(activeSnapshot.val() || {}).length;
+          } catch (e) {
+            activeCount = 0;
+          }
+          if (activeCount >= MAX_SIMULTANEOUS_CONNECTIONS) {
+            this._capacityDenied = true;
+            this._capacityDeniedAt = nowTs();
+            showOnlineNotice(window.I18N.translateArgs("status.onlineCapacityFull"), { allowSpectator: true });
+            try { firebase.database().goOffline(); } catch (e) {}
+            return false;
+          }
+
+          const connectionId = this._capacityConnectionId || newConnectionId();
+          const connectionRef = rootRef.child(connectionId);
+          const payload = {
+            uid,
+            connectedAt: currentTime,
+            updatedAt: currentTime,
+            expiresAt: currentTime + CONNECTION_LEASE_MS,
+          };
+          try {
+            connectionRef.onDisconnect().remove();
+          } catch (e) {}
+          const registered = await settleWithin(connectionRef.set(payload).then(() => true), 8000, false);
+          if (!registered) return false;
+
+          this._capacityConnectionId = connectionId;
+          this._capacityRef = connectionRef;
+          this._capacityDenied = false;
+          this._capacityDeniedAt = 0;
+          this._startCapacityHeartbeat();
+          return true;
+        },
+
+    _startCapacityHeartbeat: function () {
+          if (!this._capacityRef || this._capacityHeartbeatTimer) return;
+          const tick = () => {
+            try {
+              if (!this._capacityRef || !requireAuthUid(this.myUid)) return;
+              const currentTime = nowTs();
+              this._capacityRef.update({
+                updatedAt: currentTime,
+                expiresAt: currentTime + CONNECTION_LEASE_MS,
+              }).catch(() => {});
+            } catch (e) {}
+          };
+          this._capacityHeartbeatTimer = setInterval(tick, CONNECTION_HEARTBEAT_MS);
+        },
+
+    _releaseCapacityConnection: function () {
+          try {
+            if (this._capacityHeartbeatTimer) clearInterval(this._capacityHeartbeatTimer);
+          } catch (e) {}
+          this._capacityHeartbeatTimer = null;
+          const ref = this._capacityRef;
+          this._capacityRef = null;
+          this._capacityConnectionId = "";
+          this._capacityDenied = false;
+          this._capacityDeniedAt = 0;
+          try {
+            if (ref && typeof ref.remove === "function") ref.remove().catch(() => {});
+          } catch (e) {}
+        },
+
+    _showPresenceInitFailure: function () {
+          const key = this._capacityDenied ? "status.onlineCapacityFull" : "status.onlineInitFail";
+          showOnlineNotice(window.I18N.translateArgs(key), { allowSpectator: true });
+        },
+
     initPresence: async function () {
           const ok = await settleWithin(ensureAuthReady(), 9000, false);
           if (!ok) return false;
@@ -2221,6 +2377,9 @@
               } catch (e) {}
               try {
                 this._teardownGamePresence();
+              } catch (e) {}
+              try {
+                this._releaseCapacityConnection();
               } catch (e) {}
               try {
                 if (this._presenceConnInfoRef && this._presenceConnInfoHandler) {
@@ -2275,6 +2434,9 @@
             this._presenceStatus = "available";
             this._presenceRole = null;
             this._presenceRoomId = null;
+
+            const capacityOk = await this._registerCapacityConnection();
+            if (!capacityOk) return false;
     
             const serverNow = () => nowTs();
             const payload = () => ({
@@ -2307,6 +2469,16 @@
                 } catch (e) {
                   Logger.warn("presence_ondisconnect_failed", { err: String(e && (e.message || e)) });
                 }
+                try {
+                  if (this._capacityRef) {
+                    this._capacityRef.onDisconnect().remove();
+                    const currentTime = nowTs();
+                    this._capacityRef.update({
+                      updatedAt: currentTime,
+                      expiresAt: currentTime + CONNECTION_LEASE_MS,
+                    }).catch(() => {});
+                  }
+                } catch (e) {}
                 try {
                   const okW = safePlayerWriteNoAwait(
                     this.statusRef,
@@ -2344,7 +2516,10 @@
               8000,
               false,
             );
-            if (!initialPresenceOk) return false;
+            if (!initialPresenceOk) {
+              this._releaseCapacityConnection();
+              return false;
+            }
     
             this._presenceInited = true;
             try {
@@ -2363,6 +2538,7 @@
     
             return true;
           } catch (e) {
+            this._releaseCapacityConnection();
             return false;
           }
         },
@@ -2419,6 +2595,7 @@
            
            
           try { this._pageClosing = true; } catch (_) {}
+          try { this._releaseCapacityConnection(); } catch (_) {}
           try { this._stopPresenceHeartbeat(); } catch (_) {}
           try { if (this._stopGamePresenceHeartbeat) this._stopGamePresenceHeartbeat(); } catch (_) {}
           try { if (this._stopMoveCommitWatchdog) this._stopMoveCommitWatchdog(); } catch (_) {}
@@ -3692,11 +3869,12 @@
         },
 
     _acceptInviteLobby: async function (inv, inviteRef) {
+          let matchClaim = null;
           try {
             if (!inv || !inv.gameId) return;
             const ok = await this.initPresence();
             if (!ok) {
-              showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
+              this._showPresenceInitFailure();
               return;
             }
     
@@ -3711,6 +3889,19 @@
     
             inv = validated.invite || inv;
             const gameId = inv.gameId;
+            matchClaim = await acquireMatchClaims(gameId, inv.fromUid, this.myUid);
+            if (!matchClaim || !matchClaim.ok) {
+              try { await this._invalidateInviteLocally(inv, inviteRef); } catch (e) {}
+              showOnlineNotice(window.I18N.translateArgs("online.inviteInvalidated"));
+              return;
+            }
+            const validatedUnderClaim = await this._validateInviteBeforeAccept(inv, inviteRef);
+            if (!validatedUnderClaim || !validatedUnderClaim.ok) {
+              try { await this._invalidateInviteLocally(inv, inviteRef); } catch (e) {}
+              showOnlineNotice(window.I18N.translateArgs("online.inviteInvalidated"));
+              return;
+            }
+            inv = validatedUnderClaim.invite || inv;
             const gameRef = db.ref("games").child(gameId);
             let committed = false;
     
@@ -3792,10 +3983,17 @@
             try {
               await this._purgeInvitesOnEnterMatch();
             } catch (e) {}
+
+            try {
+              await releaseMatchClaims(matchClaim);
+              matchClaim = null;
+            } catch (e) {}
     
             this._goToGameAsPlayer(gameId);
           } catch (err) {
             handleDbError(err, window.I18N.translateArgs("online.inviteInvalidated"), { ctx: "invite.join" });
+          } finally {
+            if (matchClaim) await releaseMatchClaims(matchClaim);
           }
         },
   };

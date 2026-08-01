@@ -19,6 +19,7 @@ const LIMITS = Object.freeze({
   rtc: 2 * 60_000,
   chatRead: 7 * 24 * 60 * 60_000,
   userEventFallback: 2 * 24 * 60 * 60_000,
+  connectionLease: 10 * 60_000,
   maxChatMessages: 200,
 });
 
@@ -252,9 +253,10 @@ function cleanupSpectators(spectators, games, roomList, purgedGameIds, updates, 
 
 async function main() {
   const cred = await credentials();
-  const [players, invites, gamesRaw, roomListRaw, spectators, chats, rtc, userEvents] = await Promise.all([
+  const [players, invites, gamesRaw, roomListRaw, spectators, chats, rtc, userEvents, capacityConnections] = await Promise.all([
     read('players', cred), read('invites', cred), read('games', cred), read('roomList', cred),
     read('spectators', cred), read('chats', cred), read('rtc', cred), read('userEvents', cred),
+    read('capacityConnections', cred),
   ]);
   const games = object(gamesRaw);
   const roomList = object(roomListRaw);
@@ -264,7 +266,17 @@ async function main() {
     players: 0, invites: 0, games: 0, roomList: 0, undo: 0, recovery: 0,
     spectators: 0, rtcParticipants: 0, rtcSignals: 0, chatMessages: 0,
     chatReads: 0, userEvents: 0, orphans: 0,
+    capacityConnections: 0,
   };
+
+  for (const [connectionId, connection] of Object.entries(object(capacityConnections))) {
+    const expiresAt = num(connection && connection.expiresAt);
+    const updatedAt = num(connection && connection.updatedAt);
+    if ((!expiresAt && (!updatedAt || NOW - updatedAt >= LIMITS.connectionLease)) || (expiresAt && NOW >= expiresAt)) {
+      updates[`capacityConnections/${connectionId}`] = null;
+      counts.capacityConnections += 1;
+    }
+  }
 
   for (const [uid, player] of Object.entries(object(players))) {
     const ts = num(player && player.updatedAt);

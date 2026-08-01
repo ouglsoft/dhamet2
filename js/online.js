@@ -134,7 +134,7 @@
   async function initPresenceWithRetry(owner, options) {
     let ok = false;
     try { ok = !!(await owner.initPresence(options)); } catch (_) { ok = false; }
-    if (ok) return true;
+    if (ok || owner._capacityDenied) return ok;
     await waitForOnlineRetry(350);
     try { return !!(await owner.initPresence(options)); } catch (_) { return false; }
   }
@@ -199,19 +199,6 @@
       deferredPromotions: queue,
       deferredPromotion: queue.length ? Object.assign({}, queue[0]) : null,
     };
-  }
-
-  function officialSouflaFromHistoricalState(stateRecord) {
-    const snapshot = stateRecord && stateRecord.snapshot && typeof stateRecord.snapshot === "object"
-      ? stateRecord.snapshot
-      : null;
-    const pending = snapshot && snapshot.soufla && typeof snapshot.soufla === "object"
-      ? stripUndefined(snapshot.soufla)
-      : null;
-    const player = snapshot ? Number(snapshot.player) : null;
-    const penalizer = pending ? Number(pending.penalizer) : null;
-    if (!pending || (penalizer !== -1 && penalizer !== 1) || penalizer !== player) return null;
-    return { availableFor: penalizer, pending };
   }
 
   Object.assign(Online, {
@@ -693,50 +680,23 @@
               const ts = nowTs();
               const who = displayPlayerName(this.myUid, this.myNick);
               const MatchEnd = window.DhametMatchEnd;
-              const policy = MatchEnd && typeof MatchEnd.policyForEnd === "function"
-                ? MatchEnd.policyForEnd("opponent-absent", this.mySide, {
-                    reason: "opponent_absent",
-                     
-                     
-                    policyProfile: "strict-low-material",
-                  }, g)
-                : { ok: true, reason: "opponent_absent", resultReason: "opponent_absent", winner: null, countsAsResult: false, neutralEnd: true, rejectionReason: "policy_unavailable" };
-
-              const terminalResult = MatchEnd && typeof MatchEnd.createTerminalResult === "function"
-                ? MatchEnd.createTerminalResult({
-                    winner: policy.winner,
-                    reason: policy.resultReason || policy.reason || "opponent_absent",
-                    mode: "pvp",
-                    moveIndex: Number(g.moveIndex || 0) || 0,
-                    ply: Number(g.ply || 0) || 0,
-                    endedAt: ts,
-                    source: "firebase-opponent-absence-v1",
-                    countsAsResult: policy.countsAsResult === true,
-                    meta: {
-                      kind: "opponent-absent",
-                      countsAsResult: policy.countsAsResult === true,
-                      neutralEnd: policy.neutralEnd !== false,
-                      adjudicated: policy.adjudicated === true,
-                      terminalConfidence: policy.terminalConfidence || null,
-                      terminalTag: policy.terminalTag || null,
-                      rejectionReason: policy.rejectionReason || null,
-                      assessment: policy.assessment || null,
-                    },
-                  })
-                : {
-                    status: "ongoing",
-                    terminal: false,
-                    winner: 0,
-                    reason: "opponent_absent",
-                    meta: { kind: "opponent-absent", countsAsResult: false, neutralEnd: true },
-                  };
-
-              g.status = "ended";
-              g.endedAt = ts;
-              g.endedReason = policy.reason || "opponent_absent";
-              g.endedBy = { uid: this.myUid, side: this.mySide, nickname: who };
-              g.winner = policy.winner == null ? null : policy.winner;
-              g.result = terminalResult;
+              const end = MatchEnd.createAdministrativeEnd({
+                kind: "opponent-absent",
+                reason: "opponent_absent",
+                actorUid: this.myUid,
+                actorNick: who,
+                actorSide: this.mySide,
+                moveIndex: g.moveIndex,
+                ply: g.ply,
+                endedAt: ts,
+              });
+              if (!end || !end.ok) return;
+              g.status = end.status;
+              g.endedAt = end.endedAt;
+              g.endedReason = end.endedReason;
+              g.endedBy = end.endedBy;
+              g.winner = end.winner;
+              g.result = end.result;
               g.log = Array.isArray(g.log) ? g.log : [];
               normalizeLogArrayForWrite(g.log);
               g.log.push({
@@ -1126,7 +1086,7 @@
     startOnline: async function () {
           const ok = await initPresenceWithRetry(this);
           if (!ok) {
-            showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
+            this._showPresenceInitFailure();
             return;
           }
     
@@ -1301,10 +1261,23 @@
               const whiteUid = String(g.players && g.players.white && g.players.white.uid || "");
               const blackUid = String(g.players && g.players.black && g.players.black.uid || "");
               if (uid !== whiteUid && uid !== blackUid) return;
-              g.status = "ended";
-              g.endedAt = nowTs();
-              g.endedReason = "ended_by_player";
-              g.endedBy = { uid, nickname: who };
+              const end = window.DhametMatchEnd.createAdministrativeEnd({
+                kind: "leave",
+                reason: "ended_by_player",
+                actorUid: uid,
+                actorNick: who,
+                actorSide: uid === whiteUid ? -1 : 1,
+                moveIndex: g.moveIndex,
+                ply: g.ply,
+                endedAt: nowTs(),
+              });
+              if (!end || !end.ok) return;
+              g.status = end.status;
+              g.endedAt = end.endedAt;
+              g.endedReason = end.endedReason;
+              g.endedBy = end.endedBy;
+              g.winner = end.winner;
+              g.result = end.result;
               return g;
             });
             if (!result || result.committed === false) {
@@ -1391,7 +1364,7 @@
     _createGame: async function (opponentUid) {
           const ok = await initPresenceWithRetry(this);
           if (!ok) {
-            showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
+            this._showPresenceInitFailure();
             return;
           }
     
@@ -1919,11 +1892,23 @@
           let wrote = false;
     
           const who = this.myNick || window.I18N.translateArgs("players.player");
-          const payload = {
-            status: "ended",
+          const administrativeEnd = window.DhametMatchEnd.createAdministrativeEnd({
+            kind: "leave",
+            reason: "ended_by_player",
+            actorUid: this.myUid,
+            actorNick: who,
+            actorSide: this.mySide,
+            moveIndex: this._lastGameData && this._lastGameData.moveIndex,
+            ply: this._lastGameData && this._lastGameData.ply,
             endedAt: nowTs(),
-            endedReason: "ended_by_player",
-            endedBy: { uid: this.myUid, nickname: who },
+          });
+          const payload = {
+            status: administrativeEnd.status,
+            endedAt: administrativeEnd.endedAt,
+            endedReason: administrativeEnd.endedReason,
+            endedBy: administrativeEnd.endedBy,
+            winner: administrativeEnd.winner,
+            result: administrativeEnd.result,
           };
     
     
@@ -1935,6 +1920,8 @@
                 g.endedAt = payload.endedAt;
                 g.endedReason = payload.endedReason;
                 g.endedBy = payload.endedBy;
+                g.winner = payload.winner;
+                g.result = payload.result;
     
                 g.log = Array.isArray(g.log) ? g.log : [];
     
@@ -6012,9 +5999,11 @@
 
               g.moveIndex = moveIndex;
               g.ply = previousPly;
-              g.state = previous.state;
-              g.turn = Number(previous.state.snapshot.player);
-              g.soufla = officialSouflaFromHistoricalState(previous.state);
+              const restoredSoufla = Control.souflaFromState(previous.state);
+              const restoredState = Control.stateWithSoufla(previous.state, restoredSoufla) || previous.state;
+              g.state = restoredState;
+              g.turn = Number(restoredState.snapshot.player);
+              g.soufla = restoredSoufla;
               g.undoRequest = null;
                
                
@@ -6597,7 +6586,7 @@
     _enterGameFromId: async function (gameId, forceSpectator) {
           const ok = await initPresenceWithRetry(this);
           if (!ok) {
-            showOnlineNotice(window.I18N.translateArgs("status.onlineInitFail"));
+            this._showPresenceInitFailure();
             return;
           }
     

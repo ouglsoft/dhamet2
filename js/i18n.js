@@ -189,6 +189,7 @@
     "status": {
       "forcedChainStepByStep": "هذه سلسلة أسر إجبارية. نفّذها خطوةً خطوة.",
       "onlineInitFail": "تعذر فتح اللعب عبر الإنترنت الآن. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.",
+      "onlineCapacityFull": "يوجد ضغط كبير حاليًا على اللعب عبر الإنترنت والاتصال. يرجى المحاولة لاحقًا.",
       "reconnecting": "جارٍ استعادة الاتصال…",
       "onlineInitHelp": "تحقق من اتصال الإنترنت، ثم حدّث الصفحة لإعادة إنشاء جلسة اللعب المؤقتة.",
       "wait": "الدور على اللاعب الآخر. انتظر قليلًا.",
@@ -554,6 +555,7 @@
     "status": {
       "forcedChainStepByStep": "This is a forced capture chain. Complete it one step at a time.",
       "onlineInitFail": "Online play could not be opened right now. Check your internet connection and try again.",
+      "onlineCapacityFull": "Online play is currently under heavy load. Please try again later.",
       "reconnecting": "Restoring the connection…",
       "onlineInitHelp": "Check your internet connection, then refresh the page to recreate the temporary play session.",
       "wait": "It is the other player’s turn. Please wait.",
@@ -919,6 +921,7 @@
     "status": {
       "forcedChainStepByStep": "Cette chaîne de prises est obligatoire. Effectuez-la étape par étape.",
       "onlineInitFail": "Le jeu en ligne ne peut pas être ouvert pour le moment. Vérifiez votre connexion Internet et réessayez.",
+      "onlineCapacityFull": "Le jeu en ligne est actuellement très chargé. Veuillez réessayer plus tard.",
       "reconnecting": "Rétablissement de la connexion…",
       "onlineInitHelp": "Vérifiez la connexion Internet, puis actualisez la page pour recréer la session de jeu temporaire.",
       "wait": "C’est au tour de l’autre joueur. Veuillez patienter.",
