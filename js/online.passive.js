@@ -1906,6 +1906,8 @@
 
     _lobbyPlayersLastSnap: null,
 
+    _lobbyRoomsLastSnap: null,
+
     moveIndex: 0,
 
     ply: 0,

@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260801-v42-icons",
-  "source": "firebase-online-only-native-rtdb-transport-v42-icons",
-  "uiReference": "approved-online-only-v42-icons",
-  "release": "20260801-v42-icons"
+  "version": "20260801-v43-game-theme-language-readme-icons",
+  "source": "firebase-online-only-native-rtdb-transport",
+  "uiReference": "approved-online-only-interface",
+  "release": "20260801-v43-game-theme-language-readme-icons"
 }

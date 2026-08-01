@@ -34,7 +34,24 @@
     try { localStorage.setItem(LANG_KEY, value); } catch (_) {}
     document.documentElement.lang = value;
     document.documentElement.dir = value === "ar" ? "rtl" : "ltr";
-    try { window.I18N && window.I18N.apply && window.I18N.apply(document, value); } catch (_) {}
+    try {
+      if (window.I18N && typeof window.I18N.setLang === "function") window.I18N.setLang(value, document);
+      else if (window.I18N && typeof window.I18N.apply === "function") window.I18N.apply(document, value);
+    } catch (_) {}
+    try {
+      if (typeof window.applyLanguage === "function") window.applyLanguage(value);
+    } catch (_) {}
+    try {
+      if (window.Online && typeof window.Online.refreshTranslatedUi === "function") {
+        window.Online.refreshTranslatedUi();
+      }
+    } catch (_) {}
+    try {
+      const desktopSelect = document.getElementById("zLangSel");
+      const pageSelect = document.getElementById("langSel");
+      if (desktopSelect) desktopSelect.value = value;
+      if (pageSelect) pageSelect.value = value;
+    } catch (_) {}
     return value;
   }
 

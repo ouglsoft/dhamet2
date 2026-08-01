@@ -759,6 +759,19 @@
           } catch (e) {}
         },
 
+    refreshTranslatedUi: function () {
+          try {
+            if (this._lobbyRoomsLastSnap && this._lobbyRoomsCb) {
+              this._lobbyRoomsCb(this._lobbyRoomsLastSnap, { translationOnly: true });
+            } else if (this._lobbyPlayersLastSnap && this._lobbyPlayersCb) {
+              this._lobbyPlayersCb(this._lobbyPlayersLastSnap, { translationOnly: true });
+            }
+          } catch (e) {}
+          try { this.refreshPresenceUi && this.refreshPresenceUi(); } catch (e) {}
+          try { this.refreshPvpControls && this.refreshPvpControls(); } catch (e) {}
+          try { window.UI && typeof window.UI.updateStatus === "function" && window.UI.updateStatus(); } catch (e) {}
+        },
+
     _buildGamePresencePayload: function () {
           const ts = nowTs();
           if (!this._gamePresenceJoinedAt) this._gamePresenceJoinedAt = ts;
@@ -6253,11 +6266,14 @@
             }
             this._lobbyPlayersRef = ref;
     
-            const cb = (snap) => {
+            const cb = (snap, options) => {
               if (!isCurrent()) return;
               try {
-              playersLoaded = true;
-              markDataReceived();
+              const translationOnly = !!(options && options.translationOnly === true);
+              if (!translationOnly) {
+                playersLoaded = true;
+                markDataReceived();
+              }
               this._lobbyPlayersLastSnap = snap || null;
               const all = snap && snap.val ? snap.val() : null;
               const rows = [];
@@ -6390,11 +6406,15 @@
             }
             this._lobbyRoomsRef = refG;
     
-            const cbG = (snap) => {
+            const cbG = (snap, options) => {
               if (!isCurrent()) return;
               try {
-              roomsLoaded = true;
-              markDataReceived();
+              const translationOnly = !!(options && options.translationOnly === true);
+              if (!translationOnly) {
+                roomsLoaded = true;
+                markDataReceived();
+              }
+              this._lobbyRoomsLastSnap = snap || null;
               const all = snap && snap.val ? snap.val() : null;
               const rooms = [];
     
@@ -6403,7 +6423,9 @@
                 for (const [gid, g] of Object.entries(all)) {
                   if (!g || g.status !== "active") continue;
                   if (this._isLobbyRoomStale(g)) {
-                    try { this._sweepStaleLobbyRoom(gid, g); } catch (e) {}
+                    if (!translationOnly) {
+                      try { this._sweepStaleLobbyRoom(gid, g); } catch (e) {}
+                    }
                     continue;
                   }
                   const wuid = g.players && g.players.white ? g.players.white.uid || "" : "";
@@ -6433,7 +6455,9 @@
               }
               this._lobbyActivePlayerRooms = activePlayerRooms;
               try {
-                if (this._lobbyPlayersLastSnap && this._lobbyPlayersCb) this._lobbyPlayersCb(this._lobbyPlayersLastSnap);
+                if (this._lobbyPlayersLastSnap && this._lobbyPlayersCb) {
+                  this._lobbyPlayersCb(this._lobbyPlayersLastSnap, translationOnly ? { translationOnly: true } : undefined);
+                }
               } catch (e) {}
               rooms.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     

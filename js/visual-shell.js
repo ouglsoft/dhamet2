@@ -18,8 +18,18 @@
     return theme === "dark" ? "dark" : "light";
   }
 
+  function isGamePage() {
+    try {
+      const path = String(location.pathname || "").toLowerCase();
+      if (path.endsWith("/pages/game.html") || path.endsWith("/game.html") || path.endsWith("/pages/game") || path.endsWith("/game")) return true;
+      return !!(document.body && document.body.classList && document.body.classList.contains("z-game-page"));
+    } catch (_) {
+      return false;
+    }
+  }
+
   function applyTheme() {
-    try { document.documentElement.classList.toggle("dark", readStoredTheme() === "dark"); } catch (_) {}
+    try { document.documentElement.classList.toggle("dark", isGamePage() && readStoredTheme() === "dark"); } catch (_) {}
   }
 
   function tr(key, fallback) {
