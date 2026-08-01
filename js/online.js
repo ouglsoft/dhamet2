@@ -6545,12 +6545,12 @@
           }
         },
 
-    _showUnavailableGameAndLeave: async function () {
+    _showUnavailableGameAndLeave: async function (noticeKey) {
           const silentSpectatorLeave = !!this._spectatorLeaving;
           try { this._clearPersistedActiveGame(); } catch (e) {}
           try { await this._setLobbyStatus("available"); } catch (e) {}
           if (!silentSpectatorLeave) {
-            try { showOnlineNotice(window.I18N.translateArgs("online.errors.noGame")); } catch (e) {}
+            try { showOnlineNotice(window.I18N.translateArgs(noticeKey || "online.errors.noGame")); } catch (e) {}
           }
           try {
             if (typeof location !== "undefined" && isGamePage()) {
@@ -6613,9 +6613,12 @@
           const buid = g.players && g.players.black && g.players.black.uid ? String(g.players.black.uid) : "";
     
           const amPlayer = this.myUid && (String(this.myUid) === wuid || String(this.myUid) === buid);
-          const asSpectator = !amPlayer;
     
-          if (asSpectator) {
+          if (!amPlayer) {
+            if (!forceSpectator) {
+              await this._showUnavailableGameAndLeave("online.errors.authRequired");
+              return;
+            }
             if (statusText !== "active") {
               await this._showUnavailableGameAndLeave();
               return;

@@ -1,7 +1,7 @@
 {
   "application": "dhamet2",
-  "version": "20260731-v35-i18n-dead-code-comment-cleanup",
-  "source": "firebase-online-only-native-rtdb-transport-v35-i18n-dead-code-comment-cleanup",
-  "uiReference": "approved-online-only-v35-i18n-dead-code-comment-cleanup",
-  "release": "20260731-v35-i18n-dead-code-comment-cleanup"
+  "version": "20260801-v36-player-entry-identity-guard",
+  "source": "firebase-online-only-native-rtdb-transport-v36-player-entry-identity-guard",
+  "uiReference": "approved-online-only-v36-player-entry-identity-guard",
+  "release": "20260801-v36-player-entry-identity-guard"
 }

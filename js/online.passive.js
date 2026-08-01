@@ -3289,7 +3289,7 @@
                   const acceptedAt = Number(g.acceptedAt || 0) || 0;
     
                   if (acceptedAt > 0 && (st === "active" || st === "pending")) {
-                    await this._handleOutgoingInviteAccepted(gid);
+                    await this._handleOutgoingInviteAccepted(gid, g);
                     return;
                   }
     
@@ -3319,9 +3319,29 @@
           } catch (e) {}
         },
 
-    _handleOutgoingInviteAccepted: async function (gameId) {
+    _handleOutgoingInviteAccepted: async function (gameId, gameRecord) {
           try {
             if (!gameId) return;
+    
+            if (gameRecord && gameRecord.players) {
+              const currentUid = String(this.myUid || "").trim();
+              const inviterUid = String((gameRecord.players.white && gameRecord.players.white.uid) || "").trim();
+              if (!currentUid || !inviterUid) return;
+              if (currentUid !== inviterUid) {
+                const gid = String(gameId);
+                try {
+                  const watch = this._outInviteWatchMap && this._outInviteWatchMap[gid];
+                  if (watch && watch.ref && watch.cb) watch.ref.off("value", watch.cb);
+                } catch (e) {}
+                try {
+                  if (this._outInviteWatchMap) delete this._outInviteWatchMap[gid];
+                } catch (e) {}
+                try { this._clearPendingInviteWatcher(); } catch (e) {}
+                try { this._untrackOutgoingInviteByGame(gid); } catch (e) {}
+                try { showOnlineNotice(window.I18N.translateArgs("online.errors.authRequired")); } catch (e) {}
+                return;
+              }
+            }
     
             const inMatch = !!(
               this.isActive ||
