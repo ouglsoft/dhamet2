@@ -9,7 +9,6 @@
   const AUTH_BROWSER_KEY = "dhamet2.auth.browser.v4";
   const BROWSER_SESSION_COOKIE = "dhamet2_browser_session";
   const LANG_KEY = "zamat.lang";
-  const NICK_KEY = "zamat.nick";
   const ICON_KEY = "zamat.icon";
   const DEFAULT_ICON = "assets/icons/users/autouser1.png";
   const ACTIVE_GAME_ID_KEY = "zamat.activeGameId";
@@ -106,21 +105,14 @@
     } catch (_) {}
     const user = window.firebase && firebase.auth ? firebase.auth().currentUser : null;
     if (!user || !user.isAnonymous) return null;
-    let nickname = "";
-    try { nickname = localStorage.getItem(NICK_KEY) || ""; } catch (_) {}
-    if (!nickname) nickname = randomNick(user.uid);
+    const nickname = randomNick(user.uid);
     let icon = DEFAULT_ICON;
     try { icon = localStorage.getItem(ICON_KEY) || DEFAULT_ICON; } catch (_) {}
     return { kind: "guest", uid: user.uid, nickname, nick: nickname, icon, anonymous: true };
   }
   function writeSession(user) {
     if (!user || !user.uid) return null;
-    let nickname = "";
-    try { nickname = localStorage.getItem(NICK_KEY) || ""; } catch (_) {}
-    if (!nickname) {
-      nickname = randomNick(user.uid);
-      try { localStorage.setItem(NICK_KEY, nickname); } catch (_) {}
-    }
+    const nickname = randomNick(user.uid);
     let icon = DEFAULT_ICON;
     try {
       icon = localStorage.getItem(ICON_KEY) || DEFAULT_ICON;
@@ -466,8 +458,8 @@
     getFooterText,
     createStartPlayButton: () => null
   });
-  window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, resetAnonymous, readSession, writeSession, firebaseConfigReady, isDefinitiveAuthFailure, hasLocalActiveAssociation });
-  window.DhametEmergency = Object.freeze({ ensureAnonymous, resetAnonymous, readSession, randomNick, isDefinitiveAuthFailure, hasLocalActiveAssociation });
+  window.ZAuth = Object.freeze({ initFirebase, ensureAnonymous, resetAnonymous, readSession, writeSession, firebaseConfigReady, isDefinitiveAuthFailure, hasLocalActiveAssociation, browserSessionId: ensureBrowserSessionId });
+  window.DhametEmergency = Object.freeze({ ensureAnonymous, resetAnonymous, readSession, randomNick, isDefinitiveAuthFailure, hasLocalActiveAssociation, browserSessionId: ensureBrowserSessionId });
 
   document.documentElement.classList.add("auth-pending");
   const ready = ensureAnonymous()

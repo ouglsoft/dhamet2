@@ -1065,6 +1065,8 @@
 
   const NICK_KEY = "zamat.nick";
   const NICK_EXPLICIT_KEY = "zamat.nickExplicit";
+  const NICK_SESSION_SEEN_KEY = "zamat.nickSessionSeen.v1";
+  const NICK_BROWSER_RECORD_KEY = "zamat.onlineName.browserSession.v1";
 
   const MIGRATION_VERSION_KEY = "zamat.migrationVersion";
 
@@ -1139,7 +1141,71 @@
     }
   }
 
+  function browserNameSessionId() {
+    try {
+      if (window.DhametEmergency && typeof window.DhametEmergency.browserSessionId === "function") {
+        return String(window.DhametEmergency.browserSessionId() || "");
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  function readBrowserNickRecord() {
+    const sessionId = browserNameSessionId();
+    if (!sessionId) return null;
+    try {
+      const raw = localStorage.getItem(NICK_BROWSER_RECORD_KEY);
+      const record = raw ? JSON.parse(raw) : null;
+      if (!record || String(record.sessionId || "") !== sessionId) {
+        if (raw) localStorage.removeItem(NICK_BROWSER_RECORD_KEY);
+        try {
+          sessionStorage.removeItem(NICK_KEY);
+          sessionStorage.removeItem(NICK_EXPLICIT_KEY);
+          sessionStorage.removeItem(NICK_SESSION_SEEN_KEY);
+        } catch (e) {}
+        return null;
+      }
+      const nickname = String(record.nickname || "").trim();
+      if (!nickname || record.seen !== true) return null;
+      return {
+        sessionId,
+        nickname,
+        explicit: record.explicit === true,
+        seen: true,
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeBrowserNickRecord(nick, explicit, seen) {
+    const nickname = String(nick || "").trim();
+    const sessionId = browserNameSessionId();
+    if (!sessionId || !nickname || seen !== true) return;
+    try {
+      localStorage.setItem(NICK_BROWSER_RECORD_KEY, JSON.stringify({
+        sessionId,
+        nickname,
+        explicit: explicit === true,
+        seen: true,
+      }));
+    } catch (e) {}
+  }
+
+  function syncNickSessionFromBrowser() {
+    const record = readBrowserNickRecord();
+    if (!record) return null;
+    try {
+      sessionStorage.setItem(NICK_KEY, record.nickname);
+      sessionStorage.setItem(NICK_SESSION_SEEN_KEY, "1");
+      if (record.explicit) sessionStorage.setItem(NICK_EXPLICIT_KEY, "1");
+      else sessionStorage.removeItem(NICK_EXPLICIT_KEY);
+    } catch (e) {}
+    return record;
+  }
+
   runMigrationsOnline();
+  syncNickSessionFromBrowser();
 
    
    
@@ -1266,20 +1332,19 @@
   }
 
   function getSavedNick() {
-    const fromSessionUser = getNickFromSessionUser();
-    if (fromSessionUser) return fromSessionUser;
-    try {
-      return (sessionStorage.getItem(NICK_KEY) || "").trim();
-    } catch (e) {
-      return "";
-    }
+    const record = syncNickSessionFromBrowser();
+    return record ? record.nickname : "";
   }
 
-  function saveNickSession(nick, explicit) {
+  function saveNickSession(nick, explicit, seen) {
     try {
       sessionStorage.setItem(NICK_KEY, String(nick || ""));
       if (explicit) sessionStorage.setItem(NICK_EXPLICIT_KEY, "1");
+      else sessionStorage.removeItem(NICK_EXPLICIT_KEY);
+      if (seen) sessionStorage.setItem(NICK_SESSION_SEEN_KEY, "1");
     } catch (e) {}
+
+    writeBrowserNickRecord(nick, explicit, seen);
 
     try {
       localStorage.removeItem(NICK_KEY);
@@ -1381,12 +1446,7 @@
 
   function getSavedNickOrDefault(uid) {
     const saved = getSavedNick();
-    const nick = saved || defaultNick(uid);
-
-    if (!getNickFromSessionUser()) {
-      saveNickSession(nick, !!saved);
-    }
-    return nick;
+    return saved || defaultNick(uid);
   }
 
   function allowedUserIcons() {
@@ -1716,16 +1776,8 @@
 
   function hasExplicitNick(uid) {
     try {
-      const flag = (sessionStorage.getItem(NICK_EXPLICIT_KEY) || "") === "1";
-      if (flag) return true;
-
-      const saved = getSavedNick();
-      if (!saved) return false;
-
-      const u = uid || (auth && auth.currentUser && auth.currentUser.uid) || "";
-      if (!u) return true;
-      const def = defaultNick(u);
-      return saved !== def;
+      const record = syncNickSessionFromBrowser();
+      return !!(record && record.seen && record.nickname);
     } catch (e) {
       return false;
     }

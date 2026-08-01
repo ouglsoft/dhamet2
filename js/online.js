@@ -1093,9 +1093,15 @@
           this._lobbyOpenedAt = localNow();
     
           try {
-            const picked = ((await askNickname()) || "").trim();
-            if (picked) this.myNick = picked;
-            if (!this.myNick) this.myNick = getSavedNickOrDefault(this.myUid);
+            const uid = this.myUid || (auth && auth.currentUser && auth.currentUser.uid) || "";
+            if (!hasExplicitNick(uid)) {
+              const picked = ((await askNickname()) || "").trim();
+              if (picked) this.myNick = picked;
+            } else {
+              const saved = (getSavedNick() || "").trim();
+              if (saved) this.myNick = saved;
+            }
+            if (!this.myNick) this.myNick = getSavedNickOrDefault(uid);
           } catch (e) {}
     
           await this._setLobbyStatus("available");
